@@ -36,6 +36,39 @@
     <string name="product_cheesecake">Cheesecake</string>
     <string name="product_cheesecake_description">New York style</string>
 
+    <string name="product_cinnamon_roll">Cinnamon roll</string>
+    <string name="product_cinnamon_roll_description">Soft dough with cinnamon and sugar</string>
+    <string name="product_muffin">Chocolate muffin</string>
+    <string name="product_muffin_description">With chocolate chips inside</string>
+    <string name="product_apple_pie">Apple pie</string>
+    <string name="product_apple_pie_description">Apples, cinnamon and crumbly crust</string>
+    <string name="product_cookie">Almond cookie</string>
+    <string name="product_cookie_description">Crunchy, with toasted almonds</string>
+
+    <!-- Описания на экране позиции -->
+    <string name="product_cappuccino_details">Classic espresso with gentle milk foam. Made from freshly roasted beans.</string>
+    <string name="product_latte_details">Soft coffee with a lot of steamed milk and a thin layer of foam.</string>
+    <string name="product_raf_details">Espresso blended with cream and vanilla sugar. Sweet and velvety.</string>
+    <string name="product_espresso_details">A short, strong shot of 40 ml. Served without milk.</string>
+    <string name="product_americano_details">Espresso diluted with hot water. Clean taste, no milk.</string>
+    <string name="product_hot_chocolate_details">Thick drink made from real chocolate and cocoa. Warm and sweet.</string>
+    <string name="product_tea_details">Black tea brewed in a pot, served with a slice of lemon.</string>
+    <string name="product_croissant_details">Classic buttery croissant, baked every morning.</string>
+    <string name="product_cinnamon_roll_details">Soft roll with cinnamon and sugar filling and a light glaze.</string>
+    <string name="product_muffin_details">Moist chocolate muffin with chocolate chips inside.</string>
+    <string name="product_apple_pie_details">Pie with baked apples and cinnamon on a crumbly shortcrust base.</string>
+    <string name="product_cheesecake_details">New York style cheesecake on a biscuit base, with a creamy texture.</string>
+    <string name="product_cookie_details">Crunchy cookie with toasted almond flakes.</string>
+    <string name="extra_cinnamon">Cinnamon</string>
+    <string name="extra_honey">Honey</string>
+    <string name="extra_marshmallow">Marshmallow</string>
+    <string name="extra_lemon">Lemon</string>
+    <string name="extra_mint">Mint</string>
+    <string name="extra_ginger">Ginger</string>
+    <string name="allergen_gluten">gluten</string>
+    <string name="allergen_eggs">eggs</string>
+    <string name="allergen_nuts">nuts</string>
+
     <!-- Корзина -->
     <string name="cart_title">Cart</string>
     <string name="cart_empty">Your cart is empty</string>

@@ -27,12 +27,13 @@ fun CartLine.optionsText(): String {
     val o = options ?: return stringResource(product.descriptionRes)
     val parts = buildList {
         // Метка размера выглядит как «M · 350 мл» — в корзине нужна только буква
-        add(stringResource(o.size.labelRes).substringBefore(' '))
-        add(stringResource(o.milk.labelRes))
+        o.size?.let { add(stringResource(it.labelRes).substringBefore(' ')) }
+        o.milk?.let { add(stringResource(it.labelRes)) }
         if (o.isIced) add(stringResource(R.string.temperature_iced))
         o.extras.forEach { add(stringResource(it.labelRes)) }
     }
-    return parts.joinToString(" · ")
+    // Ничего не выбрано (например, эспрессо без добавок) — показываем описание
+    return if (parts.isEmpty()) stringResource(product.descriptionRes) else parts.joinToString(" · ")
 }
 
 @Composable

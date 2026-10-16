@@ -1,8 +1,7 @@
 package ru.coffeerun.ui.components
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -27,23 +27,18 @@ import ru.coffeerun.R
 import ru.coffeerun.model.Product
 import ru.coffeerun.ui.theme.spacing
 
-/** Квадратная заглушка вместо фото товара (иконка чашки на тонированном фоне). */
+/** Квадратное фото позиции со скруглёнными углами. */
 @Composable
-fun ProductImage(size: Dp, iconSize: Dp, modifier: Modifier = Modifier) {
-    Box(
+fun ProductImage(product: Product, size: Dp, modifier: Modifier = Modifier) {
+    Image(
+        painter = painterResource(product.imageRes),
+        // Декоративное: название позиции рядом идёт текстом
+        contentDescription = null,
+        contentScale = ContentScale.Crop,
         modifier = modifier
             .size(size)
             .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_local_cafe),
-            contentDescription = null,
-            modifier = Modifier.size(iconSize),
-            tint = MaterialTheme.colorScheme.primary
-        )
-    }
+    )
 }
 
 /** Карточка позиции меню: нажатие открывает позицию, «+» кладёт её в корзину. */
@@ -65,7 +60,7 @@ fun ProductCard(
             modifier = Modifier.padding(MaterialTheme.spacing.medium),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.large)
         ) {
-            ProductImage(size = 88.dp, iconSize = 36.dp)
+            ProductImage(product = product, size = 88.dp)
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)

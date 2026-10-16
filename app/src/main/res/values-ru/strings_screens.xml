@@ -34,6 +34,38 @@
     <string name="product_cheesecake">Чизкейк</string>
     <string name="product_cheesecake_description">Нью-Йорк</string>
 
+    <string name="product_cinnamon_roll">Булочка с корицей</string>
+    <string name="product_cinnamon_roll_description">Мягкое тесто с корицей и сахаром</string>
+    <string name="product_muffin">Шоколадный маффин</string>
+    <string name="product_muffin_description">С шоколадной крошкой внутри</string>
+    <string name="product_apple_pie">Яблочный пирог</string>
+    <string name="product_apple_pie_description">Яблоки, корица и рассыпчатое тесто</string>
+    <string name="product_cookie">Миндальное печенье</string>
+    <string name="product_cookie_description">Хрустящее, с поджаренным миндалём</string>
+
+    <string name="product_cappuccino_details">Классический эспрессо с нежной молочной пеной. Готовим на зерне свежей обжарки.</string>
+    <string name="product_latte_details">Мягкий кофе с большим количеством горячего молока и тонким слоем пены.</string>
+    <string name="product_raf_details">Эспрессо, взбитый со сливками и ванильным сахаром. Сладкий и бархатный.</string>
+    <string name="product_espresso_details">Короткий и крепкий кофе, 40 мл. Подаётся без молока.</string>
+    <string name="product_americano_details">Эспрессо, разбавленный горячей водой. Чистый вкус, без молока.</string>
+    <string name="product_hot_chocolate_details">Густой напиток из настоящего шоколада и какао. Тёплый и сладкий.</string>
+    <string name="product_tea_details">Чёрный чай, заваренный в чайнике, подаётся с долькой лимона.</string>
+    <string name="product_croissant_details">Классический сливочный круассан, выпекаем каждое утро.</string>
+    <string name="product_cinnamon_roll_details">Мягкая булочка с начинкой из корицы и сахара и лёгкой глазурью.</string>
+    <string name="product_muffin_details">Влажный шоколадный маффин с шоколадной крошкой внутри.</string>
+    <string name="product_apple_pie_details">Пирог с печёными яблоками и корицей на рассыпчатой основе.</string>
+    <string name="product_cheesecake_details">Чизкейк Нью-Йорк на песочной основе, с нежной сливочной текстурой.</string>
+    <string name="product_cookie_details">Хрустящее печенье с поджаренными миндальными лепестками.</string>
+    <string name="extra_cinnamon">Корица</string>
+    <string name="extra_honey">Мёд</string>
+    <string name="extra_marshmallow">Маршмеллоу</string>
+    <string name="extra_lemon">Лимон</string>
+    <string name="extra_mint">Мята</string>
+    <string name="extra_ginger">Имбирь</string>
+    <string name="allergen_gluten">глютен</string>
+    <string name="allergen_eggs">яйца</string>
+    <string name="allergen_nuts">орехи</string>
+
     <string name="cart_title">Корзина</string>
     <string name="cart_empty">Корзина пуста</string>
     <string name="cart_items_count">Товары (%1$d)</string>

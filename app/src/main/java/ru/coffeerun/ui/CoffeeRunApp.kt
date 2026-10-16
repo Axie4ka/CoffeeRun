@@ -19,7 +19,7 @@ import ru.coffeerun.ui.components.AppNavigationBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.screens.CartScreen
 import ru.coffeerun.ui.screens.CheckoutScreen
-import ru.coffeerun.ui.screens.DrinkScreen
+import ru.coffeerun.ui.screens.ProductScreen
 import ru.coffeerun.ui.screens.MenuScreen
 import ru.coffeerun.ui.screens.OrderPlacedScreen
 import ru.coffeerun.ui.screens.OrdersScreen
@@ -27,7 +27,7 @@ import ru.coffeerun.ui.screens.ProfileScreen
 import ru.coffeerun.ui.util.snackbar
 
 /** Экраны поверх вкладок: у них нет нижней навигации. */
-private enum class Overlay { DRINK, CHECKOUT, PLACED }
+private enum class Overlay { PRODUCT, CHECKOUT, PLACED }
 
 // Навигация построена на двух состояниях вместо Navigation Compose: экранов
 // мало, а переходы линейные. Когда появятся аргументы и глубокие ссылки,
@@ -39,13 +39,16 @@ fun CoffeeRunApp(
 ) {
     var tab by rememberSaveable { mutableStateOf(Tab.MENU) }
     var overlay by rememberSaveable { mutableStateOf<Overlay?>(null) }
+    // Позиция, открытая на экране PRODUCT
+    var product by rememberSaveable { mutableStateOf(Product.CAPPUCCINO) }
     val notify: () -> Unit = MaterialTheme.snackbar::notifyPlaceholder
 
     val lastOrder = viewModel.lastOrder
     when (overlay) {
-        Overlay.DRINK -> {
+        Overlay.PRODUCT -> {
             BackHandler { overlay = null }
-            DrinkScreen(
+            ProductScreen(
+                product = product,
                 cartCount = viewModel.cartCount,
                 onBack = { overlay = null },
                 onFavorite = notify,
@@ -108,8 +111,10 @@ fun CoffeeRunApp(
                 val content = Modifier.padding(innerPadding)
                 when (tab) {
                     Tab.MENU -> MenuScreen(
-                        // Экран настройки пока есть только у капучино
-                        onProductClick = { if (it == Product.CAPPUCCINO) overlay = Overlay.DRINK else notify() },
+                        onProductClick = {
+                            product = it
+                            overlay = Overlay.PRODUCT
+                        },
                         onAddProduct = { viewModel.addToCart(CartLine(it, unitPrice = it.price)) },
                         modifier = content
                     )

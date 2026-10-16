@@ -1,9 +1,9 @@
 package ru.coffeerun.model
 
-/** Опции, выбранные на экране напитка. */
+/** Опции, выбранные на экране позиции. null — у позиции нет такого выбора (например, молока у эспрессо). */
 data class DrinkOptions(
-    val size: DrinkSize,
-    val milk: MilkType,
+    val size: DrinkSize?,
+    val milk: MilkType?,
     val isIced: Boolean,
     val extras: Set<Extra>
 )

@@ -29,11 +29,20 @@ enum class MilkType(
     COCONUT(R.string.milk_coconut, 50, isAvailable = false)
 }
 
-/** Добавка к напитку. Можно выбрать несколько; [price] — доплата за каждую. */
+/**
+ * Добавка к напитку. Можно выбрать несколько; [price] — доплата за каждую.
+ * Какие добавки доступны конкретной позиции, задаёт [Product.extras].
+ */
 enum class Extra(@StringRes val labelRes: Int, val price: Int) {
     VANILLA(R.string.extra_vanilla, 40),
     CARAMEL(R.string.extra_caramel, 40),
     HAZELNUT(R.string.extra_hazelnut, 40),
     CREAM(R.string.extra_cream, 50),
-    EXTRA_SHOT(R.string.extra_shot, 60)
+    EXTRA_SHOT(R.string.extra_shot, 60),
+    CINNAMON(R.string.extra_cinnamon, 20),
+    HONEY(R.string.extra_honey, 30),
+    MARSHMALLOW(R.string.extra_marshmallow, 40),
+    LEMON(R.string.extra_lemon, 20),
+    MINT(R.string.extra_mint, 20),
+    GINGER(R.string.extra_ginger, 30)
 }

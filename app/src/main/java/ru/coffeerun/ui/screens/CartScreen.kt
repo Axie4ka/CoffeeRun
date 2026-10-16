@@ -113,7 +113,7 @@ private fun CartItemCard(
             modifier = Modifier.padding(MaterialTheme.spacing.medium),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
         ) {
-            ProductImage(size = 64.dp, iconSize = 27.dp)
+            ProductImage(product = line.product, size = 64.dp)
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)

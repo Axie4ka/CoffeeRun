@@ -76,6 +76,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.Customization
 import ru.coffeerun.model.DrinkOptions
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
@@ -90,15 +91,17 @@ private const val MIN_QUANTITY = 1
 private const val MAX_QUANTITY = 10
 
 /**
- * Экран настройки напитка: размер, молоко, температура, добавки, комментарий
- * и количество порций
+ * Экран позиции меню. Набор блоков зависит от [product]: [Product.customizations]
+ * задаёт, что можно выбрать (размер, молоко, лёд, добавки, комментарий). У выпечки
+ * блоков нет — только описание, калории, аллергены и количество порций.
  *
  * Выбранные параметры экран хранит сам, аэкран получает
  * [cartCount] для бейджа и сообщает о добавлении через [onAddToCart], передавая
  * готовую позицию корзины (напиток, опции, цена и количество порций)
  */
 @Composable
-fun DrinkScreen(
+fun ProductScreen(
+    product: Product,
     cartCount: Int,
     onBack: () -> Unit,
     onFavorite: () -> Unit,
@@ -117,13 +120,18 @@ fun DrinkScreen(
     var note by rememberSaveable { mutableStateOf("") }
     // Цены — производные значения: не хранятся в состоянии, а пересчитываются
     // из выбранных параметров при каждой рекомпозиции.
-    val unitPrice = selectedSize.price + selectedMilk.price + selectedExtras.sumOf { it.price }
+    val features = product.customizations
+    // DrinkSize.price — цена капучино в этом размере, поэтому для остальных позиций
+    // берём только доплату относительно самого маленького размера.
+    val sizeSurcharge = if (Customization.SIZE in features) selectedSize.price - DrinkSize.SMALL.price else 0
+    val milkSurcharge = if (Customization.MILK in features) selectedMilk.price else 0
+    val unitPrice = product.price + sizeSurcharge + milkSurcharge + selectedExtras.sumOf { it.price }
     var quantity by rememberSaveable { mutableIntStateOf(MIN_QUANTITY) }
     val totalPrice = unitPrice * quantity
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
-            DrinkTopBar(
+            ProductTopBar(
                 cartCount = cartCount,
                 onBack = onBack,
                 onFavorite = onFavorite,
@@ -140,10 +148,18 @@ fun DrinkScreen(
                 onAddToCart = {
                     onAddToCart(
                         CartLine(
-                            product = Product.CAPPUCCINO,
+                            product = product,
                             unitPrice = unitPrice,
                             quantity = quantity,
-                            options = DrinkOptions(selectedSize, selectedMilk, isIced, selectedExtras)
+                            // Комментарий в корзину не попадает, поэтому он не считается опцией
+                            options = if (features.any { it != Customization.NOTE } || product.extras.isNotEmpty()) {
+                                DrinkOptions(
+                                    size = selectedSize.takeIf { Customization.SIZE in features },
+                                    milk = selectedMilk.takeIf { Customization.MILK in features },
+                                    isIced = isIced,
+                                    extras = selectedExtras
+                                )
+                            } else null
                         )
                     )
                 }
@@ -164,65 +180,76 @@ fun DrinkScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            DrinkHeader(
+            ProductHeader(
+                product = product,
                 // Цена за одну порцию — без учёта количества.
                 price = unitPrice,
-                calories = 120,
                 modifier = Modifier.padding(MaterialTheme.spacing.large)
             )
 
-            HorizontalDivider(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large))
+            if (Customization.SIZE in features) {
+                SectionDivider()
+                SizeSection(
+                    selectedSize = selectedSize,
+                    onSizeSelected = { selectedSize = it },
+                    modifier = Modifier.padding(MaterialTheme.spacing.large)
+                )
+            }
 
-            SizeSection(
-                selectedSize = selectedSize,
-                onSizeSelected = { selectedSize = it },
-                modifier = Modifier.padding(MaterialTheme.spacing.large)
-            )
+            if (Customization.MILK in features) {
+                SectionDivider()
+                MilkSection(
+                    selectedMilk = selectedMilk,
+                    onMilkSelected = { selectedMilk = it },
+                    modifier = Modifier.padding(MaterialTheme.spacing.large)
+                )
+            }
 
-            HorizontalDivider(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large))
+            if (Customization.ICE in features) {
+                SectionDivider()
+                TemperatureSection(
+                    isIced = isIced,
+                    onIcedChange = { isIced = it }
+                )
+            }
 
-            MilkSection(
-                selectedMilk = selectedMilk,
-                onMilkSelected = { selectedMilk = it },
-                modifier = Modifier.padding(MaterialTheme.spacing.large)
-            )
+            if (product.extras.isNotEmpty()) {
+                SectionDivider()
+                ExtrasSection(
+                    available = product.extras,
+                    selectedExtras = selectedExtras,
+                    onExtraToggle = { extra ->
+                        selectedExtras = if (extra in selectedExtras) {
+                            selectedExtras - extra
+                        } else {
+                            selectedExtras + extra
+                        }
+                    },
+                    modifier = Modifier.padding(MaterialTheme.spacing.large)
+                )
+            }
 
-            HorizontalDivider(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large))
-
-            TemperatureSection(
-                isIced = isIced,
-                onIcedChange = { isIced = it }
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large))
-
-            ExtrasSection(
-                selectedExtras = selectedExtras,
-                onExtraToggle = { extra ->
-                    selectedExtras = if (extra in selectedExtras) {
-                        selectedExtras - extra
-                    } else {
-                        selectedExtras + extra
-                    }
-                },
-                modifier = Modifier.padding(MaterialTheme.spacing.large)
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large))
-
-            NoteSection(
-                note = note,
-                onNoteChange = { note = it },
-                modifier = Modifier.padding(MaterialTheme.spacing.large)
-            )
+            if (Customization.NOTE in features) {
+                SectionDivider()
+                NoteSection(
+                    note = note,
+                    onNoteChange = { note = it },
+                    modifier = Modifier.padding(MaterialTheme.spacing.large)
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun SectionDivider() {
+    HorizontalDivider(modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large))
 }
 
 /** Верхняя панель: «назад», избранное, «поделиться» и корзина с бейджем. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DrinkTopBar(
+private fun ProductTopBar(
     cartCount: Int,
     onBack: () -> Unit,
     onFavorite: () -> Unit,
@@ -276,17 +303,17 @@ private fun DrinkTopBar(
     )
 }
 
-/** Шапка: фото напитка, название, цена за порцию, описание, калории и аллергены. */
+/** Шапка: фото, название, цена за порцию, описание, калории и аллергены. */
 @Composable
-private fun DrinkHeader(
+private fun ProductHeader(
+    product: Product,
     price: Int,
-    calories: Int,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
         Image(
-            painter = painterResource(R.drawable.cappuccino),
-            // Фото декоративное: название напитка идёт текстом ниже,
+            painter = painterResource(product.imageRes),
+            // Фото декоративное: название идёт текстом ниже,
             // поэтому TalkBack картинку пропускает.
             contentDescription = null,
             contentScale = ContentScale.Crop,
@@ -303,7 +330,7 @@ private fun DrinkHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(R.string.drink_name),
+                text = stringResource(product.nameRes),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.weight(1f)
             )
@@ -317,7 +344,7 @@ private fun DrinkHeader(
         Spacer(Modifier.height(MaterialTheme.spacing.small))
 
         Text(
-            text = stringResource(R.string.drink_description),
+            text = stringResource(product.detailsRes),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -333,23 +360,25 @@ private fun DrinkHeader(
             )
             Spacer(Modifier.width(MaterialTheme.spacing.extraSmall))
             Text(
-                text = stringResource(R.string.drink_calories, calories),
+                text = stringResource(R.string.drink_calories, product.calories),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            VerticalDivider(
-                modifier = Modifier
-                    .padding(horizontal = MaterialTheme.spacing.medium)
-                    .height(MaterialTheme.spacing.large)
-            )
-            Text(
-                text = stringResource(
-                    R.string.drink_allergens,
-                    stringResource(R.string.allergen_milk)
-                ),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (product.allergens.isNotEmpty()) {
+                VerticalDivider(
+                    modifier = Modifier
+                        .padding(horizontal = MaterialTheme.spacing.medium)
+                        .height(MaterialTheme.spacing.large)
+                )
+                Text(
+                    text = stringResource(
+                        R.string.drink_allergens,
+                        product.allergens.map { stringResource(it.labelRes) }.joinToString(", ")
+                    ),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -493,10 +522,11 @@ private fun TemperatureSection(
     )
 }
 
-/** Выбор добавок: любое количество вариантов из [Extra]. */
+/** Выбор добавок: любое количество вариантов из [available] — они зависят от позиции. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ExtrasSection(
+    available: Set<Extra>,
     selectedExtras: Set<Extra>,
     onExtraToggle: (Extra) -> Unit,
     modifier: Modifier = Modifier
@@ -510,7 +540,7 @@ private fun ExtrasSection(
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
-            Extra.entries.forEach { extra ->
+            available.forEach { extra ->
                 val selected = extra in selectedExtras
 
                 FilterChip(
@@ -641,10 +671,11 @@ private fun OrderBar(
 
 @Preview(showBackground = true, locale = "ru")
 @Composable
-private fun DrinkScreenPreview() {
+private fun ProductScreenPreview() {
     // dynamicColor = false, чтобы превью показывало фирменную палитру.
     CoffeeRunTheme(dynamicColor = false) {
-        DrinkScreen(
+        ProductScreen(
+            product = Product.CAPPUCCINO,
             cartCount = 2,
             onBack = {},
             onFavorite = {},

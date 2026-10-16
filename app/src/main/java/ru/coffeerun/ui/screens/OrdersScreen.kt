@@ -161,7 +161,10 @@ private fun StatusBadge(status: OrderStatus) {
         Text(
             text = stringResource(status.labelRes),
             style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+            modifier = Modifier.padding(
+                horizontal = MaterialTheme.spacing.medium,
+                vertical = MaterialTheme.spacing.extraSmall
+            )
         )
     }
 }

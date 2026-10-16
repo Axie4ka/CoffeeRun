@@ -2,8 +2,6 @@
     <string name="app_name" translatable="false">CoffeeRun</string>
 
     <!-- Напиток -->
-    <string name="drink_name" translatable="false">Cappuccino</string>
-    <string name="drink_description" translatable="false">Double espresso with steamed milk and a velvety foam</string>
     <string name="drink_calories">%1$d kcal</string>
     <string name="drink_allergens">Allergens: %1$s</string>
     <string name="allergen_milk">milk</string>

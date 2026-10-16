@@ -1,6 +1,4 @@
 <resources>
-    <string name="drink_name">Капучино</string>
-    <string name="drink_description">Двойной эспрессо с горячим молоком и бархатной пенкой</string>
     <string name="drink_calories">%1$d ккал</string>
     <string name="drink_allergens">Аллергены: %1$s</string>
     <string name="allergen_milk">молоко</string>
