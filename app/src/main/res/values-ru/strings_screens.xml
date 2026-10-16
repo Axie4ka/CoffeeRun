@@ -1,0 +1,97 @@
+<resources>
+    <string name="tab_menu">Меню</string>
+    <string name="tab_cart">Корзина</string>
+    <string name="tab_orders">Заказы</string>
+    <string name="tab_profile">Профиль</string>
+    <string name="action_close">Закрыть</string>
+
+    <string name="menu_search">Поиск</string>
+    <string name="menu_choose_shop">Выбрать кофейню</string>
+    <string name="shop_moskovskaya">ул. Московская, 12</string>
+    <string name="shop_stroiteley">пр. Строителей, 1</string>
+    <string name="category_coffee">Кофе</string>
+    <string name="category_not_coffee">Не кофе</string>
+    <string name="category_pastry">Выпечка</string>
+    <string name="price_from">от %1$d ₽</string>
+    <string name="add_product">Добавить в корзину: %1$s</string>
+
+    <string name="product_cappuccino">Капучино</string>
+    <string name="product_cappuccino_description">Эспрессо и нежная молочная пена</string>
+    <string name="product_latte">Латте</string>
+    <string name="product_latte_description">Мягкий кофе с большим количеством молока</string>
+    <string name="product_raf">Раф ванильный</string>
+    <string name="product_raf_description">Сливки, эспрессо и ванильный сахар</string>
+    <string name="product_espresso">Эспрессо</string>
+    <string name="product_espresso_description">Крепкий и насыщенный, 40 мл</string>
+    <string name="product_americano">Американо</string>
+    <string name="product_americano_description">Эспрессо, разбавленный горячей водой</string>
+    <string name="product_hot_chocolate">Горячий шоколад</string>
+    <string name="product_hot_chocolate_description">Густой и сладкий, на какао</string>
+    <string name="product_tea">Чёрный чай</string>
+    <string name="product_tea_description">Заварной, с лимоном</string>
+    <string name="product_croissant">Круассан</string>
+    <string name="product_croissant_description">Классический, сливочный</string>
+    <string name="product_cheesecake">Чизкейк</string>
+    <string name="product_cheesecake_description">Нью-Йорк</string>
+
+    <string name="cart_title">Корзина</string>
+    <string name="cart_empty">Корзина пуста</string>
+    <string name="cart_items_count">Товары (%1$d)</string>
+    <string name="cart_hint">Кофейню и время получения выберете на следующем шаге</string>
+    <string name="cart_checkout">Оформить заказ</string>
+    <string name="cart_remove">Удалить из корзины</string>
+    <string name="total_label">Итого</string>
+    <string name="line_summary">%1$s × %2$d</string>
+    <string name="line_summary_sized">%1$s %2$s × %3$d</string>
+
+    <string name="checkout_title">Оформление</string>
+    <string name="section_shop">Кофейня</string>
+    <string name="shop_status">Открыто до 22:00 · 350 м</string>
+    <string name="section_pickup">Время получения</string>
+    <string name="pickup_asap">Как можно скорее</string>
+    <string name="pickup_asap_hint">Будет готов примерно через 10–15 минут</string>
+    <string name="pickup_scheduled">Ко времени</string>
+    <string name="pickup_scheduled_hint">Выбрать время</string>
+    <string name="section_payment">Оплата</string>
+    <string name="payment_on_pickup">При получении</string>
+    <string name="payment_on_pickup_hint">Картой или наличными в кофейне</string>
+    <string name="payment_online">Картой онлайн</string>
+    <string name="payment_online_hint">Пока недоступно</string>
+    <string name="section_order">Ваш заказ</string>
+    <string name="checkout_confirm">Подтвердить заказ</string>
+
+    <string name="placed_title">Заказ принят!</string>
+    <string name="placed_description">Бариста уже начал готовить. Покажите номер заказа при получении.</string>
+    <string name="order_number_label">Номер заказа</string>
+    <string name="order_number">№ %1$d</string>
+    <string name="placed_ready">Будет готов к %1$s</string>
+    <string name="placed_to_orders">К моим заказам</string>
+    <string name="placed_to_menu">Вернуться в меню</string>
+
+    <string name="orders_title">Заказы</string>
+    <string name="orders_active">Активные</string>
+    <string name="orders_history">История</string>
+    <string name="orders_empty">Заказов пока нет</string>
+    <string name="order_title">Заказ №%1$d</string>
+    <string name="order_total">Итого %1$d ₽</string>
+    <string name="order_meta_active">Сегодня, к %1$s · %2$s</string>
+    <string name="order_meta_history">%1$s · %2$s</string>
+    <string name="order_details">Подробнее</string>
+    <string name="order_repeat">Повторить</string>
+    <string name="status_accepted">Принят</string>
+    <string name="status_preparing">Готовится</string>
+    <string name="status_ready">Готов</string>
+    <string name="status_picked_up">Выдан</string>
+
+    <string name="profile_title">Профиль</string>
+    <string name="profile_name">Денис</string>
+    <string name="profile_edit">Редактировать профиль</string>
+    <string name="profile_orders_label">заказов</string>
+    <string name="profile_favorites_label">в избранном</string>
+    <string name="profile_favorites">Избранное</string>
+    <string name="profile_favorites_hint">Капучино, Раф ванильный, Латте</string>
+    <string name="profile_shop">Любимая кофейня</string>
+    <string name="profile_phone_title">Телефон</string>
+    <string name="profile_about">О приложении</string>
+    <string name="profile_version">Версия 1.0</string>
+</resources>

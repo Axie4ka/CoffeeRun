@@ -1,0 +1,105 @@
+<resources>
+    <!-- Навигация -->
+    <string name="tab_menu">Menu</string>
+    <string name="tab_cart">Cart</string>
+    <string name="tab_orders">Orders</string>
+    <string name="tab_profile">Profile</string>
+    <string name="action_close">Close</string>
+
+    <!-- Меню -->
+    <string name="menu_search">Search</string>
+    <string name="menu_choose_shop">Choose coffee shop</string>
+    <string name="shop_moskovskaya">Moskovskaya St, 12</string>
+    <string name="shop_stroiteley">Stroiteley Ave, 1</string>
+    <string name="category_coffee">Coffee</string>
+    <string name="category_not_coffee">Not coffee</string>
+    <string name="category_pastry">Pastry</string>
+    <string name="price_from">from %1$d ₽</string>
+    <string name="add_product">Add %1$s to cart</string>
+
+    <string name="product_cappuccino">Cappuccino</string>
+    <string name="product_cappuccino_description">Espresso and gentle milk foam</string>
+    <string name="product_latte">Latte</string>
+    <string name="product_latte_description">Soft coffee with lots of milk</string>
+    <string name="product_raf">Vanilla raf</string>
+    <string name="product_raf_description">Cream, espresso and vanilla sugar</string>
+    <string name="product_espresso">Espresso</string>
+    <string name="product_espresso_description">Strong and rich, 40 ml</string>
+    <string name="product_americano">Americano</string>
+    <string name="product_americano_description">Espresso diluted with hot water</string>
+    <string name="product_hot_chocolate">Hot chocolate</string>
+    <string name="product_hot_chocolate_description">Thick and sweet, made with cocoa</string>
+    <string name="product_tea">Black tea</string>
+    <string name="product_tea_description">Brewed in a pot, with lemon</string>
+    <string name="product_croissant">Croissant</string>
+    <string name="product_croissant_description">Classic, buttery</string>
+    <string name="product_cheesecake">Cheesecake</string>
+    <string name="product_cheesecake_description">New York style</string>
+
+    <!-- Корзина -->
+    <string name="cart_title">Cart</string>
+    <string name="cart_empty">Your cart is empty</string>
+    <string name="cart_items_count">Items (%1$d)</string>
+    <string name="cart_hint">You will choose the coffee shop and pickup time on the next step</string>
+    <string name="cart_checkout">Checkout</string>
+    <string name="cart_remove">Remove from cart</string>
+    <string name="total_label">Total</string>
+    <string name="line_summary">%1$s × %2$d</string>
+    <string name="line_summary_sized">%1$s %2$s × %3$d</string>
+
+    <!-- Оформление -->
+    <string name="checkout_title">Checkout</string>
+    <string name="section_shop">Coffee shop</string>
+    <string name="shop_status">Open until 22:00 · 350 m</string>
+    <string name="section_pickup">Pickup time</string>
+    <string name="pickup_asap">As soon as possible</string>
+    <string name="pickup_asap_hint">Ready in about 10–15 minutes</string>
+    <string name="pickup_scheduled">At a set time</string>
+    <string name="pickup_scheduled_hint">Choose a time</string>
+    <string name="section_payment">Payment</string>
+    <string name="payment_on_pickup">Pay on pickup</string>
+    <string name="payment_on_pickup_hint">By card or cash at the shop</string>
+    <string name="payment_online">Card online</string>
+    <string name="payment_online_hint">Not available yet</string>
+    <string name="section_order">Your order</string>
+    <string name="checkout_confirm">Confirm order</string>
+
+    <!-- Заказ принят -->
+    <string name="placed_title">Order accepted!</string>
+    <string name="placed_description">The barista has started preparing it. Show the order number at pickup.</string>
+    <string name="order_number_label">Order number</string>
+    <string name="order_number">№ %1$d</string>
+    <string name="placed_ready">Ready by %1$s</string>
+    <string name="placed_to_orders">My orders</string>
+    <string name="placed_to_menu">Back to menu</string>
+
+    <!-- Заказы -->
+    <string name="orders_title">Orders</string>
+    <string name="orders_active">Active</string>
+    <string name="orders_history">History</string>
+    <string name="orders_empty">No orders yet</string>
+    <string name="order_title">Order №%1$d</string>
+    <string name="order_total">Total %1$d ₽</string>
+    <string name="order_meta_active">Today, by %1$s · %2$s</string>
+    <string name="order_meta_history">%1$s · %2$s</string>
+    <string name="order_details">Details</string>
+    <string name="order_repeat">Repeat</string>
+    <string name="status_accepted">Accepted</string>
+    <string name="status_preparing">Preparing</string>
+    <string name="status_ready">Ready</string>
+    <string name="status_picked_up">Picked up</string>
+
+    <!-- Профиль (данные демонстрационные) -->
+    <string name="profile_title">Profile</string>
+    <string name="profile_name">Denis</string>
+    <string name="profile_phone" translatable="false">+7 900 123-45-67</string>
+    <string name="profile_edit">Edit profile</string>
+    <string name="profile_orders_label">orders</string>
+    <string name="profile_favorites_label">in favorites</string>
+    <string name="profile_favorites">Favorites</string>
+    <string name="profile_favorites_hint">Cappuccino, Vanilla raf, Latte</string>
+    <string name="profile_shop">Favorite coffee shop</string>
+    <string name="profile_phone_title">Phone</string>
+    <string name="profile_about">About the app</string>
+    <string name="profile_version">Version 1.0</string>
+</resources>

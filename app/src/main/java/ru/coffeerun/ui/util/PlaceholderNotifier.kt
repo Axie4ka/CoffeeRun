@@ -46,3 +46,11 @@ fun CoroutineScope.showNotImplemented(
  */
 val MaterialTheme.snackbar: PlaceholderNotifier
     @Composable @ReadOnlyComposable get() = LocalPlaceholderNotifier.current
+/** Для превью: заглушки ничего не показывают, но экран не падает без провайдера. */
+@androidx.compose.runtime.Composable
+fun ProvidePreviewNotifier(content: @androidx.compose.runtime.Composable () -> Unit) {
+    androidx.compose.runtime.CompositionLocalProvider(
+        LocalPlaceholderNotifier provides PlaceholderNotifier {},
+        content = content
+    )
+}

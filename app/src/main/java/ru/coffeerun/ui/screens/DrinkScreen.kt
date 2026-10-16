@@ -75,9 +75,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
+import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.DrinkOptions
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
+import ru.coffeerun.model.Product
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
 
@@ -92,7 +95,7 @@ private const val MAX_QUANTITY = 10
  *
  * Выбранные параметры экран хранит сам, аэкран получает
  * [cartCount] для бейджа и сообщает о добавлении через [onAddToCart], передавая
- * количество порций
+ * готовую позицию корзины (напиток, опции, цена и количество порций)
  */
 @Composable
 fun DrinkScreen(
@@ -101,7 +104,7 @@ fun DrinkScreen(
     onFavorite: () -> Unit,
     onShare: () -> Unit,
     onCart: () -> Unit,
-    onAddToCart: (Int) -> Unit,
+    onAddToCart: (CartLine) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
@@ -134,7 +137,16 @@ fun DrinkScreen(
                 totalPrice = totalPrice,
                 onDecrease = { quantity-- },
                 onIncrease = { quantity++ },
-                onAddToCart = { onAddToCart(quantity) }
+                onAddToCart = {
+                    onAddToCart(
+                        CartLine(
+                            product = Product.CAPPUCCINO,
+                            unitPrice = unitPrice,
+                            quantity = quantity,
+                            options = DrinkOptions(selectedSize, selectedMilk, isIced, selectedExtras)
+                        )
+                    )
+                }
             )
         },
 
