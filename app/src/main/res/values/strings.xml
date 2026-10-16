@@ -1,0 +1,67 @@
+<resources>
+    <string name="app_name" translatable="false">CoffeeRun</string>
+
+    <!-- Напиток -->
+    <string name="drink_name" translatable="false">Cappuccino</string>
+    <string name="drink_description" translatable="false">Double espresso with steamed milk and a velvety foam</string>
+    <string name="drink_calories">%1$d kcal</string>
+    <string name="drink_allergens">Allergens: %1$s</string>
+    <string name="allergen_milk">milk</string>
+
+    <!-- Заголовки блоков -->
+    <string name="section_size">Size</string>
+    <string name="section_milk">Milk</string>
+    <string name="section_temperature">Temperature</string>
+    <string name="section_extras">Syrups and toppings</string>
+    <string name="section_note">Note for the barista</string>
+    <string name="section_quantity">Quantity</string>
+
+    <!-- Размер -->
+    <string name="size_small">S · 250 ml</string>
+    <string name="size_medium">M · 350 ml</string>
+    <string name="size_large">L · 450 ml</string>
+
+    <!-- Молоко -->
+    <string name="option_with_detail">%1$s · %2$s</string>
+    <string name="milk_regular">Regular</string>
+    <string name="milk_lactose_free">Lactose-free</string>
+    <string name="milk_oat">Oat</string>
+    <string name="milk_almond">Almond</string>
+    <string name="milk_coconut">Coconut</string>
+
+    <!-- Температура -->
+    <string name="temperature_iced">Iced</string>
+
+    <!-- Допы -->
+    <string name="extra_vanilla">Vanilla syrup</string>
+    <string name="extra_caramel">Caramel syrup</string>
+    <string name="extra_hazelnut">Hazelnut syrup</string>
+    <string name="extra_cream">Whipped cream</string>
+    <string name="extra_shot">Extra shot</string>
+
+    <!-- Цены и статусы -->
+    <string name="price_rub">%1$d ₽</string>
+    <string name="price_extra">+%1$d ₽</string>
+    <string name="out_of_stock">Out of stock</string>
+
+    <!-- Пожелание -->
+    <string name="note_counter">%1$d / %2$d</string>
+    <string name="note_placeholder">e.g. extra hot, no foam</string>
+
+    <!-- Действия -->
+    <string name="add_to_cart">Add to cart · %1$d ₽</string>
+    <string name="action_back">Back</string>
+    <string name="action_favorite">Add to favorites</string>
+    <string name="action_share">Share</string>
+    <string name="action_cart">Cart</string>
+    <string name="action_decrease">Decrease quantity</string>
+    <string name="action_increase">Increase quantity</string>
+
+    <plurals name="cart_items">
+        <item quantity="one">%d item in cart</item>
+        <item quantity="other">%d items in cart</item>
+    </plurals>
+
+    <!-- Пункт 10 -->
+    <string name="notice_not_implemented">This feature is not available yet</string>
+</resources>
