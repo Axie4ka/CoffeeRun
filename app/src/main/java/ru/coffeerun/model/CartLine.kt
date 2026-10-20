@@ -5,7 +5,9 @@ data class DrinkOptions(
     val size: DrinkSize?,
     val milk: MilkType?,
     val isIced: Boolean,
-    val extras: Set<Extra>
+    val extras: Set<Extra>,
+    /** Примечание для бариста; пустая строка — примечания нет. */
+    val note: String = ""
 )
 
 /**

@@ -19,7 +19,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.DrinkSize
+import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Shop
+import ru.coffeerun.model.defaultOptions
+import ru.coffeerun.model.unitPrice
 import ru.coffeerun.ui.components.AppNavigationBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.navigation.CartRoute
@@ -73,7 +77,16 @@ fun CoffeeRunApp(
             composable<MenuRoute> {
                 MenuScreen(
                     onProductClick = { navController.navigate(ProductRoute(it)) },
-                    onAddProduct = { viewModel.addToCart(CartLine(it, unitPrice = it.price)) },
+                    // Размер S и обычное молоко — с явными опциями, чтобы бариста видел размер
+                    onAddProduct = {
+                        viewModel.addToCart(
+                            CartLine(
+                                product = it,
+                                unitPrice = it.unitPrice(DrinkSize.SMALL, MilkType.REGULAR, emptySet()),
+                                options = it.defaultOptions()
+                            )
+                        )
+                    },
                     modifier = tabModifier
                 )
             }

@@ -78,21 +78,22 @@ import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Customization
-import ru.coffeerun.model.DrinkOptions
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
+import ru.coffeerun.model.defaultOptions
+import ru.coffeerun.model.unitPrice
+import ru.coffeerun.ui.MAX_QUANTITY
 import ru.coffeerun.ui.components.CartBadge
 import ru.coffeerun.ui.components.QuantityStepper
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.priceLarge
 import ru.coffeerun.ui.theme.spacing
 
-// Ограничения формы заказа: длина комментария и количество порций
+// Ограничения формы заказа: длина комментария и минимум порций (максимум — MAX_QUANTITY корзины)
 private const val MAX_NOTE_LENGTH = 100
 private const val MIN_QUANTITY = 1
-private const val MAX_QUANTITY = 10
 
 /**
  * Экран позиции меню. Набор блоков зависит от [product]: [Product.customizations]
@@ -125,11 +126,7 @@ fun ProductScreen(
     // Цены — производные значения: не хранятся в состоянии, а пересчитываются
     // из выбранных параметров при каждой рекомпозиции.
     val features = product.customizations
-    // DrinkSize.price — цена капучино в этом размере, поэтому для остальных позиций
-    // берём только доплату относительно самого маленького размера.
-    val sizeSurcharge = if (Customization.SIZE in features) selectedSize.price - DrinkSize.SMALL.price else 0
-    val milkSurcharge = if (Customization.MILK in features) selectedMilk.price else 0
-    val unitPrice = product.price + sizeSurcharge + milkSurcharge + selectedExtras.sumOf { it.price }
+    val unitPrice = product.unitPrice(selectedSize, selectedMilk, selectedExtras)
     var quantity by rememberSaveable { mutableIntStateOf(MIN_QUANTITY) }
     val totalPrice = unitPrice * quantity
     Scaffold(
@@ -155,15 +152,14 @@ fun ProductScreen(
                             product = product,
                             unitPrice = unitPrice,
                             quantity = quantity,
-                            // Комментарий в корзину не попадает, поэтому он не считается опцией
-                            options = if (features.any { it != Customization.NOTE } || product.extras.isNotEmpty()) {
-                                DrinkOptions(
-                                    size = selectedSize.takeIf { Customization.SIZE in features },
-                                    milk = selectedMilk.takeIf { Customization.MILK in features },
-                                    isIced = isIced,
-                                    extras = selectedExtras
-                                )
-                            } else null
+                            // Те же опции по умолчанию, что у «+» в меню, — иначе одинаковые строки не сольются
+                            options = product.defaultOptions()?.copy(
+                                size = selectedSize.takeIf { Customization.SIZE in features },
+                                milk = selectedMilk.takeIf { Customization.MILK in features },
+                                isIced = isIced,
+                                extras = selectedExtras,
+                                note = note.trim()
+                            )
                         )
                     )
                 }

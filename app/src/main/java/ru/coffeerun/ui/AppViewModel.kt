@@ -15,6 +15,9 @@ import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop
 
+/** Больше порций одной позиции не положить — ни с экрана позиции, ни в корзине. */
+const val MAX_QUANTITY = 10
+
 private const val FIRST_ORDER_NUMBER = 1042
 private const val DAY_MILLIS = 24 * 60 * 60 * 1000L
 
@@ -59,22 +62,22 @@ class AppViewModel : ViewModel() {
     }
 
     val cartCount: Int get() = cart.sumOf { it.quantity }
-    val cartTotal: Int get() = cart.sumOf { it.total }
 
+    /** Одинаковые позиции сливаются в одну строку; количество не превышает [MAX_QUANTITY]. */
     fun addToCart(line: CartLine) {
         val index = cart.indexOfFirst { it.isSameItem(line) }
         if (index >= 0) {
-            cart[index] = cart[index].copy(quantity = cart[index].quantity + line.quantity)
+            cart[index] = cart[index].copy(quantity = (cart[index].quantity + line.quantity).coerceAtMost(MAX_QUANTITY))
         } else {
-            cart += line.copy(id = nextLineId++)
+            cart += line.copy(id = nextLineId++, quantity = line.quantity.coerceAtMost(MAX_QUANTITY))
         }
     }
 
-    /** Меняет количество, но не опускает его ниже 1: удаляет позицию [remove]. */
+    /** Меняет количество в пределах 1…[MAX_QUANTITY]; удаляет позицию [remove]. */
     fun changeQuantity(id: Int, delta: Int) {
         val index = cart.indexOfFirst { it.id == id }
         if (index >= 0) {
-            cart[index] = cart[index].copy(quantity = (cart[index].quantity + delta).coerceAtLeast(1))
+            cart[index] = cart[index].copy(quantity = (cart[index].quantity + delta).coerceIn(1, MAX_QUANTITY))
         }
     }
 

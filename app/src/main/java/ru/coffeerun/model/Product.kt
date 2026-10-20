@@ -4,7 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import ru.coffeerun.R
 
-/** Раздел меню — соответствует чипам на экране меню. */
+/** Раздел меню — соответствует вкладкам на экране меню. */
 enum class ProductCategory(@StringRes val labelRes: Int) {
     COFFEE(R.string.category_coffee),
     NOT_COFFEE(R.string.category_not_coffee),
@@ -130,4 +130,28 @@ enum class Product(
         R.string.product_cookie_details, R.drawable.product_cookie, price = 110, calories = 220,
         allergens = setOf(Allergen.GLUTEN, Allergen.EGGS, Allergen.NUTS)
     )
+}
+
+/** Есть ли у позиции что выбирать. У выпечки нет — её строка корзины без опций. */
+private val Product.hasOptions: Boolean get() = customizations.isNotEmpty() || extras.isNotEmpty()
+
+/**
+ * Опции по умолчанию: самый маленький размер, обычное молоко, без добавок.
+ * Их получает и «+» в меню, и экран позиции, поэтому одинаковые строки корзины сливаются.
+ */
+fun Product.defaultOptions(): DrinkOptions? = if (!hasOptions) null else DrinkOptions(
+    size = DrinkSize.SMALL.takeIf { Customization.SIZE in customizations },
+    milk = MilkType.REGULAR.takeIf { Customization.MILK in customizations },
+    isIced = false,
+    extras = emptySet()
+)
+
+/**
+ * Цена одной порции с выбранными опциями, в рублях. [DrinkSize.price] — цена капучино
+ * в этом размере, поэтому для остальных позиций берётся только доплата к размеру S.
+ */
+fun Product.unitPrice(size: DrinkSize, milk: MilkType, extras: Set<Extra>): Int {
+    val sizeSurcharge = if (Customization.SIZE in customizations) size.price - DrinkSize.SMALL.price else 0
+    val milkSurcharge = if (Customization.MILK in customizations) milk.price else 0
+    return price + sizeSurcharge + milkSurcharge + extras.sumOf { it.price }
 }
