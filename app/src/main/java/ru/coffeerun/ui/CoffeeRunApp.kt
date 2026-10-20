@@ -130,7 +130,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                     ProductUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
                     }
-                    ProductUiState.NotFound -> LaunchedEffect(Unit) { navController.popBackStack() }
+                    ProductUiState.NotFound -> LaunchedEffect(Unit) { navController.popBackStack<ProductRoute>(inclusive = true) }
                     is ProductUiState.Success -> ProductScreen(
                         product = state.product,
                         form = state.form,

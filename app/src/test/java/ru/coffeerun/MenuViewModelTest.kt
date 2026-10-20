@@ -1,6 +1,7 @@
 package ru.coffeerun
 
 import java.io.IOException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -58,5 +59,23 @@ class MenuViewModelTest {
         vm.uiState.first()
         vm.uiState.first()
         assertEquals(1, fake.calls)
+    }
+
+    @Test
+    fun retry_cancelsPreviousLoad() {
+        val first = CompletableDeferred<List<Product>>()
+        var call = 0
+        val repo = object : MenuRepository {
+            override suspend fun getMenu(): List<Product> =
+                if (call++ == 0) first.await() else LocalMenu.products
+
+            override suspend fun getProduct(id: String): Product? = LocalMenu.byId(id)
+        }
+        val vm = MenuViewModel(repo, InMemoryCartRepository())
+        vm.loadMenu()
+        assertEquals(MenuUiState.Success(LocalMenu.products), vm.uiState.value)
+        // Поздняя ошибка первой загрузки не должна затереть Success
+        first.completeExceptionally(IOException("поздно"))
+        assertEquals(MenuUiState.Success(LocalMenu.products), vm.uiState.value)
     }
 }

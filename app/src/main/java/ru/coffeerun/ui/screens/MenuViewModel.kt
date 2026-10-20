@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import java.io.IOException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
@@ -29,7 +31,8 @@ sealed interface MenuUiState {
 class MenuViewModel(private val menu: MenuRepository, private val cart: CartRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MenuUiState>(MenuUiState.Loading)
-    val uiState: StateFlow<MenuUiState> = _uiState
+    val uiState: StateFlow<MenuUiState> = _uiState.asStateFlow()
+    private var loadJob: Job? = null
 
     init {
         loadMenu()
@@ -37,8 +40,9 @@ class MenuViewModel(private val menu: MenuRepository, private val cart: CartRepo
 
     /** Первая загрузка и «Повторить» после ошибки. Ловим только [IOException]: остальное — баг. */
     fun loadMenu() {
+        loadJob?.cancel() // повторное «Повторить» не должно гоняться с прошлой загрузкой
         _uiState.value = MenuUiState.Loading
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             _uiState.value = try {
                 MenuUiState.Success(menu.getMenu())
             } catch (e: IOException) {

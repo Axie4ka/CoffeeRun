@@ -2,7 +2,9 @@ package ru.coffeerun
 
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.data.LocalMenuRepository
+import ru.coffeerun.data.MenuRepository
 import androidx.lifecycle.SavedStateHandle
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -64,9 +66,17 @@ class ProductViewModelTest {
 
     @Test
     fun form_survivesWhileProductLoads() = runTest {
-        savedState = SavedStateHandle(mapOf("form" to ProductForm(size = DrinkSize.LARGE)))
-        val vm = vm(LocalMenu.LATTE)
+        val gate = CompletableDeferred<Product?>()
+        val slow = object : MenuRepository {
+            override suspend fun getMenu(): List<Product> = LocalMenu.products
+            override suspend fun getProduct(id: String): Product? = gate.await()
+        }
+        val vm = ProductViewModel(LocalMenu.LATTE.id, slow, cart, savedState)
         keepActive(vm)
+        assertEquals(ProductUiState.Loading, vm.uiState.value)
+        vm.selectSize(DrinkSize.LARGE)
+        assertEquals(ProductUiState.Loading, vm.uiState.value)
+        gate.complete(LocalMenu.LATTE)
         assertEquals(DrinkSize.LARGE, (vm.uiState.value as ProductUiState.Success).form.size)
     }
 

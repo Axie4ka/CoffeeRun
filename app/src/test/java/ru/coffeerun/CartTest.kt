@@ -45,6 +45,9 @@ class CartTest {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         assertEquals(3, vm.uiState.value.count)
         assertEquals(2 * 180 + 240, vm.uiState.value.total)
+        cart.add(CartLine(LocalMenu.CROISSANT, unitPrice = 180))
+        assertEquals(4, vm.uiState.value.count)
+        assertEquals(3 * 180 + 240, vm.uiState.value.total)
     }
 
     @Test
