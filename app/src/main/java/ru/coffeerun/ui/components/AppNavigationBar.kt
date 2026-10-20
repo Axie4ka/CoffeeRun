@@ -17,13 +17,17 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import ru.coffeerun.R
+import ru.coffeerun.ui.navigation.CartRoute
+import ru.coffeerun.ui.navigation.MenuRoute
+import ru.coffeerun.ui.navigation.OrdersRoute
+import ru.coffeerun.ui.navigation.ProfileRoute
 
 /** Четыре раздела верхнего уровня. */
-enum class Tab(@StringRes val labelRes: Int) {
-    MENU(R.string.tab_menu),
-    CART(R.string.tab_cart),
-    ORDERS(R.string.tab_orders),
-    PROFILE(R.string.tab_profile)
+enum class Tab(@StringRes val labelRes: Int, val route: Any) {
+    MENU(R.string.tab_menu, MenuRoute),
+    CART(R.string.tab_cart, CartRoute),
+    ORDERS(R.string.tab_orders, OrdersRoute),
+    PROFILE(R.string.tab_profile, ProfileRoute)
 }
 
 @Composable
