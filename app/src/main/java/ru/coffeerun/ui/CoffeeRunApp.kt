@@ -84,6 +84,7 @@ fun CoffeeRunApp(
                     onChangeQuantity = viewModel::changeQuantity,
                     onRemove = viewModel::remove,
                     onCheckout = { navController.navigate(CheckoutRoute) },
+                    onBrowseMenu = { navController.openTab(Tab.MENU) },
                     modifier = tabModifier
                 )
             }
@@ -95,6 +96,7 @@ fun CoffeeRunApp(
                         viewModel.repeat(it)
                         navController.openTab(Tab.CART)
                     },
+                    onBrowseMenu = { navController.openTab(Tab.MENU) },
                     modifier = tabModifier
                 )
             }
@@ -138,7 +140,6 @@ fun CoffeeRunApp(
                 } else {
                     OrderPlacedScreen(
                         order = order,
-                        onClose = toMenu,
                         onToOrders = { navController.jumpToTab(Tab.ORDERS) },
                         onToMenu = toMenu
                     )

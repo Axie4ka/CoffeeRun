@@ -4,10 +4,8 @@ import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
@@ -53,15 +51,8 @@ fun AppNavigationBar(
                 selected = tab == selected,
                 onClick = { onSelect(tab) },
                 icon = {
-                    if (tab == Tab.CART && cartCount > 0) {
-                        BadgedBox(
-                            badge = {
-                                Badge(
-                                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                                ) { Text(cartCount.toString()) }
-                            }
-                        ) { Icon(icon, contentDescription = null) }
+                    if (tab == Tab.CART) {
+                        BadgedBox(badge = { CartBadge(cartCount) }) { Icon(icon, contentDescription = null) }
                     } else {
                         Icon(icon, contentDescription = null)
                     }

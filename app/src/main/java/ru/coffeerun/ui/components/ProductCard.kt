@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.model.Product
+import ru.coffeerun.ui.theme.priceSmall
 import ru.coffeerun.ui.theme.spacing
 
 /** Квадратное фото позиции со скруглёнными углами. */
@@ -81,14 +82,13 @@ fun ProductCard(
                             if (product.isPriceFrom) R.string.price_from else R.string.price_rub,
                             product.price
                         ),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.priceSmall,
+                        color = MaterialTheme.colorScheme.tertiary
                     )
-                    FilledTonalIconButton(onClick = onAdd, modifier = Modifier.size(36.dp)) {
+                    FilledTonalIconButton(onClick = onAdd) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = stringResource(R.string.add_product, name),
-                            modifier = Modifier.size(20.dp)
+                            contentDescription = stringResource(R.string.add_product, name)
                         )
                     }
                 }

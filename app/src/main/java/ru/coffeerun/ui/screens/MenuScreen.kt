@@ -1,7 +1,6 @@
 package ru.coffeerun.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,17 +12,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,7 +41,7 @@ import ru.coffeerun.ui.util.ProvidePreviewNotifier
 import ru.coffeerun.ui.util.snackbar
 
 /**
- * Меню: заголовок с адресом кофейни, чипы разделов и список позиций.
+ * Меню: логотип с адресом кофейни, вкладки разделов и список позиций.
  * Нажатие на карточку — [onProductClick], кнопка «+» — [onAddProduct].
  */
 @Composable
@@ -59,39 +54,24 @@ fun MenuScreen(
     var category by rememberSaveable { mutableStateOf(ProductCategory.COFFEE) }
 
     Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
-        MenuHeader(
-            // Выбор кофейни и поиск пока не реализованы
-            onShopClick = notify::notifyPlaceholder,
-            onSearchClick = notify::notifyPlaceholder
-        )
-        Row(
-            modifier = Modifier
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small),
-            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
-        ) {
+        // Выбор кофейни пока не реализован
+        MenuHeader(onShopClick = notify::notifyPlaceholder)
+        // Разделы одного уровня — вкладки, а не фильтр-чипы
+        PrimaryTabRow(selectedTabIndex = category.ordinal) {
             ProductCategory.entries.forEach { entry ->
-                val selected = entry == category
-                FilterChip(
-                    selected = selected,
+                Tab(
+                    selected = entry == category,
                     onClick = { category = entry },
-                    label = { Text(stringResource(entry.labelRes)) },
-                    leadingIcon = if (selected) {
-                        {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(FilterChipDefaults.IconSize)
-                            )
-                        }
-                    } else null
+                    text = { Text(stringResource(entry.labelRes)) },
+                    selectedContentColor = MaterialTheme.colorScheme.primary,
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
         LazyColumn(
             contentPadding = PaddingValues(
                 horizontal = MaterialTheme.spacing.large,
-                vertical = MaterialTheme.spacing.small
+                vertical = MaterialTheme.spacing.medium
             ),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
         ) {
@@ -107,48 +87,40 @@ fun MenuScreen(
 }
 
 @Composable
-private fun MenuHeader(onShopClick: () -> Unit, onSearchClick: () -> Unit) {
-    Row(
+private fun MenuHeader(onShopClick: () -> Unit) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)
     ) {
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)
+        Text(
+            text = stringResource(R.string.app_name),
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Row(
+            modifier = Modifier.clickable(onClick = onShopClick),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = stringResource(R.string.app_name),
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = stringResource(R.string.menu_choose_shop),
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.tertiary
             )
-            Row(
-                modifier = Modifier.clickable(onClick = onShopClick),
-                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.LocationOn,
-                    contentDescription = stringResource(R.string.menu_choose_shop),
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.tertiary
-                )
-                Text(
-                    text = stringResource(Shop.MOSKOVSKAYA.addressRes),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        IconButton(onClick = onSearchClick) {
-            Icon(Icons.Default.Search, contentDescription = stringResource(R.string.menu_search))
+            Text(
+                text = stringResource(Shop.MOSKOVSKAYA.addressRes),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -156,7 +128,7 @@ private fun MenuHeader(onShopClick: () -> Unit, onSearchClick: () -> Unit) {
 @Preview(showBackground = true, locale = "ru")
 @Composable
 private fun MenuScreenPreview() {
-    CoffeeRunTheme(dynamicColor = false) {
+    CoffeeRunTheme {
         ProvidePreviewNotifier { MenuScreen(onProductClick = {}, onAddProduct = {}) }
     }
 }

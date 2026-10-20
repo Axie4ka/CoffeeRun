@@ -12,11 +12,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -29,9 +31,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
@@ -44,6 +44,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -82,7 +83,10 @@ import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
+import ru.coffeerun.ui.components.CartBadge
+import ru.coffeerun.ui.components.QuantityStepper
 import ru.coffeerun.ui.theme.CoffeeRunTheme
+import ru.coffeerun.ui.theme.priceLarge
 import ru.coffeerun.ui.theme.spacing
 
 // Ограничения формы заказа: длина комментария и количество порций
@@ -280,19 +284,7 @@ private fun ProductTopBar(
                 )
             }
             IconButton(onClick = onCart) {
-                BadgedBox(
-                    badge = {
-                        // Пустую корзину бейджем не отмечаем.
-                        if (cartCount > 0) {
-                            Badge(
-                                containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                            ) {
-                                Text(cartCount.toString())
-                            }
-                        }
-                    }
-                ) {
+                BadgedBox(badge = { CartBadge(cartCount) }) {
                     Icon(
                         imageVector = Icons.Default.ShoppingCart,
                         contentDescription = stringResource(R.string.action_cart)
@@ -331,13 +323,13 @@ private fun ProductHeader(
         ) {
             Text(
                 text = stringResource(product.nameRes),
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.weight(1f)
             )
             Text(
                 text = stringResource(R.string.price_rub, price),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary
+                style = MaterialTheme.typography.priceLarge,
+                color = MaterialTheme.colorScheme.tertiary
             )
         }
 
@@ -468,11 +460,7 @@ private fun MilkSection(
                                 modifier = Modifier.size(FilterChipDefaults.IconSize)
                             )
                         }
-                    } else null,
-                    // Отключён только чип «нет в наличии» — выделяем его цветом ошибки.
-                    colors = FilterChipDefaults.filterChipColors(
-                        disabledLabelColor = MaterialTheme.colorScheme.error
-                    )
+                    } else null
                 )
             }
         }
@@ -563,14 +551,7 @@ private fun ExtrasSection(
                                 modifier = Modifier.size(FilterChipDefaults.IconSize)
                             )
                         }
-                    } else null,
-                    // Выбранные добавки красим в tertiary, чтобы они визуально
-                    // отличались от чипов молока.
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                        selectedLeadingIconColor = MaterialTheme.colorScheme.onTertiaryContainer
-                    )
+                    } else null
                 )
             }
         }
@@ -624,47 +605,36 @@ private fun OrderBar(
     onIncrease: () -> Unit,
     onAddToCart: () -> Unit
 ) {
-    BottomAppBar {
-        // Границы количества держатся на отключении кнопок: на пределе
-        // «−» и «+» недоступны, поэтому отдельной проверки в обработчиках нет.
-        FilledTonalIconButton(
-            onClick = onDecrease,
-            enabled = quantity > MIN_QUANTITY
+    // Вместо BottomAppBar (он устаревает и рассчитан на иконки и FAB) — панель в стиле docked toolbar
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .navigationBarsPadding()
+                .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.medium),
+            horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_remove),
-                contentDescription = stringResource(R.string.action_decrease)
+            // Границы количества держатся на отключении кнопок: на пределе
+            // «−» и «+» недоступны, поэтому отдельной проверки в обработчиках нет.
+            QuantityStepper(
+                quantity = quantity,
+                onDecrease = onDecrease,
+                onIncrease = onIncrease,
+                canDecrease = quantity > MIN_QUANTITY,
+                canIncrease = quantity < MAX_QUANTITY
             )
-        }
-
-        Text(
-            text = quantity.toString(),
-            style = MaterialTheme.typography.titleMedium,
-            textAlign = TextAlign.Center,
-            // Минимальная ширина, чтобы кнопки не сдвигались при переходе 9 → 10.
-            modifier = Modifier.widthIn(min = 32.dp)
-        )
-
-        FilledTonalIconButton(
-            onClick = onIncrease,
-            enabled = quantity < MAX_QUANTITY
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = stringResource(R.string.action_increase)
-            )
-        }
-
-        Spacer(Modifier.width(MaterialTheme.spacing.large))
-
-        Button(
-            onClick = onAddToCart,
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = stringResource(R.string.add_to_cart, totalPrice),
-                maxLines = 1
-            )
+            Button(
+                onClick = onAddToCart,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = stringResource(R.string.add_to_cart, totalPrice),
+                    maxLines = 1
+                )
+            }
         }
     }
 }
@@ -672,8 +642,7 @@ private fun OrderBar(
 @Preview(showBackground = true, locale = "ru")
 @Composable
 private fun ProductScreenPreview() {
-    // dynamicColor = false, чтобы превью показывало фирменную палитру.
-    CoffeeRunTheme(dynamicColor = false) {
+    CoffeeRunTheme {
         ProductScreen(
             product = Product.CAPPUCCINO,
             cartCount = 2,
