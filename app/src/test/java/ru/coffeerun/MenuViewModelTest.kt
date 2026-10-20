@@ -8,6 +8,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
+import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.Product
@@ -32,20 +33,20 @@ class MenuViewModelTest {
 
     @Test
     fun menu_loadsSuccess() {
-        val vm = MenuViewModel(FakeMenuRepository(), InMemoryCartRepository())
+        val vm = MenuViewModel(FakeMenuRepository(), InMemoryCartRepository(), InMemoryShopRepository())
         assertEquals(MenuUiState.Success(LocalMenu.products), vm.uiState.value)
     }
 
     @Test
     fun menu_networkError_isError() {
-        val vm = MenuViewModel(FakeMenuRepository(fail = true), InMemoryCartRepository())
+        val vm = MenuViewModel(FakeMenuRepository(fail = true), InMemoryCartRepository(), InMemoryShopRepository())
         assertEquals(MenuUiState.Error, vm.uiState.value)
     }
 
     @Test
     fun retry_afterError_loadsMenu() {
         val fake = FakeMenuRepository(fail = true)
-        val vm = MenuViewModel(fake, InMemoryCartRepository())
+        val vm = MenuViewModel(fake, InMemoryCartRepository(), InMemoryShopRepository())
         assertEquals(MenuUiState.Error, vm.uiState.value)
         fake.fail = false
         vm.loadMenu()
@@ -55,7 +56,7 @@ class MenuViewModelTest {
     @Test
     fun menu_loadsOnce() = runTest {
         val fake = FakeMenuRepository()
-        val vm = MenuViewModel(fake, InMemoryCartRepository())
+        val vm = MenuViewModel(fake, InMemoryCartRepository(), InMemoryShopRepository())
         vm.uiState.first()
         vm.uiState.first()
         assertEquals(1, fake.calls)
@@ -71,7 +72,7 @@ class MenuViewModelTest {
 
             override suspend fun getProduct(id: String): Product? = LocalMenu.byId(id)
         }
-        val vm = MenuViewModel(repo, InMemoryCartRepository())
+        val vm = MenuViewModel(repo, InMemoryCartRepository(), InMemoryShopRepository())
         vm.loadMenu()
         assertEquals(MenuUiState.Success(LocalMenu.products), vm.uiState.value)
         // Поздняя ошибка первой загрузки не должна затереть Success

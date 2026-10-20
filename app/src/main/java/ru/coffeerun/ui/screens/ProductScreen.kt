@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -108,6 +109,7 @@ fun ProductScreen(
     onQuantityChange: (delta: Int) -> Unit,
     onAddToCart: () -> Unit,
     onBack: () -> Unit,
+    isFavorite: Boolean,
     onFavorite: () -> Unit,
     onShare: () -> Unit,
     onCart: () -> Unit,
@@ -121,6 +123,7 @@ fun ProductScreen(
             ProductTopBar(
                 cartCount = cartCount,
                 onBack = onBack,
+                isFavorite = isFavorite,
                 onFavorite = onFavorite,
                 onShare = onShare,
                 onCart = onCart
@@ -216,6 +219,7 @@ private fun SectionDivider() {
 private fun ProductTopBar(
     cartCount: Int,
     onBack: () -> Unit,
+    isFavorite: Boolean,
     onFavorite: () -> Unit,
     onShare: () -> Unit,
     onCart: () -> Unit,
@@ -233,8 +237,8 @@ private fun ProductTopBar(
         actions = {
             IconButton(onClick = onFavorite) {
                 Icon(
-                    imageVector = Icons.Default.FavoriteBorder,
-                    contentDescription = stringResource(R.string.action_favorite)
+                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = stringResource(if (isFavorite) R.string.action_unfavorite else R.string.action_favorite)
                 )
             }
             IconButton(onClick = onShare) {
@@ -613,6 +617,7 @@ private fun ProductScreenPreview() {
             onQuantityChange = {},
             onAddToCart = {},
             onBack = {},
+            isFavorite = false,
             onFavorite = {},
             onShare = {},
             onCart = {}

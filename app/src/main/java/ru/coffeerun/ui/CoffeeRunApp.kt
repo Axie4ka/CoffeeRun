@@ -1,10 +1,10 @@
 package ru.coffeerun.ui
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -13,6 +13,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -23,11 +25,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import ru.coffeerun.R
 import ru.coffeerun.model.itemCount
 import ru.coffeerun.ui.components.AppNavigationBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.navigation.CartRoute
 import ru.coffeerun.ui.navigation.CheckoutRoute
+import ru.coffeerun.ui.navigation.FavoritesRoute
 import ru.coffeerun.ui.navigation.MenuRoute
 import ru.coffeerun.ui.navigation.OrdersRoute
 import ru.coffeerun.ui.navigation.PlacedRoute
@@ -37,6 +41,8 @@ import ru.coffeerun.ui.screens.CartScreen
 import ru.coffeerun.ui.screens.CartViewModel
 import ru.coffeerun.ui.screens.CheckoutScreen
 import ru.coffeerun.ui.screens.CheckoutViewModel
+import ru.coffeerun.ui.screens.FavoritesScreen
+import ru.coffeerun.ui.screens.FavoritesViewModel
 import ru.coffeerun.ui.screens.MenuScreen
 import ru.coffeerun.ui.screens.MenuViewModel
 import ru.coffeerun.ui.screens.OrderPlacedScreen
@@ -47,7 +53,7 @@ import ru.coffeerun.ui.screens.ProductScreen
 import ru.coffeerun.ui.screens.ProductUiState
 import ru.coffeerun.ui.screens.ProductViewModel
 import ru.coffeerun.ui.screens.ProfileScreen
-import ru.coffeerun.ui.util.snackbar
+import ru.coffeerun.ui.screens.ProfileViewModel
 
 /**
  * Корень приложения: NavHost внутри одного Scaffold. Нижняя панель видна только
@@ -63,7 +69,6 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
     val currentTab = Tab.entries.find { tab ->
         entry?.destination?.hierarchy?.any { it.hasRoute(tab.route::class) } == true
     }
-    val notify: () -> Unit = MaterialTheme.snackbar::notifyPlaceholder
     // Вне NavHost — ViewModel уровня Activity, только ради счётчика на нижней панели
     val cartUiState by viewModel<CartViewModel>(factory = CartViewModel.Factory).uiState.collectAsStateWithLifecycle()
 
@@ -84,8 +89,11 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             composable<MenuRoute> {
                 val vm: MenuViewModel = viewModel(factory = MenuViewModel.Factory)
                 val menuState by vm.uiState.collectAsStateWithLifecycle()
+                val shop by vm.shop.collectAsStateWithLifecycle()
                 MenuScreen(
                     uiState = menuState,
+                    shop = shop,
+                    onShopSelected = vm::selectShop,
                     onRetry = vm::loadMenu,
                     onProductClick = { navController.navigate(ProductRoute(it.id)) },
                     onAddProduct = vm::quickAdd,
@@ -120,7 +128,31 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                 )
             }
 
-            composable<ProfileRoute> { ProfileScreen(modifier = tabModifier) }
+            composable<ProfileRoute> {
+                val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
+                val shop by vm.shop.collectAsStateWithLifecycle()
+                val ordersCount by vm.ordersCount.collectAsStateWithLifecycle()
+                val favoritesCount by vm.favoritesCount.collectAsStateWithLifecycle()
+                ProfileScreen(
+                    shop = shop,
+                    ordersCount = ordersCount,
+                    favoritesCount = favoritesCount,
+                    onShopSelected = vm::selectShop,
+                    onFavoritesClick = { navController.navigate(FavoritesRoute) },
+                    modifier = tabModifier
+                )
+            }
+
+            composable<FavoritesRoute> {
+                val vm: FavoritesViewModel = viewModel(factory = FavoritesViewModel.Factory)
+                val favoritesState by vm.uiState.collectAsStateWithLifecycle()
+                FavoritesScreen(
+                    uiState = favoritesState,
+                    onProductClick = { navController.navigate(ProductRoute(it)) },
+                    onBrowseMenu = { navController.jumpToTab(Tab.MENU) },
+                    onBack = { navController.popBackStack() }
+                )
+            }
 
             composable<ProductRoute> {
                 val vm: ProductViewModel = viewModel(factory = ProductViewModel.Factory)
@@ -131,30 +163,46 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                         CircularProgressIndicator()
                     }
                     ProductUiState.NotFound -> LaunchedEffect(Unit) { navController.popBackStack<ProductRoute>(inclusive = true) }
-                    is ProductUiState.Success -> ProductScreen(
-                        product = state.product,
-                        form = state.form,
-                        unitPrice = state.unitPrice,
-                        cartCount = lines.itemCount,
-                        onSizeSelected = vm::selectSize,
-                        onMilkSelected = vm::selectMilk,
-                        onIcedChange = vm::setIced,
-                        onExtraToggle = vm::toggleExtra,
-                        onNoteChange = vm::setNote,
-                        onQuantityChange = vm::changeQuantity,
-                        onAddToCart = vm::addToCart,
-                        onBack = { navController.popBackStack() },
-                        onFavorite = notify,
-                        onShare = notify,
-                        onCart = { navController.jumpToTab(Tab.CART) },
-                        snackbarHostState = snackbarHostState
-                    )
+                    is ProductUiState.Success -> {
+                        val context = LocalContext.current
+                        val product = state.product
+                        val name = stringResource(product.nameRes)
+                        val price = stringResource(
+                            if (product.isPriceFrom) R.string.price_from else R.string.price_rub,
+                            product.price
+                        )
+                        val shareText = stringResource(R.string.share_product, name, price)
+                        ProductScreen(
+                            product = state.product,
+                            form = state.form,
+                            unitPrice = state.unitPrice,
+                            cartCount = lines.itemCount,
+                            onSizeSelected = vm::selectSize,
+                            onMilkSelected = vm::selectMilk,
+                            onIcedChange = vm::setIced,
+                            onExtraToggle = vm::toggleExtra,
+                            onNoteChange = vm::setNote,
+                            onQuantityChange = vm::changeQuantity,
+                            onAddToCart = vm::addToCart,
+                            onBack = { navController.popBackStack() },
+                            isFavorite = state.isFavorite,
+                            onFavorite = vm::toggleFavorite,
+                            onShare = {
+                                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, shareText)
+                                context.startActivity(Intent.createChooser(send, null))
+                            },
+                            onCart = { navController.jumpToTab(Tab.CART) },
+                            snackbarHostState = snackbarHostState
+                        )
+                    }
                 }
             }
 
             composable<CheckoutRoute> {
                 val vm: CheckoutViewModel = viewModel(factory = CheckoutViewModel.Factory)
                 val lines by vm.lines.collectAsStateWithLifecycle()
+                val shop by vm.shop.collectAsStateWithLifecycle()
+                val pickupAtMillis by vm.pickupAtMillis.collectAsStateWithLifecycle()
                 val placedOrderNumber by vm.placedOrderNumber.collectAsStateWithLifecycle()
                 LaunchedEffect(placedOrderNumber) {
                     placedOrderNumber?.let { number ->
@@ -165,9 +213,13 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                 }
                 CheckoutScreen(
                     lines = lines,
-                    shop = vm.shop,
+                    shop = shop,
                     onBack = { navController.popBackStack() },
                     onConfirm = vm::placeOrder,
+                    pickupAtMillis = pickupAtMillis,
+                    earliestPickup = vm.earliestPickupTime(),
+                    onPickupAsap = vm::pickupAsap,
+                    onPickupTimeChosen = vm::setPickupTime,
                     snackbarHostState = snackbarHostState
                 )
             }

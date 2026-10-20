@@ -10,6 +10,7 @@
     <string name="category_coffee">Кофе</string>
     <string name="category_not_coffee">Не кофе</string>
     <string name="category_pastry">Выпечка</string>
+    <string name="share_product">%1$s — %2$s в CoffeeRun</string>
     <string name="price_from">от %1$d ₽</string>
     <string name="add_product">Добавить в корзину: %1$s</string>
 
@@ -87,6 +88,7 @@
 
     <string name="placed_title">Заказ принят!</string>
     <string name="placed_description">Бариста уже начал готовить. Покажите номер заказа при получении.</string>
+    <string name="placed_description_scheduled">Бариста приготовит заказ к выбранному времени. Покажите номер заказа при получении.</string>
     <string name="order_number_label">Номер заказа</string>
     <string name="order_number">№ %1$d</string>
     <string name="placed_ready">Будет готов к %1$s</string>
@@ -113,13 +115,25 @@
     <string name="profile_orders_label">заказов</string>
     <string name="profile_favorites_label">в избранном</string>
     <string name="profile_favorites">Избранное</string>
-    <string name="profile_favorites_hint">Капучино, Раф ванильный, Латте</string>
+    <string name="favorites_title">Избранное</string>
+    <string name="favorites_empty">В избранном пока пусто</string>
+    <string name="profile_favorites_none">Пока ничего нет</string>
+    <plurals name="profile_favorites_count">
+        <item quantity="one">%d позиция</item>
+        <item quantity="few">%d позиции</item>
+        <item quantity="many">%d позиций</item>
+        <item quantity="other">%d позиции</item>
+    </plurals>
+    <string name="about_text">Заказ кофе с самовывозом. Учебный проект.</string>
     <string name="profile_shop">Любимая кофейня</string>
     <string name="profile_phone_title">Телефон</string>
     <string name="profile_about">О приложении</string>
     <string name="profile_version">Версия 1.0</string>
     <!-- Редизайн M3 -->
-    <string name="pickup_soon">Скоро</string>
+    <string name="pickup_scheduled_hint">Выберите время</string>
+    <string name="pickup_scheduled_closed">Сегодня уже нельзя — кофейня закрывается в 22:00</string>
+    <string name="pickup_time_title">Время самовывоза</string>
+    <string name="pickup_time_invalid">Выберите время не раньше чем через 15 минут и до 22:00</string>
     <string name="payment_on_pickup_title">Оплата при получении</string>
     <string name="browse_menu">Перейти в меню</string>
     <plurals name="cart_total_items">

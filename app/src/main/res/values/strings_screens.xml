@@ -12,6 +12,7 @@
     <string name="category_coffee">Coffee</string>
     <string name="category_not_coffee">Not coffee</string>
     <string name="category_pastry">Pastry</string>
+    <string name="share_product">%1$s — %2$s at CoffeeRun</string>
     <string name="price_from">from %1$d ₽</string>
     <string name="add_product">Add %1$s to cart</string>
 
@@ -93,6 +94,7 @@
     <!-- Заказ принят -->
     <string name="placed_title">Order accepted!</string>
     <string name="placed_description">The barista has started preparing it. Show the order number at pickup.</string>
+    <string name="placed_description_scheduled">The barista will have it ready at the time you chose. Show the order number at pickup.</string>
     <string name="order_number_label">Order number</string>
     <string name="order_number">№ %1$d</string>
     <string name="placed_ready">Ready by %1$s</string>
@@ -122,13 +124,23 @@
     <string name="profile_orders_label">orders</string>
     <string name="profile_favorites_label">in favorites</string>
     <string name="profile_favorites">Favorites</string>
-    <string name="profile_favorites_hint">Cappuccino, Vanilla raf, Latte</string>
+    <string name="favorites_title">Favorites</string>
+    <string name="favorites_empty">No favorites yet</string>
+    <string name="profile_favorites_none">Nothing yet</string>
+    <plurals name="profile_favorites_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <string name="about_text">Coffee pickup ordering. Study project.</string>
     <string name="profile_shop">Favorite coffee shop</string>
     <string name="profile_phone_title">Phone</string>
     <string name="profile_about">About the app</string>
     <string name="profile_version">Version 1.0</string>
     <!-- Редизайн M3 -->
-    <string name="pickup_soon">Coming soon</string>
+    <string name="pickup_scheduled_hint">Choose a time</string>
+    <string name="pickup_scheduled_closed">Not available today — the shop closes at 22:00</string>
+    <string name="pickup_time_title">Pickup time</string>
+    <string name="pickup_time_invalid">Pick a time at least 15 minutes from now and no later than 22:00</string>
     <string name="payment_on_pickup_title">Pay on pickup</string>
     <string name="browse_menu">Go to menu</string>
     <plurals name="cart_total_items">

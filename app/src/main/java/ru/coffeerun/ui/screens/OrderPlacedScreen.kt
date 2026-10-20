@@ -97,7 +97,9 @@ fun OrderPlacedScreen(
                 style = MaterialTheme.typography.headlineMedium
             )
             Text(
-                text = stringResource(R.string.placed_description),
+                text = stringResource(
+                    if (order.pickupAtMillis != null) R.string.placed_description_scheduled else R.string.placed_description
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center

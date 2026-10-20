@@ -21,6 +21,7 @@ import org.junit.Test
 import org.junit.rules.ExternalResource
 import org.junit.runner.RunWith
 import ru.coffeerun.model.Product
+import ru.coffeerun.model.Shop
 
 /**
  * Сценарии навигации из плана (F1–F12, N1). Проверяют поведение через UI,
@@ -167,13 +168,15 @@ class NavigationTest {
     }
 
     @Test
-    fun checkout_scheduledPickupIsDisabled() {
+    fun checkout_scheduledPickupOpensTimePicker() {
         val name = str(LocalMenu.CAPPUCCINO.nameRes)
         rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
         tab(R.string.tab_cart).performClick()
         rule.onNodeWithText(str(R.string.cart_checkout)).performClick()
-        rule.onNodeWithText(str(R.string.pickup_scheduled)).assertIsNotEnabled()
         rule.onNodeWithText(str(R.string.pickup_asap)).assertIsSelected()
+        rule.onNodeWithText(str(R.string.pickup_scheduled)).performClick()
+        // Заголовок диалога совпадает с заголовком секции, поэтому проверяем по кнопке «ОК»
+        rule.onNodeWithText(str(android.R.string.ok)).assertIsDisplayed()
     }
 
     @Test
@@ -190,5 +193,39 @@ class NavigationTest {
         tab(R.string.category_pastry).performClick()
         rule.onNodeWithText(str(LocalMenu.CROISSANT.nameRes)).assertIsDisplayed()
         rule.onNodeWithText(str(LocalMenu.CAPPUCCINO.nameRes)).assertDoesNotExist()
+    }
+
+    @Test
+    fun favorites_flow() {
+        val latte = LocalMenu.LATTE
+        openProduct(latte)
+        rule.onNodeWithContentDescription(str(R.string.action_favorite)).performClick()
+        rule.onNodeWithContentDescription(str(R.string.action_unfavorite)).assertIsDisplayed()
+        rule.onNodeWithContentDescription(str(R.string.action_back)).performClick()
+        tab(R.string.tab_profile).performClick()
+        rule.onNodeWithText(str(R.string.profile_favorites)).performClick()
+        rule.onNodeWithText(str(latte.nameRes)).assertIsDisplayed()
+        rule.onNodeWithText(str(latte.nameRes)).performClick()
+        rule.onNodeWithContentDescription(str(R.string.action_unfavorite)).assertIsDisplayed()
+    }
+
+    @Test
+    fun profile_aboutDialogOpensAndCloses() {
+        tab(R.string.tab_profile).performClick()
+        rule.onNodeWithText(str(R.string.profile_about)).performClick()
+        rule.onNodeWithText(str(R.string.about_text)).assertIsDisplayed()
+        rule.onNodeWithText(str(android.R.string.ok)).performClick()
+        rule.onNodeWithText(str(R.string.about_text)).assertDoesNotExist()
+    }
+
+    @Test
+    fun shopPicker_changesCheckoutShop() {
+        rule.onNodeWithText(str(Shop.MOSKOVSKAYA.addressRes)).performClick()
+        rule.onNodeWithText(str(Shop.STROITELEY.addressRes)).performClick()
+        val name = str(LocalMenu.CAPPUCCINO.nameRes)
+        rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
+        tab(R.string.tab_cart).performClick()
+        rule.onNodeWithText(str(R.string.cart_checkout)).performClick()
+        rule.onNodeWithText(str(Shop.STROITELEY.addressRes)).assertIsDisplayed()
     }
 }

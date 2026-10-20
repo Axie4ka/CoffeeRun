@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,29 +26,41 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.components.ScreenTopBar
+import ru.coffeerun.ui.components.ShopPickerSheet
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.ProvidePreviewNotifier
 import ru.coffeerun.ui.util.snackbar
 
-// Демонстрационная статистика: аккаунтов и избранного в приложении пока нет
-private const val DEMO_ORDERS_COUNT = 12
-private const val DEMO_FAVORITES_COUNT = 3
-
-/** Профиль: данные пользователя, статистика и список настроек (пока заглушки). */
+/** Профиль: данные пользователя, статистика и список настроек («Изменить» и «Телефон» пока заглушки). */
 @Composable
-fun ProfileScreen(modifier: Modifier = Modifier) {
+fun ProfileScreen(
+    shop: Shop,
+    ordersCount: Int,
+    favoritesCount: Int,
+    onShopSelected: (Shop) -> Unit,
+    onFavoritesClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showShopPicker by rememberSaveable { mutableStateOf(false) }
+    var showAbout by rememberSaveable { mutableStateOf(false) }
     val notify = MaterialTheme.snackbar
     val name = stringResource(R.string.profile_name)
 
@@ -87,16 +100,31 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
         ) {
-            StatCard(DEMO_ORDERS_COUNT, stringResource(R.string.profile_orders_label), Modifier.weight(1f))
-            StatCard(DEMO_FAVORITES_COUNT, stringResource(R.string.profile_favorites_label), Modifier.weight(1f))
+            StatCard(ordersCount, stringResource(R.string.profile_orders_label), Modifier.weight(1f))
+            StatCard(favoritesCount, stringResource(R.string.profile_favorites_label), Modifier.weight(1f))
         }
         Column(Modifier.padding(top = MaterialTheme.spacing.large)) {
-            ProfileItem(Icons.Default.Favorite, R.string.profile_favorites, stringResource(R.string.profile_favorites_hint), notify::notifyPlaceholder)
-            ProfileItem(Icons.Default.LocationOn, R.string.profile_shop, stringResource(Shop.MOSKOVSKAYA.addressRes), notify::notifyPlaceholder)
+            ProfileItem(Icons.Default.Favorite, R.string.profile_favorites, if (favoritesCount == 0) stringResource(R.string.profile_favorites_none)
+                else pluralStringResource(R.plurals.profile_favorites_count, favoritesCount, favoritesCount), onFavoritesClick)
+            ProfileItem(Icons.Default.LocationOn, R.string.profile_shop, stringResource(shop.addressRes)) { showShopPicker = true }
             ProfileItem(Icons.Default.Phone, R.string.profile_phone_title, stringResource(R.string.profile_phone), notify::notifyPlaceholder)
             HorizontalDivider()
-            ProfileItem(Icons.Default.Info, R.string.profile_about, stringResource(R.string.profile_version), notify::notifyPlaceholder)
+            ProfileItem(Icons.Default.Info, R.string.profile_about, stringResource(R.string.profile_version)) { showAbout = true }
         }
+    }
+    if (showShopPicker) ShopPickerSheet(shop, onShopSelected, onDismiss = { showShopPicker = false })
+    if (showAbout) {
+        AlertDialog(
+            onDismissRequest = { showAbout = false },
+            title = { Text(stringResource(R.string.app_name)) },
+            text = {
+                Column {
+                    Text(stringResource(R.string.profile_version), style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.about_text))
+                }
+            },
+            confirmButton = { TextButton(onClick = { showAbout = false }) { Text(stringResource(android.R.string.ok)) } }
+        )
     }
 }
 
@@ -137,6 +165,6 @@ private fun ProfileItem(icon: ImageVector, titleRes: Int, supporting: String, on
 @Composable
 private fun ProfileScreenPreview() {
     CoffeeRunTheme(dynamicColor = false) {
-        ProvidePreviewNotifier { ProfileScreen() }
+        ProvidePreviewNotifier { ProfileScreen(Shop.MOSKOVSKAYA, 2, 3, {}, {}) }
     }
 }

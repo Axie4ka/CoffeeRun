@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
+import ru.coffeerun.data.FavoritesRepository
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.MAX_NOTE_LENGTH
 import ru.coffeerun.model.MAX_QUANTITY
@@ -48,7 +49,7 @@ data class ProductForm(
 /** Состояние экрана позиции: товар грузится по id из маршрута. [unitPrice] — производное от товара и формы. */
 sealed interface ProductUiState {
     data object Loading : ProductUiState
-    data class Success(val product: Product, val form: ProductForm, val unitPrice: Int) : ProductUiState
+    data class Success(val product: Product, val form: ProductForm, val unitPrice: Int, val isFavorite: Boolean) : ProductUiState
     data object NotFound : ProductUiState
 }
 
@@ -64,6 +65,7 @@ class ProductViewModel(
     private val productId: String,
     private val menu: MenuRepository,
     private val cart: CartRepository,
+    private val favorites: FavoritesRepository,
     private val savedState: SavedStateHandle
 ) : ViewModel() {
     val form: StateFlow<ProductForm> = savedState.getStateFlow(FORM_KEY, ProductForm())
@@ -71,12 +73,13 @@ class ProductViewModel(
 
     private val loaded = MutableStateFlow<Loaded>(Loaded.Loading)
 
-    val uiState: StateFlow<ProductUiState> = combine(loaded, form) { loaded, form ->
+    val uiState: StateFlow<ProductUiState> = combine(loaded, form, favorites.ids) { loaded, form, favoriteIds ->
         when (loaded) {
             Loaded.Loading -> ProductUiState.Loading
             Loaded.Missing -> ProductUiState.NotFound
             is Loaded.Found -> ProductUiState.Success(
-                loaded.product, form, loaded.product.unitPrice(form.size, form.milk, form.extras)
+                loaded.product, form, loaded.product.unitPrice(form.size, form.milk, form.extras),
+                isFavorite = productId in favoriteIds
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductUiState.Loading)
@@ -98,6 +101,8 @@ class ProductViewModel(
     }
 
     fun changeQuantity(delta: Int) = update { copy(quantity = (quantity + delta).coerceIn(MIN_QUANTITY, MAX_QUANTITY)) }
+
+    fun toggleFavorite() = favorites.toggle(productId)
 
     fun addToCart() {
         val product = (loaded.value as? Loaded.Found)?.product ?: return
@@ -128,7 +133,7 @@ class ProductViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val savedState = createSavedStateHandle()
-                ProductViewModel(savedState.toRoute<ProductRoute>().productId, container.menu, container.cart, savedState)
+                ProductViewModel(savedState.toRoute<ProductRoute>().productId, container.menu, container.cart, container.favorites, savedState)
             }
         }
     }

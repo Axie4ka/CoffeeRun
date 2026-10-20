@@ -16,6 +16,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
+import ru.coffeerun.data.InMemoryFavoritesRepository
+import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
@@ -36,7 +38,7 @@ class ProductViewModelTest {
     private val cart = InMemoryCartRepository()
     private var savedState = SavedStateHandle()
     private fun vm(product: Product) = vm(product.id)
-    private fun vm(id: String) = ProductViewModel(id, LocalMenuRepository(), cart, savedState)
+    private fun vm(id: String) = ProductViewModel(id, LocalMenuRepository(), cart, InMemoryFavoritesRepository(), savedState)
 
     /** uiState живёт только при подписчике (WhileSubscribed), поэтому держим коллектор. */
     private fun TestScope.keepActive(vm: ProductViewModel) {
@@ -71,7 +73,7 @@ class ProductViewModelTest {
             override suspend fun getMenu(): List<Product> = LocalMenu.products
             override suspend fun getProduct(id: String): Product? = gate.await()
         }
-        val vm = ProductViewModel(LocalMenu.LATTE.id, slow, cart, savedState)
+        val vm = ProductViewModel(LocalMenu.LATTE.id, slow, cart, InMemoryFavoritesRepository(), savedState)
         keepActive(vm)
         assertEquals(ProductUiState.Loading, vm.uiState.value)
         vm.selectSize(DrinkSize.LARGE)
@@ -114,7 +116,7 @@ class ProductViewModelTest {
         vm.setNote("  ")
         vm.changeQuantity(+1)
         vm.addToCart()
-        MenuViewModel(LocalMenuRepository(), cart).quickAdd(LocalMenu.ESPRESSO)
+        MenuViewModel(LocalMenuRepository(), cart, InMemoryShopRepository()).quickAdd(LocalMenu.ESPRESSO)
         val lines = cart.lines.value
         assertEquals(1, lines.size)
         assertEquals(3, lines[0].quantity)
