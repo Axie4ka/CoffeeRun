@@ -96,6 +96,15 @@ class NavigationTest {
         tab(R.string.tab_cart).assertIsSelected()
     }
 
+    @Test
+    fun productCart_thenMenuTabOpensMenu() {
+        openProduct(LocalMenu.CAPPUCCINO)
+        rule.onNodeWithContentDescription(str(R.string.action_cart)).performClick()
+        tab(R.string.tab_menu).performClick()
+        assertMenuShown()
+        tab(R.string.tab_menu).assertIsSelected()
+    }
+
     @Test // F8
     fun checkout_backReturnsToCart() {
         val name = str(LocalMenu.CAPPUCCINO.nameRes)

@@ -247,7 +247,9 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
 private fun NavController.openTab(tab: Tab) = navigate(tab.route) {
     popUpTo(graph.findStartDestination().id) { saveState = true }
     launchSingleTop = true
-    restoreState = true
+    // Меню — стартовый экран и со стека не снимается. Под его ключом navigation сохраняет
+    // только что снятую вкладку, и restoreState вернул бы её вместо меню
+    restoreState = tab != Tab.MENU
 }
 
 /**
