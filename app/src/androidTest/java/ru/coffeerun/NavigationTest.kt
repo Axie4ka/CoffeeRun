@@ -1,5 +1,6 @@
 package ru.coffeerun
 
+import ru.coffeerun.data.LocalMenu
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -54,7 +55,7 @@ class NavigationTest {
     }
 
     private fun placeCappuccinoOrder() {
-        val name = str(Product.CAPPUCCINO.nameRes)
+        val name = str(LocalMenu.CAPPUCCINO.nameRes)
         rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
         tab(R.string.tab_cart).performClick()
         rule.onNodeWithText(str(R.string.cart_checkout)).performClick()
@@ -80,7 +81,7 @@ class NavigationTest {
 
     @Test // F5, F6
     fun product_hidesBottomBarAndBackReturnsToMenu() {
-        openProduct(Product.CAPPUCCINO)
+        openProduct(LocalMenu.CAPPUCCINO)
         tab(R.string.tab_orders).assertDoesNotExist()
         Espresso.pressBack()
         tab(R.string.tab_orders).assertIsDisplayed()
@@ -89,14 +90,14 @@ class NavigationTest {
 
     @Test // F7
     fun productCart_selectsCartTab() {
-        openProduct(Product.CAPPUCCINO)
+        openProduct(LocalMenu.CAPPUCCINO)
         rule.onNodeWithContentDescription(str(R.string.action_cart)).performClick()
         tab(R.string.tab_cart).assertIsSelected()
     }
 
     @Test // F8
     fun checkout_backReturnsToCart() {
-        val name = str(Product.CAPPUCCINO.nameRes)
+        val name = str(LocalMenu.CAPPUCCINO.nameRes)
         rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
         tab(R.string.tab_cart).performClick()
         rule.onNodeWithText(str(R.string.cart_checkout)).performClick()
@@ -148,10 +149,10 @@ class NavigationTest {
 
     @Test // N1
     fun recreate_keepsProductScreen() {
-        openProduct(Product.LATTE)
+        openProduct(LocalMenu.LATTE)
         rule.activityRule.scenario.recreate()
         tab(R.string.tab_orders).assertDoesNotExist()
-        rule.onNodeWithText(str(Product.LATTE.nameRes)).assertIsDisplayed()
+        rule.onNodeWithText(str(LocalMenu.LATTE.nameRes)).assertIsDisplayed()
     }
 
     // ---------- Поведение, которое добавил редизайн M3 (спецификация 2026-10-20, раздел 9) ----------
@@ -167,7 +168,7 @@ class NavigationTest {
 
     @Test
     fun checkout_scheduledPickupIsDisabled() {
-        val name = str(Product.CAPPUCCINO.nameRes)
+        val name = str(LocalMenu.CAPPUCCINO.nameRes)
         rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
         tab(R.string.tab_cart).performClick()
         rule.onNodeWithText(str(R.string.cart_checkout)).performClick()
@@ -177,7 +178,7 @@ class NavigationTest {
 
     @Test
     fun product_minusDisabledAtOne() {
-        openProduct(Product.CAPPUCCINO)
+        openProduct(LocalMenu.CAPPUCCINO)
         rule.onNodeWithContentDescription(str(R.string.action_decrease)).assertIsNotEnabled()
         rule.onNodeWithContentDescription(str(R.string.action_increase)).performClick()
         rule.onNodeWithContentDescription(str(R.string.action_decrease)).assertIsEnabled()
@@ -185,9 +186,9 @@ class NavigationTest {
 
     @Test
     fun menu_tabsSwitchCategory() {
-        rule.onNodeWithText(str(Product.CAPPUCCINO.nameRes)).assertIsDisplayed()
+        rule.onNodeWithText(str(LocalMenu.CAPPUCCINO.nameRes)).assertIsDisplayed()
         tab(R.string.category_pastry).performClick()
-        rule.onNodeWithText(str(Product.CROISSANT.nameRes)).assertIsDisplayed()
-        rule.onNodeWithText(str(Product.CAPPUCCINO.nameRes)).assertDoesNotExist()
+        rule.onNodeWithText(str(LocalMenu.CROISSANT.nameRes)).assertIsDisplayed()
+        rule.onNodeWithText(str(LocalMenu.CAPPUCCINO.nameRes)).assertDoesNotExist()
     }
 }

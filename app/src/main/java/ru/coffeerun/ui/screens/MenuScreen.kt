@@ -31,6 +31,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
+import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.ProductCategory
 import ru.coffeerun.model.Shop
@@ -75,7 +76,7 @@ fun MenuScreen(
             ),
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
         ) {
-            items(Product.entries.filter { it.category == category }, key = { it.name }) { product ->
+            items(LocalMenu.products.filter { it.category == category }, key = { it.id }) { product ->
                 ProductCard(
                     product = product,
                     onClick = { onProductClick(product) },

@@ -10,7 +10,6 @@ import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus
-import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop
 
 private const val FIRST_ORDER_NUMBER = 1042
@@ -46,7 +45,7 @@ private fun demoHistory(now: Long): List<Order> {
         Order(
             number = 1037,
             status = OrderStatus.PICKED_UP,
-            lines = listOf(CartLine(Product.LATTE, unitPrice = 240, quantity = 2, options = regular, id = 1)),
+            lines = listOf(CartLine(LocalMenu.LATTE, unitPrice = 240, quantity = 2, options = regular, id = 1)),
             shop = Shop.MOSKOVSKAYA,
             placedAtMillis = now - 2 * DAY_MILLIS
         ),
@@ -54,8 +53,8 @@ private fun demoHistory(now: Long): List<Order> {
             number = 1029,
             status = OrderStatus.PICKED_UP,
             lines = listOf(
-                CartLine(Product.RAF, unitPrice = 300, options = regular.copy(size = DrinkSize.LARGE), id = 1),
-                CartLine(Product.ESPRESSO, unitPrice = 150, id = 2)
+                CartLine(LocalMenu.RAF, unitPrice = 300, options = regular.copy(size = DrinkSize.LARGE), id = 1),
+                CartLine(LocalMenu.ESPRESSO, unitPrice = 150, id = 2)
             ),
             shop = Shop.STROITELEY,
             placedAtMillis = now - 6 * DAY_MILLIS

@@ -1,5 +1,6 @@
 package ru.coffeerun.ui.screens
 
+import ru.coffeerun.data.LocalMenu
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,7 +36,6 @@ import ru.coffeerun.R
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus
-import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
@@ -176,7 +176,7 @@ private fun OrderPlacedScreenPreview() {
             order = Order(
                 number = 1042,
                 status = OrderStatus.PREPARING,
-                lines = listOf(CartLine(Product.CROISSANT, unitPrice = 180, id = 1)),
+                lines = listOf(CartLine(LocalMenu.CROISSANT, unitPrice = 180, id = 1)),
                 shop = Shop.MOSKOVSKAYA,
                 placedAtMillis = System.currentTimeMillis()
             ),

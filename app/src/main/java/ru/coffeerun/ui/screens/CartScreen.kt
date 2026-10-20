@@ -1,5 +1,6 @@
 package ru.coffeerun.ui.screens
 
+import ru.coffeerun.data.LocalMenu
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,7 +27,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.model.CartLine
-import ru.coffeerun.model.Product
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.MIN_QUANTITY
 import ru.coffeerun.model.itemCount
@@ -181,8 +181,8 @@ private fun CartScreenPreview() {
     CoffeeRunTheme {
         CartScreen(
             lines = listOf(
-                CartLine(Product.CROISSANT, unitPrice = 180, id = 1),
-                CartLine(Product.LATTE, unitPrice = 240, quantity = 2, id = 2)
+                CartLine(LocalMenu.CROISSANT, unitPrice = 180, id = 1),
+                CartLine(LocalMenu.LATTE, unitPrice = 240, quantity = 2, id = 2)
             ),
             onChangeQuantity = { _, _ -> },
             onRemove = {},

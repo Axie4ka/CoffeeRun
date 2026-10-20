@@ -9,6 +9,7 @@ import androidx.navigation.toRoute
 import kotlinx.coroutines.flow.StateFlow
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
+import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.model.MAX_NOTE_LENGTH
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.MIN_QUANTITY
@@ -90,7 +91,8 @@ class ProductViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val savedState = createSavedStateHandle()
-                ProductViewModel(savedState.toRoute<ProductRoute>().product, container.cart, savedState)
+                val product = checkNotNull(LocalMenu.byId(savedState.toRoute<ProductRoute>().productId))
+                ProductViewModel(product, container.cart, savedState)
             }
         }
     }

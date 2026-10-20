@@ -1,5 +1,6 @@
 package ru.coffeerun
 
+import ru.coffeerun.data.LocalMenu
 import androidx.lifecycle.SavedStateHandle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -24,7 +25,7 @@ class ProductViewModelTest {
 
     @Test
     fun choices_changePriceAndSurviveViewModelRecreation() {
-        val vm = vm(Product.LATTE)
+        val vm = vm(LocalMenu.LATTE)
         vm.selectSize(DrinkSize.LARGE)
         vm.selectMilk(MilkType.OAT)
         vm.toggleExtra(Extra.VANILLA)
@@ -32,12 +33,12 @@ class ProductViewModelTest {
         vm.toggleExtra(Extra.VANILLA)
         assertEquals(360, vm.unitPrice(vm.form.value))
         // Новая ViewModel с тем же SavedStateHandle — как после смерти процесса
-        assertEquals(DrinkSize.LARGE, vm(Product.LATTE).form.value.size)
+        assertEquals(DrinkSize.LARGE, vm(LocalMenu.LATTE).form.value.size)
     }
 
     @Test
     fun quantity_staysWithinLimits() {
-        val vm = vm(Product.LATTE)
+        val vm = vm(LocalMenu.LATTE)
         vm.changeQuantity(-1)
         assertEquals(MIN_QUANTITY, vm.form.value.quantity)
         repeat(MAX_QUANTITY + 5) { vm.changeQuantity(+1) }
@@ -46,7 +47,7 @@ class ProductViewModelTest {
 
     @Test
     fun tooLongNote_isRejectedWhole() {
-        val vm = vm(Product.LATTE)
+        val vm = vm(LocalMenu.LATTE)
         vm.setNote("без пенки")
         vm.setNote("x".repeat(MAX_NOTE_LENGTH + 1))
         assertEquals("без пенки", vm.form.value.note)
@@ -55,11 +56,11 @@ class ProductViewModelTest {
     @Test
     fun addToCart_buildsLineThatMergesWithQuickAdd() {
         // Эспрессо без выбора размера: форма с размером M всё равно даёт те же опции, что «+»
-        val vm = vm(Product.ESPRESSO)
+        val vm = vm(LocalMenu.ESPRESSO)
         vm.setNote("  ")
         vm.changeQuantity(+1)
         vm.addToCart()
-        MenuViewModel(cart).quickAdd(Product.ESPRESSO)
+        MenuViewModel(cart).quickAdd(LocalMenu.ESPRESSO)
         val lines = cart.lines.value
         assertEquals(1, lines.size)
         assertEquals(3, lines[0].quantity)
@@ -69,6 +70,6 @@ class ProductViewModelTest {
 
     @Test
     fun form_defaults() {
-        assertEquals(ProductForm(), vm(Product.CAPPUCCINO).form.value)
+        assertEquals(ProductForm(), vm(LocalMenu.CAPPUCCINO).form.value)
     }
 }

@@ -79,7 +79,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             composable<MenuRoute> {
                 val vm: MenuViewModel = viewModel(factory = MenuViewModel.Factory)
                 MenuScreen(
-                    onProductClick = { navController.navigate(ProductRoute(it)) },
+                    onProductClick = { navController.navigate(ProductRoute(it.id)) },
                     onAddProduct = vm::quickAdd,
                     modifier = tabModifier
                 )

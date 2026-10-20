@@ -1,5 +1,6 @@
 package ru.coffeerun.ui.screens
 
+import ru.coffeerun.data.LocalMenu
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,7 +27,6 @@ import ru.coffeerun.ui.components.EmptyState
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus
-import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.theme.CoffeeRunTheme
@@ -186,8 +186,8 @@ private fun OrdersScreenPreview() {
         ProvidePreviewNotifier {
             OrdersScreen(
                 orders = listOf(
-                    Order(1042, OrderStatus.PREPARING, listOf(CartLine(Product.CROISSANT, 180, id = 1)), Shop.MOSKOVSKAYA, now),
-                    Order(1037, OrderStatus.PICKED_UP, listOf(CartLine(Product.LATTE, 240, 2, id = 2)), Shop.STROITELEY, now - 172_800_000L)
+                    Order(1042, OrderStatus.PREPARING, listOf(CartLine(LocalMenu.CROISSANT, 180, id = 1)), Shop.MOSKOVSKAYA, now),
+                    Order(1037, OrderStatus.PICKED_UP, listOf(CartLine(LocalMenu.LATTE, 240, 2, id = 2)), Shop.STROITELEY, now - 172_800_000L)
                 ),
                 onRepeat = {},
                 onBrowseMenu = {}
