@@ -12,6 +12,7 @@
     <string name="category_coffee">Coffee</string>
     <string name="category_not_coffee">Not coffee</string>
     <string name="category_pastry">Pastry</string>
+    <string name="share_product">%1$s — %2$s at CoffeeRun</string>
     <string name="price_from">from %1$d ₽</string>
     <string name="add_product">Add %1$s to cart</string>
 

@@ -1,5 +1,6 @@
 package ru.coffeerun.ui
 
+import android.content.Intent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,6 +14,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -23,6 +26,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import ru.coffeerun.R
 import ru.coffeerun.model.itemCount
 import ru.coffeerun.ui.components.AppNavigationBar
 import ru.coffeerun.ui.components.Tab
@@ -139,24 +143,37 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                         CircularProgressIndicator()
                     }
                     ProductUiState.NotFound -> LaunchedEffect(Unit) { navController.popBackStack<ProductRoute>(inclusive = true) }
-                    is ProductUiState.Success -> ProductScreen(
-                        product = state.product,
-                        form = state.form,
-                        unitPrice = state.unitPrice,
-                        cartCount = lines.itemCount,
-                        onSizeSelected = vm::selectSize,
-                        onMilkSelected = vm::selectMilk,
-                        onIcedChange = vm::setIced,
-                        onExtraToggle = vm::toggleExtra,
-                        onNoteChange = vm::setNote,
-                        onQuantityChange = vm::changeQuantity,
-                        onAddToCart = vm::addToCart,
-                        onBack = { navController.popBackStack() },
-                        onFavorite = notify,
-                        onShare = notify,
-                        onCart = { navController.jumpToTab(Tab.CART) },
-                        snackbarHostState = snackbarHostState
-                    )
+                    is ProductUiState.Success -> {
+                        val context = LocalContext.current
+                        val product = state.product
+                        val name = stringResource(product.nameRes)
+                        val price = stringResource(
+                            if (product.isPriceFrom) R.string.price_from else R.string.price_rub,
+                            product.price
+                        )
+                        val shareText = stringResource(R.string.share_product, name, price)
+                        ProductScreen(
+                            product = state.product,
+                            form = state.form,
+                            unitPrice = state.unitPrice,
+                            cartCount = lines.itemCount,
+                            onSizeSelected = vm::selectSize,
+                            onMilkSelected = vm::selectMilk,
+                            onIcedChange = vm::setIced,
+                            onExtraToggle = vm::toggleExtra,
+                            onNoteChange = vm::setNote,
+                            onQuantityChange = vm::changeQuantity,
+                            onAddToCart = vm::addToCart,
+                            onBack = { navController.popBackStack() },
+                            onFavorite = notify,
+                            onShare = {
+                                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, shareText)
+                                context.startActivity(Intent.createChooser(send, null))
+                            },
+                            onCart = { navController.jumpToTab(Tab.CART) },
+                            snackbarHostState = snackbarHostState
+                        )
+                    }
                 }
             }
 
