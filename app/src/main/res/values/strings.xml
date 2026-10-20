@@ -49,6 +49,8 @@
     <!-- Действия -->
     <string name="add_to_cart">Add to cart · %1$d ₽</string>
     <string name="action_back">Back</string>
+    <string name="action_retry">Retry</string>
+    <string name="menu_error">Couldn\'t load the menu</string>
     <string name="action_favorite">Add to favorites</string>
     <string name="action_share">Share</string>
     <string name="action_cart">Cart</string>

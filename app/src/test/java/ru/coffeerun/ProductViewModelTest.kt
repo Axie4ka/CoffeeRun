@@ -1,6 +1,7 @@
 package ru.coffeerun
 
 import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.LocalMenuRepository
 import androidx.lifecycle.SavedStateHandle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -60,7 +61,7 @@ class ProductViewModelTest {
         vm.setNote("  ")
         vm.changeQuantity(+1)
         vm.addToCart()
-        MenuViewModel(cart).quickAdd(LocalMenu.ESPRESSO)
+        MenuViewModel(LocalMenuRepository(), cart).quickAdd(LocalMenu.ESPRESSO)
         val lines = cart.lines.value
         assertEquals(1, lines.size)
         assertEquals(3, lines[0].quantity)
