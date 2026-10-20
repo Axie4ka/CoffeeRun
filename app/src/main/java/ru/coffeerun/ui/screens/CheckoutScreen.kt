@@ -31,6 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import ru.coffeerun.R
+import ru.coffeerun.ui.components.TotalRow
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop

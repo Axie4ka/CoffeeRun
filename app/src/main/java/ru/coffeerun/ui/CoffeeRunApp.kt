@@ -117,14 +117,23 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             composable<ProductRoute> {
                 val vm: ProductViewModel = viewModel(factory = ProductViewModel.Factory)
                 val lines by vm.cartLines.collectAsStateWithLifecycle()
+                val form by vm.form.collectAsStateWithLifecycle()
                 ProductScreen(
                     product = vm.product,
+                    form = form,
+                    unitPrice = vm.unitPrice(form),
                     cartCount = lines.itemCount,
+                    onSizeSelected = vm::selectSize,
+                    onMilkSelected = vm::selectMilk,
+                    onIcedChange = vm::setIced,
+                    onExtraToggle = vm::toggleExtra,
+                    onNoteChange = vm::setNote,
+                    onQuantityChange = vm::changeQuantity,
+                    onAddToCart = vm::addToCart,
                     onBack = { navController.popBackStack() },
                     onFavorite = notify,
                     onShare = notify,
                     onCart = { navController.jumpToTab(Tab.CART) },
-                    onAddToCart = vm::addToCart,
                     snackbarHostState = snackbarHostState
                 )
             }
@@ -132,16 +141,19 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             composable<CheckoutRoute> {
                 val vm: CheckoutViewModel = viewModel(factory = CheckoutViewModel.Factory)
                 val lines by vm.lines.collectAsStateWithLifecycle()
+                val placedOrderNumber by vm.placedOrderNumber.collectAsStateWithLifecycle()
+                LaunchedEffect(placedOrderNumber) {
+                    placedOrderNumber?.let { number ->
+                        // Cart и Checkout снимаем: «назад» с «Заказ принят» ведёт в меню
+                        navController.navigate(PlacedRoute(number)) { popUpTo(MenuRoute) }
+                        vm.onPlacedOrderShown()
+                    }
+                }
                 CheckoutScreen(
                     lines = lines,
                     shop = vm.shop,
                     onBack = { navController.popBackStack() },
-                    onConfirm = {
-                        vm.placeOrder()?.let { order ->
-                            // Cart и Checkout снимаем: «назад» с «Заказ принят» ведёт в меню
-                            navController.navigate(PlacedRoute(order.number)) { popUpTo(MenuRoute) }
-                        }
-                    },
+                    onConfirm = vm::placeOrder,
                     snackbarHostState = snackbarHostState
                 )
             }

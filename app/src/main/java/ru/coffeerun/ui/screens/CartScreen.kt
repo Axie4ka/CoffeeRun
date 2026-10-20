@@ -1,7 +1,6 @@
 package ru.coffeerun.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -28,12 +27,15 @@ import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Product
-import ru.coffeerun.data.MAX_QUANTITY
+import ru.coffeerun.model.MAX_QUANTITY
+import ru.coffeerun.model.MIN_QUANTITY
+import ru.coffeerun.model.itemCount
+import ru.coffeerun.ui.components.EmptyState
 import ru.coffeerun.ui.components.ProductImage
 import ru.coffeerun.ui.components.QuantityStepper
 import ru.coffeerun.ui.components.ScreenTopBar
+import ru.coffeerun.ui.components.TotalRow
 import ru.coffeerun.ui.theme.CoffeeRunTheme
-import ru.coffeerun.ui.theme.priceLarge
 import ru.coffeerun.ui.theme.priceSmall
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.optionsText
@@ -93,7 +95,7 @@ fun CartScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
                 ) {
-                    val count = lines.sumOf { it.quantity }
+                    val count = lines.itemCount
                     TotalRow(
                         total = lines.sumOf { it.total },
                         label = pluralStringResource(R.plurals.cart_total_items, count, count)
@@ -103,24 +105,6 @@ fun CartScreen(
                     }
                 }
             }
-        }
-    }
-}
-
-/** Пустой список: подпись и кнопка «Перейти в меню». Общая для корзины и заказов. */
-@Composable
-fun EmptyState(text: String, onBrowseMenu: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.large)
-        ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Button(onClick = onBrowseMenu) { Text(stringResource(R.string.browse_menu)) }
         }
     }
 }
@@ -182,33 +166,12 @@ private fun CartItemCard(
                         quantity = line.quantity,
                         onDecrease = onDecrease,
                         onIncrease = onIncrease,
-                        canDecrease = line.quantity > 1,
+                        canDecrease = line.quantity > MIN_QUANTITY,
                         canIncrease = line.quantity < MAX_QUANTITY
                     )
                 }
             }
         }
-    }
-}
-
-/** Строка «Итого» с крупной суммой — общая для корзины и оформления. */
-@Composable
-fun TotalRow(
-    total: Int,
-    modifier: Modifier = Modifier,
-    label: String = stringResource(R.string.total_label)
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = label, style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = stringResource(R.string.price_rub, total),
-            style = MaterialTheme.typography.priceLarge,
-            color = MaterialTheme.colorScheme.tertiary
-        )
     }
 }
 

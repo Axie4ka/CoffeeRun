@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
+import ru.coffeerun.ui.components.EmptyState
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus

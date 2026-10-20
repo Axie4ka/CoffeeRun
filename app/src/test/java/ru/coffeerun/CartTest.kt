@@ -5,7 +5,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.coffeerun.data.CartRepository
-import ru.coffeerun.data.MAX_QUANTITY
+import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.data.OrderRepository
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.DrinkSize
@@ -73,14 +73,21 @@ class CartTest {
     @Test
     fun placeOrder_movesCartToOrders() {
         val checkout = CheckoutViewModel(cart, orders)
-        assertNull(checkout.placeOrder())
+        checkout.placeOrder()
+        assertNull("пустая корзина — заказа нет", checkout.placedOrderNumber.value)
+
         cart.add(quickAdd(Product.CROISSANT).copy(quantity = 2))
-        val order = checkout.placeOrder()
-        assertEquals(360, order?.total)
+        checkout.placeOrder()
+        val order = orders.orders.value.first()
+        assertEquals(order.number, checkout.placedOrderNumber.value)
+        assertEquals(360, order.total)
         assertTrue(lines.isEmpty())
-        assertEquals(order, orders.orders.value.first())
+        // Событие обработано — повторного перехода не будет
+        checkout.onPlacedOrderShown()
+        assertNull(checkout.placedOrderNumber.value)
+
         // Экран «Заказ принят» находит заказ по номеру из маршрута
-        assertEquals(order, OrderPlacedViewModel(order!!.number, orders).order)
+        assertEquals(order, OrderPlacedViewModel(order.number, orders).order)
         assertNull(OrderPlacedViewModel(-1, orders).order)
     }
 

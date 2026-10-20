@@ -1,13 +1,9 @@
 package ru.coffeerun.ui.util
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import ru.coffeerun.R
 import ru.coffeerun.model.CartLine
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /** «Капучино L × 1» — короткая строка позиции для заказа. */
 @Composable
@@ -35,17 +31,4 @@ fun CartLine.optionsText(): String {
     }
     // Ничего не выбрано (например, эспрессо без добавок) — показываем описание
     return if (parts.isEmpty()) stringResource(product.descriptionRes) else parts.joinToString(" · ")
-}
-
-@Composable
-fun formatTime(millis: Long): String = format(millis, "H:mm")
-
-@Composable
-fun formatDateTime(millis: Long): String = format(millis, "d MMMM, H:mm")
-
-@Composable
-private fun format(millis: Long, pattern: String): String {
-    val locale = LocalConfiguration.current.locales[0]
-    return DateTimeFormatter.ofPattern(pattern, locale)
-        .format(Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()))
 }

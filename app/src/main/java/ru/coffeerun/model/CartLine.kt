@@ -1,5 +1,12 @@
 package ru.coffeerun.model
 
+/** Порций одной позиции — от [MIN_QUANTITY] до [MAX_QUANTITY], и на экране позиции, и в корзине. */
+const val MIN_QUANTITY = 1
+const val MAX_QUANTITY = 10
+
+/** Длина примечания для бариста. */
+const val MAX_NOTE_LENGTH = 100
+
 /** Опции, выбранные на экране позиции. null — у позиции нет такого выбора (например, молока у эспрессо). */
 data class DrinkOptions(
     val size: DrinkSize?,
