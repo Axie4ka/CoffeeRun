@@ -116,7 +116,14 @@
     <string name="profile_favorites">Избранное</string>
     <string name="favorites_title">Избранное</string>
     <string name="favorites_empty">В избранном пока пусто</string>
-    <string name="profile_favorites_hint">Капучино, Раф ванильный, Латте</string>
+    <string name="profile_favorites_none">Пока ничего нет</string>
+    <plurals name="profile_favorites_count">
+        <item quantity="one">%d позиция</item>
+        <item quantity="few">%d позиции</item>
+        <item quantity="many">%d позиций</item>
+        <item quantity="other">%d позиции</item>
+    </plurals>
+    <string name="about_text">Заказ кофе с самовывозом. Учебный проект.</string>
     <string name="profile_shop">Любимая кофейня</string>
     <string name="profile_phone_title">Телефон</string>
     <string name="profile_about">О приложении</string>

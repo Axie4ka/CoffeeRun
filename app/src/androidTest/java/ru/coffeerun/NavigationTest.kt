@@ -208,6 +208,15 @@ class NavigationTest {
     }
 
     @Test
+    fun profile_aboutDialogOpensAndCloses() {
+        tab(R.string.tab_profile).performClick()
+        rule.onNodeWithText(str(R.string.profile_about)).performClick()
+        rule.onNodeWithText(str(R.string.about_text)).assertIsDisplayed()
+        rule.onNodeWithText(str(android.R.string.ok)).performClick()
+        rule.onNodeWithText(str(R.string.about_text)).assertDoesNotExist()
+    }
+
+    @Test
     fun shopPicker_changesCheckoutShop() {
         rule.onNodeWithText(str(Shop.MOSKOVSKAYA.addressRes)).performClick()
         rule.onNodeWithText(str(Shop.STROITELEY.addressRes)).performClick()

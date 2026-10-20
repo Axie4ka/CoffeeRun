@@ -131,9 +131,11 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             composable<ProfileRoute> {
                 val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
                 val shop by vm.shop.collectAsStateWithLifecycle()
+                val ordersCount by vm.ordersCount.collectAsStateWithLifecycle()
                 val favoritesCount by vm.favoritesCount.collectAsStateWithLifecycle()
                 ProfileScreen(
                     shop = shop,
+                    ordersCount = ordersCount,
                     favoritesCount = favoritesCount,
                     onShopSelected = vm::selectShop,
                     onFavoritesClick = { navController.navigate(FavoritesRoute) },

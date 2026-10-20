@@ -125,7 +125,12 @@
     <string name="profile_favorites">Favorites</string>
     <string name="favorites_title">Favorites</string>
     <string name="favorites_empty">No favorites yet</string>
-    <string name="profile_favorites_hint">Cappuccino, Vanilla raf, Latte</string>
+    <string name="profile_favorites_none">Nothing yet</string>
+    <plurals name="profile_favorites_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <string name="about_text">Coffee pickup ordering. Study project.</string>
     <string name="profile_shop">Favorite coffee shop</string>
     <string name="profile_phone_title">Phone</string>
     <string name="profile_about">About the app</string>

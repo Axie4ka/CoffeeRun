@@ -14,13 +14,17 @@ import ru.coffeerun.data.OrderRepository
 import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.Shop
 
-/** Профиль: выбранная кофейня и число избранных позиций. */
+/** Профиль: выбранная кофейня, число заказов и избранных позиций. */
 class ProfileViewModel(
     private val shops: ShopRepository,
-    @Suppress("unused") private val orders: OrderRepository,
+    orders: OrderRepository,
     favorites: FavoritesRepository
 ) : ViewModel() {
     val shop: StateFlow<Shop> = shops.selected
+
+    val ordersCount: StateFlow<Int> = orders.orders
+        .map { it.size }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), orders.orders.value.size)
 
     val favoritesCount: StateFlow<Int> = favorites.ids
         .map { it.size }
