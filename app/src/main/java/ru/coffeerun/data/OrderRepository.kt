@@ -36,7 +36,8 @@ class InMemoryOrderRepository(private val now: () -> Long = System::currentTimeM
         require(lines.isNotEmpty()) { "Пустой заказ" }
         val order = Order(
             number = nextOrderNumber++,
-            status = OrderStatus.PREPARING,
+            // Заказ ко времени готовят не сразу — пока он только принят
+            status = if (pickupAtMillis != null) OrderStatus.ACCEPTED else OrderStatus.PREPARING,
             lines = lines,
             shop = shop,
             placedAtMillis = now(),

@@ -94,6 +94,7 @@
     <!-- Заказ принят -->
     <string name="placed_title">Order accepted!</string>
     <string name="placed_description">The barista has started preparing it. Show the order number at pickup.</string>
+    <string name="placed_description_scheduled">The barista will have it ready at the time you chose. Show the order number at pickup.</string>
     <string name="order_number_label">Order number</string>
     <string name="order_number">№ %1$d</string>
     <string name="placed_ready">Ready by %1$s</string>

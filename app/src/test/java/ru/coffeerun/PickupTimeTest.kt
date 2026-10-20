@@ -11,6 +11,7 @@ import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.ui.screens.CheckoutViewModel
 import java.time.LocalDate
 import java.time.LocalTime
@@ -40,6 +41,15 @@ class PickupTimeTest {
         val order = orders.orders.value.first()
         assertEquals(today(13), order.pickupAtMillis)
         assertEquals(today(13), order.readyAtMillis)
+        // К 13:00 ещё рано готовить — заказ только принят
+        assertEquals(OrderStatus.ACCEPTED, order.status)
+    }
+
+    @Test
+    fun asapOrder_isPreparing() {
+        cart.add(CartLine(LocalMenu.CROISSANT, unitPrice = 180))
+        vm.placeOrder()
+        assertEquals(OrderStatus.PREPARING, orders.orders.value.first().status)
     }
 
     @Test

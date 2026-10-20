@@ -88,6 +88,7 @@
 
     <string name="placed_title">Заказ принят!</string>
     <string name="placed_description">Бариста уже начал готовить. Покажите номер заказа при получении.</string>
+    <string name="placed_description_scheduled">Бариста приготовит заказ к выбранному времени. Покажите номер заказа при получении.</string>
     <string name="order_number_label">Номер заказа</string>
     <string name="order_number">№ %1$d</string>
     <string name="placed_ready">Будет готов к %1$s</string>
