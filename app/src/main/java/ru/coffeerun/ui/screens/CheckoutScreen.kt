@@ -1,6 +1,5 @@
 package ru.coffeerun.ui.screens
 
-import ru.coffeerun.data.LocalMenu
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,19 +40,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import java.time.LocalTime
+import kotlinx.coroutines.launch
 import ru.coffeerun.R
-import ru.coffeerun.ui.components.TotalRow
+import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.components.RadioRow
 import ru.coffeerun.ui.components.ScreenTopBar
+import ru.coffeerun.ui.components.TotalRow
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
-import ru.coffeerun.model.READY_IN_MINUTES
 import ru.coffeerun.ui.util.formatTime
 import ru.coffeerun.ui.util.summaryText
-import java.time.LocalTime
-import kotlinx.coroutines.launch
 
 /**
  * Оформление заказа: кофейня, время получения, способ оплаты и состав заказа.
@@ -68,6 +67,7 @@ fun CheckoutScreen(
     onBack: () -> Unit,
     onConfirm: () -> Unit,
     pickupAtMillis: Long? = null,
+    earliestPickup: LocalTime? = LocalTime.NOON,
     onPickupAsap: () -> Unit = {},
     onPickupTimeChosen: (hour: Int, minute: Int) -> Boolean = { _, _ -> true },
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
@@ -81,13 +81,8 @@ fun CheckoutScreen(
     val scope = rememberCoroutineScope()
     val invalidMessage = stringResource(R.string.pickup_time_invalid)
 
-    if (showTimePicker) {
-        // Начальное время — самое раннее допустимое, округлённое вверх до 5 минут
-        val initial = remember {
-            val t = LocalTime.now().plusMinutes(READY_IN_MINUTES + 4)
-            t.withMinute(t.minute / 5 * 5)
-        }
-        val timeState = rememberTimePickerState(initial.hour, initial.minute, is24Hour = true)
+    if (showTimePicker && earliestPickup != null) {
+        val timeState = rememberTimePickerState(earliestPickup.hour, earliestPickup.minute, is24Hour = true)
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
             title = { Text(stringResource(R.string.pickup_time_title)) },
@@ -157,10 +152,14 @@ fun CheckoutScreen(
                 )
                 RadioRow(
                     label = stringResource(R.string.pickup_scheduled),
-                    supporting = if (pickupAtMillis != null) formatTime(pickupAtMillis)
-                    else stringResource(R.string.pickup_scheduled_hint),
+                    supporting = when {
+                        earliestPickup == null -> stringResource(R.string.pickup_scheduled_closed)
+                        pickupAtMillis != null -> formatTime(pickupAtMillis)
+                        else -> stringResource(R.string.pickup_scheduled_hint)
+                    },
                     selected = pickupAtMillis != null,
-                    onClick = { showTimePicker = true }
+                    onClick = { showTimePicker = true },
+                    enabled = earliestPickup != null
                 )
             }
             HorizontalDivider(gutter)

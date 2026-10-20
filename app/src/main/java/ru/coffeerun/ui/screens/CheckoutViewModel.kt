@@ -15,6 +15,7 @@ import ru.coffeerun.model.CLOSING_HOUR
 import ru.coffeerun.model.READY_IN_MINUTES
 import ru.coffeerun.model.Shop
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 
 class CheckoutViewModel(
@@ -44,6 +45,20 @@ class CheckoutViewModel(
         if (millis < now() + READY_IN_MINUTES * 60_000L || millis > closing) return false
         _pickupAtMillis.value = millis
         return true
+    }
+
+    /**
+     * Самое раннее время самовывоза: now + [READY_IN_MINUTES], округлённое вверх до 5 минут.
+     * null — сегодня уже нельзя (позже закрытия или за полночь).
+     */
+    fun earliestPickupTime(): LocalTime? {
+        val step = 5 * 60_000L
+        val millis = (now() + READY_IN_MINUTES * 60_000L + step - 1) / step * step
+        val zone = ZoneId.systemDefault()
+        val at = Instant.ofEpochMilli(millis).atZone(zone)
+        val today = Instant.ofEpochMilli(now()).atZone(zone).toLocalDate()
+        val closing = today.atTime(CLOSING_HOUR, 0)
+        return at.toLocalDateTime().takeIf { it.toLocalDate() == today && !it.isAfter(closing) }?.toLocalTime()
     }
 
     fun pickupAsap() {

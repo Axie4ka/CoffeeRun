@@ -217,6 +217,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                     onBack = { navController.popBackStack() },
                     onConfirm = vm::placeOrder,
                     pickupAtMillis = pickupAtMillis,
+                    earliestPickup = vm.earliestPickupTime(),
                     onPickupAsap = vm::pickupAsap,
                     onPickupTimeChosen = vm::setPickupTime,
                     snackbarHostState = snackbarHostState

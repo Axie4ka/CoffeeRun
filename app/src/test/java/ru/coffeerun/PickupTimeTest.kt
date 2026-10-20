@@ -21,7 +21,12 @@ class PickupTimeTest {
     val mainRule = MainDispatcherRule()
 
     private fun today(hour: Int, minute: Int = 0): Long =
-        LocalDate.now().atTime(LocalTime.of(hour, minute)).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        LocalDate.of(2026, 10, 20).atTime(LocalTime.of(hour, minute)).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+    private fun vmAt(hour: Int, minute: Int = 0, second: Int = 0) = CheckoutViewModel(
+        cart, orders, InMemoryShopRepository(),
+        now = { today(hour, minute) + second * 1000L }
+    )
 
     private val cart = InMemoryCartRepository()
     private val orders = InMemoryOrderRepository()
@@ -49,5 +54,22 @@ class PickupTimeTest {
         vm.setPickupTime(13, 0)
         vm.pickupAsap()
         assertNull(vm.pickupAtMillis.value)
+    }
+
+    @Test
+    fun boundaries_nowPlus15AndClosingAccepted() {
+        assertTrue(vm.setPickupTime(12, 15))
+        assertTrue(vm.setPickupTime(22, 0))
+        assertFalse(vm.setPickupTime(22, 1))
+        assertEquals(today(22), vm.pickupAtMillis.value)
+    }
+
+    @Test
+    fun earliestPickup_roundsUpAndClosesInEvening() {
+        assertEquals(LocalTime.of(12, 15), vm.earliestPickupTime())
+        assertEquals(LocalTime.of(12, 20), vmAt(12, 3).earliestPickupTime())
+        assertEquals(LocalTime.of(22, 0), vmAt(21, 45).earliestPickupTime())
+        assertNull(vmAt(21, 50).earliestPickupTime())
+        assertNull(vmAt(23, 50).earliestPickupTime())
     }
 }
