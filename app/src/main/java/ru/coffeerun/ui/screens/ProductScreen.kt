@@ -1,5 +1,6 @@
 package ru.coffeerun.ui.screens
 
+import ru.coffeerun.data.LocalMenu
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -56,12 +57,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,59 +72,49 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
-import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Customization
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
-import ru.coffeerun.model.defaultOptions
-import ru.coffeerun.model.unitPrice
-import ru.coffeerun.ui.MAX_QUANTITY
+import ru.coffeerun.model.MAX_NOTE_LENGTH
+import ru.coffeerun.model.MAX_QUANTITY
+import ru.coffeerun.model.MIN_QUANTITY
 import ru.coffeerun.ui.components.CartBadge
 import ru.coffeerun.ui.components.QuantityStepper
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.priceLarge
 import ru.coffeerun.ui.theme.spacing
 
-// Ограничения формы заказа: длина комментария и минимум порций (максимум — MAX_QUANTITY корзины)
-private const val MAX_NOTE_LENGTH = 100
-private const val MIN_QUANTITY = 1
-
 /**
  * Экран позиции меню. Набор блоков зависит от [product]: [Product.customizations]
  * задаёт, что можно выбрать (размер, молоко, лёд, добавки, комментарий). У выпечки
  * блоков нет — только описание, калории, аллергены и количество порций.
  *
- * Выбранные параметры экран хранит сам, аэкран получает
- * [cartCount] для бейджа и сообщает о добавлении через [onAddToCart], передавая
- * готовую позицию корзины (напиток, опции, цена и количество порций)
+ * Stateless: выбор пользователя ([form]) и цену порции ([unitPrice]) держит
+ * [ProductViewModel], экран только показывает их и сообщает о действиях.
  */
 @Composable
 fun ProductScreen(
     product: Product,
+    form: ProductForm,
+    unitPrice: Int,
     cartCount: Int,
+    onSizeSelected: (DrinkSize) -> Unit,
+    onMilkSelected: (MilkType) -> Unit,
+    onIcedChange: (Boolean) -> Unit,
+    onExtraToggle: (Extra) -> Unit,
+    onNoteChange: (String) -> Unit,
+    onQuantityChange: (delta: Int) -> Unit,
+    onAddToCart: () -> Unit,
     onBack: () -> Unit,
     onFavorite: () -> Unit,
     onShare: () -> Unit,
     onCart: () -> Unit,
-    onAddToCart: (CartLine) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
-    // rememberSaveable, а не remember: выбор пользователя переживает поворот
-    // экрана и пересоздание Activity.
-    var selectedSize by rememberSaveable { mutableStateOf(DrinkSize.MEDIUM) }
-    var selectedMilk by rememberSaveable { mutableStateOf(MilkType.REGULAR) }
-    var isIced by rememberSaveable { mutableStateOf(false) }
-    var selectedExtras by rememberSaveable { mutableStateOf(setOf<Extra>()) }
-    var note by rememberSaveable { mutableStateOf("") }
-    // Цены — производные значения: не хранятся в состоянии, а пересчитываются
-    // из выбранных параметров при каждой рекомпозиции.
     val features = product.customizations
-    val unitPrice = product.unitPrice(selectedSize, selectedMilk, selectedExtras)
-    var quantity by rememberSaveable { mutableIntStateOf(MIN_QUANTITY) }
-    val totalPrice = unitPrice * quantity
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -142,27 +128,11 @@ fun ProductScreen(
         },
         bottomBar = {
             OrderBar(
-                quantity = quantity,
-                totalPrice = totalPrice,
-                onDecrease = { quantity-- },
-                onIncrease = { quantity++ },
-                onAddToCart = {
-                    onAddToCart(
-                        CartLine(
-                            product = product,
-                            unitPrice = unitPrice,
-                            quantity = quantity,
-                            // Те же опции по умолчанию, что у «+» в меню, — иначе одинаковые строки не сольются
-                            options = product.defaultOptions()?.copy(
-                                size = selectedSize.takeIf { Customization.SIZE in features },
-                                milk = selectedMilk.takeIf { Customization.MILK in features },
-                                isIced = isIced,
-                                extras = selectedExtras,
-                                note = note.trim()
-                            )
-                        )
-                    )
-                }
+                quantity = form.quantity,
+                totalPrice = unitPrice * form.quantity,
+                onDecrease = { onQuantityChange(-1) },
+                onIncrease = { onQuantityChange(+1) },
+                onAddToCart = onAddToCart
             )
         },
 
@@ -190,8 +160,8 @@ fun ProductScreen(
             if (Customization.SIZE in features) {
                 SectionDivider()
                 SizeSection(
-                    selectedSize = selectedSize,
-                    onSizeSelected = { selectedSize = it },
+                    selectedSize = form.size,
+                    onSizeSelected = onSizeSelected,
                     modifier = Modifier.padding(MaterialTheme.spacing.large)
                 )
             }
@@ -199,8 +169,8 @@ fun ProductScreen(
             if (Customization.MILK in features) {
                 SectionDivider()
                 MilkSection(
-                    selectedMilk = selectedMilk,
-                    onMilkSelected = { selectedMilk = it },
+                    selectedMilk = form.milk,
+                    onMilkSelected = onMilkSelected,
                     modifier = Modifier.padding(MaterialTheme.spacing.large)
                 )
             }
@@ -208,8 +178,8 @@ fun ProductScreen(
             if (Customization.ICE in features) {
                 SectionDivider()
                 TemperatureSection(
-                    isIced = isIced,
-                    onIcedChange = { isIced = it }
+                    isIced = form.isIced,
+                    onIcedChange = onIcedChange
                 )
             }
 
@@ -217,14 +187,8 @@ fun ProductScreen(
                 SectionDivider()
                 ExtrasSection(
                     available = product.extras,
-                    selectedExtras = selectedExtras,
-                    onExtraToggle = { extra ->
-                        selectedExtras = if (extra in selectedExtras) {
-                            selectedExtras - extra
-                        } else {
-                            selectedExtras + extra
-                        }
-                    },
+                    selectedExtras = form.extras,
+                    onExtraToggle = onExtraToggle,
                     modifier = Modifier.padding(MaterialTheme.spacing.large)
                 )
             }
@@ -232,8 +196,8 @@ fun ProductScreen(
             if (Customization.NOTE in features) {
                 SectionDivider()
                 NoteSection(
-                    note = note,
-                    onNoteChange = { note = it },
+                    note = form.note,
+                    onNoteChange = onNoteChange,
                     modifier = Modifier.padding(MaterialTheme.spacing.large)
                 )
             }
@@ -565,11 +529,8 @@ private fun NoteSection(
 
     OutlinedTextField(
         value = note,
-        onValueChange = { newText ->
-            // Текст длиннее лимита отклоняется целиком, а не обрезается:
-            // слишком длинная вставка из буфера просто не применится.
-            if (newText.length <= MAX_NOTE_LENGTH) onNoteChange(newText)
-        },
+        // Лимит длины проверяет ProductViewModel.setNote
+        onValueChange = onNoteChange,
         label = { Text(stringResource(R.string.section_note)) },
         placeholder = { Text(stringResource(R.string.note_placeholder)) },
         supportingText = {
@@ -640,13 +601,21 @@ private fun OrderBar(
 private fun ProductScreenPreview() {
     CoffeeRunTheme {
         ProductScreen(
-            product = Product.CAPPUCCINO,
+            product = LocalMenu.CAPPUCCINO,
+            form = ProductForm(),
+            unitPrice = 240,
             cartCount = 2,
+            onSizeSelected = {},
+            onMilkSelected = {},
+            onIcedChange = {},
+            onExtraToggle = {},
+            onNoteChange = {},
+            onQuantityChange = {},
+            onAddToCart = {},
             onBack = {},
             onFavorite = {},
             onShare = {},
-            onCart = {},
-            onAddToCart = {}
+            onCart = {}
         )
     }
 }

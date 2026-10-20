@@ -1,7 +1,7 @@
 package ru.coffeerun.ui.screens
 
+import ru.coffeerun.data.LocalMenu
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -27,13 +27,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.model.CartLine
-import ru.coffeerun.model.Product
-import ru.coffeerun.ui.MAX_QUANTITY
+import ru.coffeerun.model.MAX_QUANTITY
+import ru.coffeerun.model.MIN_QUANTITY
+import ru.coffeerun.ui.components.EmptyState
 import ru.coffeerun.ui.components.ProductImage
 import ru.coffeerun.ui.components.QuantityStepper
 import ru.coffeerun.ui.components.ScreenTopBar
+import ru.coffeerun.ui.components.TotalRow
 import ru.coffeerun.ui.theme.CoffeeRunTheme
-import ru.coffeerun.ui.theme.priceLarge
 import ru.coffeerun.ui.theme.priceSmall
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.optionsText
@@ -44,7 +45,7 @@ import ru.coffeerun.ui.util.optionsText
  */
 @Composable
 fun CartScreen(
-    lines: List<CartLine>,
+    uiState: CartUiState,
     onChangeQuantity: (id: Int, delta: Int) -> Unit,
     onRemove: (id: Int) -> Unit,
     onCheckout: () -> Unit,
@@ -53,7 +54,7 @@ fun CartScreen(
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.cart_title))
-        if (lines.isEmpty()) {
+        if (uiState.lines.isEmpty()) {
             EmptyState(
                 text = stringResource(R.string.cart_empty),
                 onBrowseMenu = onBrowseMenu,
@@ -68,7 +69,7 @@ fun CartScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
             ) {
-                items(lines, key = { it.id }) { line ->
+                items(uiState.lines, key = { it.id }) { line ->
                     CartItemCard(
                         line = line,
                         onDecrease = { onChangeQuantity(line.id, -1) },
@@ -93,34 +94,15 @@ fun CartScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
                 ) {
-                    val count = lines.sumOf { it.quantity }
                     TotalRow(
-                        total = lines.sumOf { it.total },
-                        label = pluralStringResource(R.plurals.cart_total_items, count, count)
+                        total = uiState.total,
+                        label = pluralStringResource(R.plurals.cart_total_items, uiState.count, uiState.count)
                     )
                     Button(onClick = onCheckout, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.cart_checkout))
                     }
                 }
             }
-        }
-    }
-}
-
-/** Пустой список: подпись и кнопка «Перейти в меню». Общая для корзины и заказов. */
-@Composable
-fun EmptyState(text: String, onBrowseMenu: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.large)
-        ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Button(onClick = onBrowseMenu) { Text(stringResource(R.string.browse_menu)) }
         }
     }
 }
@@ -182,7 +164,7 @@ private fun CartItemCard(
                         quantity = line.quantity,
                         onDecrease = onDecrease,
                         onIncrease = onIncrease,
-                        canDecrease = line.quantity > 1,
+                        canDecrease = line.quantity > MIN_QUANTITY,
                         canIncrease = line.quantity < MAX_QUANTITY
                     )
                 }
@@ -191,35 +173,18 @@ private fun CartItemCard(
     }
 }
 
-/** Строка «Итого» с крупной суммой — общая для корзины и оформления. */
-@Composable
-fun TotalRow(
-    total: Int,
-    modifier: Modifier = Modifier,
-    label: String = stringResource(R.string.total_label)
-) {
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = label, style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = stringResource(R.string.price_rub, total),
-            style = MaterialTheme.typography.priceLarge,
-            color = MaterialTheme.colorScheme.tertiary
-        )
-    }
-}
-
 @Preview(showBackground = true, locale = "ru")
 @Composable
 private fun CartScreenPreview() {
     CoffeeRunTheme {
         CartScreen(
-            lines = listOf(
-                CartLine(Product.CROISSANT, unitPrice = 180, id = 1),
-                CartLine(Product.LATTE, unitPrice = 240, quantity = 2, id = 2)
+            uiState = CartUiState(
+                lines = listOf(
+                    CartLine(LocalMenu.CROISSANT, unitPrice = 180, id = 1),
+                    CartLine(LocalMenu.LATTE, unitPrice = 240, quantity = 2, id = 2)
+                ),
+                count = 3,
+                total = 660
             ),
             onChangeQuantity = { _, _ -> },
             onRemove = {},

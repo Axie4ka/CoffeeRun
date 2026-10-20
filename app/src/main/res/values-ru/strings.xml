@@ -38,6 +38,8 @@
 
     <string name="add_to_cart">В корзину · %1$d ₽</string>
     <string name="action_back">Назад</string>
+    <string name="action_retry">Повторить</string>
+    <string name="menu_error">Не удалось загрузить меню</string>
     <string name="action_favorite">В избранное</string>
     <string name="action_share">Поделиться</string>
     <string name="action_cart">Корзина</string>

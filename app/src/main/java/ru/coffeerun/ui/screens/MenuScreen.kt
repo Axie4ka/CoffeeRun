@@ -2,6 +2,7 @@ package ru.coffeerun.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
@@ -31,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
+import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.ProductCategory
 import ru.coffeerun.model.Shop
@@ -46,6 +50,8 @@ import ru.coffeerun.ui.util.snackbar
  */
 @Composable
 fun MenuScreen(
+    uiState: MenuUiState,
+    onRetry: () -> Unit,
     onProductClick: (Product) -> Unit,
     onAddProduct: (Product) -> Unit,
     modifier: Modifier = Modifier
@@ -68,19 +74,32 @@ fun MenuScreen(
                 )
             }
         }
-        LazyColumn(
-            contentPadding = PaddingValues(
-                horizontal = MaterialTheme.spacing.large,
-                vertical = MaterialTheme.spacing.medium
-            ),
-            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
-        ) {
-            items(Product.entries.filter { it.category == category }, key = { it.name }) { product ->
-                ProductCard(
-                    product = product,
-                    onClick = { onProductClick(product) },
-                    onAdd = { onAddProduct(product) }
-                )
+        when (uiState) {
+            MenuUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            MenuUiState.Error -> Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium, Alignment.CenterVertically)
+            ) {
+                Text(stringResource(R.string.menu_error))
+                Button(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
+            }
+            is MenuUiState.Success -> LazyColumn(
+                contentPadding = PaddingValues(
+                    horizontal = MaterialTheme.spacing.large,
+                    vertical = MaterialTheme.spacing.medium
+                ),
+                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
+            ) {
+                items(uiState.products.filter { it.category == category }, key = { it.id }) { product ->
+                    ProductCard(
+                        product = product,
+                        onClick = { onProductClick(product) },
+                        onAdd = { onAddProduct(product) }
+                    )
+                }
             }
         }
     }
@@ -129,6 +148,11 @@ private fun MenuHeader(onShopClick: () -> Unit) {
 @Composable
 private fun MenuScreenPreview() {
     CoffeeRunTheme {
-        ProvidePreviewNotifier { MenuScreen(onProductClick = {}, onAddProduct = {}) }
+        ProvidePreviewNotifier { MenuScreen(
+                uiState = MenuUiState.Success(LocalMenu.products),
+                onRetry = {},
+                onProductClick = {},
+                onAddProduct = {}
+            ) }
     }
 }
