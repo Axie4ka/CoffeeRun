@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
+import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.data.LocalMenuRepository
 import ru.coffeerun.model.MAX_QUANTITY
@@ -70,12 +71,12 @@ class CartTest {
     fun quickAdd_hasSizeAndMergesWithSameDrinkFromProductScreen() {
         // Эспрессо с экрана позиции без добавок и примечания — те же опции, что у «+»
         val fromScreen = CartLine(LocalMenu.ESPRESSO, unitPrice = 150, options = LocalMenu.ESPRESSO.defaultOptions()?.copy(note = ""))
-        MenuViewModel(LocalMenuRepository(), cart).quickAdd(LocalMenu.ESPRESSO)
+        MenuViewModel(LocalMenuRepository(), cart, InMemoryShopRepository()).quickAdd(LocalMenu.ESPRESSO)
         cart.add(fromScreen)
         assertEquals(1, lines.size)
         assertEquals(2, lines[0].quantity)
 
-        MenuViewModel(LocalMenuRepository(), cart).quickAdd(LocalMenu.CAPPUCCINO)
+        MenuViewModel(LocalMenuRepository(), cart, InMemoryShopRepository()).quickAdd(LocalMenu.CAPPUCCINO)
         assertEquals(DrinkSize.SMALL, lines.last().options?.size)
         assertEquals(3, lines.itemCount)
         assertNull(LocalMenu.CROISSANT.defaultOptions())
@@ -104,7 +105,7 @@ class CartTest {
 
     @Test
     fun placeOrder_movesCartToOrders() {
-        val checkout = CheckoutViewModel(cart, orders)
+        val checkout = CheckoutViewModel(cart, orders, InMemoryShopRepository())
         checkout.placeOrder()
         assertNull("пустая корзина — заказа нет", checkout.placedOrderNumber.value)
 

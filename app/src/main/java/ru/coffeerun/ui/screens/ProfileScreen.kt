@@ -26,6 +26,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.components.ScreenTopBar
+import ru.coffeerun.ui.components.ShopPickerSheet
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.ProvidePreviewNotifier
@@ -47,7 +52,8 @@ private const val DEMO_FAVORITES_COUNT = 3
 
 /** Профиль: данные пользователя, статистика и список настроек (пока заглушки). */
 @Composable
-fun ProfileScreen(modifier: Modifier = Modifier) {
+fun ProfileScreen(shop: Shop, onShopSelected: (Shop) -> Unit, modifier: Modifier = Modifier) {
+    var showShopPicker by rememberSaveable { mutableStateOf(false) }
     val notify = MaterialTheme.snackbar
     val name = stringResource(R.string.profile_name)
 
@@ -92,12 +98,13 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
         }
         Column(Modifier.padding(top = MaterialTheme.spacing.large)) {
             ProfileItem(Icons.Default.Favorite, R.string.profile_favorites, stringResource(R.string.profile_favorites_hint), notify::notifyPlaceholder)
-            ProfileItem(Icons.Default.LocationOn, R.string.profile_shop, stringResource(Shop.MOSKOVSKAYA.addressRes), notify::notifyPlaceholder)
+            ProfileItem(Icons.Default.LocationOn, R.string.profile_shop, stringResource(shop.addressRes)) { showShopPicker = true }
             ProfileItem(Icons.Default.Phone, R.string.profile_phone_title, stringResource(R.string.profile_phone), notify::notifyPlaceholder)
             HorizontalDivider()
             ProfileItem(Icons.Default.Info, R.string.profile_about, stringResource(R.string.profile_version), notify::notifyPlaceholder)
         }
     }
+    if (showShopPicker) ShopPickerSheet(shop, onShopSelected, onDismiss = { showShopPicker = false })
 }
 
 @Composable
@@ -137,6 +144,6 @@ private fun ProfileItem(icon: ImageVector, titleRes: Int, supporting: String, on
 @Composable
 private fun ProfileScreenPreview() {
     CoffeeRunTheme(dynamicColor = false) {
-        ProvidePreviewNotifier { ProfileScreen() }
+        ProvidePreviewNotifier { ProfileScreen(Shop.MOSKOVSKAYA, {}) }
     }
 }

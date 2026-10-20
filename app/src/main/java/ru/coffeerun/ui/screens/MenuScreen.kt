@@ -39,10 +39,10 @@ import ru.coffeerun.model.Product
 import ru.coffeerun.model.ProductCategory
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.components.ProductCard
+import ru.coffeerun.ui.components.ShopPickerSheet
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.ProvidePreviewNotifier
-import ru.coffeerun.ui.util.snackbar
 
 /**
  * Меню: логотип с адресом кофейни, вкладки разделов и список позиций.
@@ -51,17 +51,18 @@ import ru.coffeerun.ui.util.snackbar
 @Composable
 fun MenuScreen(
     uiState: MenuUiState,
+    shop: Shop,
+    onShopSelected: (Shop) -> Unit,
     onRetry: () -> Unit,
     onProductClick: (Product) -> Unit,
     onAddProduct: (Product) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val notify = MaterialTheme.snackbar
+    var showShopPicker by rememberSaveable { mutableStateOf(false) }
     var category by rememberSaveable { mutableStateOf(ProductCategory.COFFEE) }
 
     Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
-        // Выбор кофейни пока не реализован
-        MenuHeader(onShopClick = notify::notifyPlaceholder)
+        MenuHeader(shop = shop, onShopClick = { showShopPicker = true })
         // Разделы одного уровня — вкладки, а не фильтр-чипы
         PrimaryTabRow(selectedTabIndex = category.ordinal) {
             ProductCategory.entries.forEach { entry ->
@@ -103,10 +104,11 @@ fun MenuScreen(
             }
         }
     }
+    if (showShopPicker) ShopPickerSheet(shop, onShopSelected, onDismiss = { showShopPicker = false })
 }
 
 @Composable
-private fun MenuHeader(onShopClick: () -> Unit) {
+private fun MenuHeader(shop: Shop, onShopClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -130,7 +132,7 @@ private fun MenuHeader(onShopClick: () -> Unit) {
                 tint = MaterialTheme.colorScheme.tertiary
             )
             Text(
-                text = stringResource(Shop.MOSKOVSKAYA.addressRes),
+                text = stringResource(shop.addressRes),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -150,6 +152,8 @@ private fun MenuScreenPreview() {
     CoffeeRunTheme {
         ProvidePreviewNotifier { MenuScreen(
                 uiState = MenuUiState.Success(LocalMenu.products),
+                shop = Shop.MOSKOVSKAYA,
+                onShopSelected = {},
                 onRetry = {},
                 onProductClick = {},
                 onAddProduct = {}

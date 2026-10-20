@@ -47,6 +47,7 @@ import ru.coffeerun.ui.screens.ProductScreen
 import ru.coffeerun.ui.screens.ProductUiState
 import ru.coffeerun.ui.screens.ProductViewModel
 import ru.coffeerun.ui.screens.ProfileScreen
+import ru.coffeerun.ui.screens.ProfileViewModel
 import ru.coffeerun.ui.util.snackbar
 
 /**
@@ -84,8 +85,11 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             composable<MenuRoute> {
                 val vm: MenuViewModel = viewModel(factory = MenuViewModel.Factory)
                 val menuState by vm.uiState.collectAsStateWithLifecycle()
+                val shop by vm.shop.collectAsStateWithLifecycle()
                 MenuScreen(
                     uiState = menuState,
+                    shop = shop,
+                    onShopSelected = vm::selectShop,
                     onRetry = vm::loadMenu,
                     onProductClick = { navController.navigate(ProductRoute(it.id)) },
                     onAddProduct = vm::quickAdd,
@@ -120,7 +124,11 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                 )
             }
 
-            composable<ProfileRoute> { ProfileScreen(modifier = tabModifier) }
+            composable<ProfileRoute> {
+                val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
+                val shop by vm.shop.collectAsStateWithLifecycle()
+                ProfileScreen(shop = shop, onShopSelected = vm::selectShop, modifier = tabModifier)
+            }
 
             composable<ProductRoute> {
                 val vm: ProductViewModel = viewModel(factory = ProductViewModel.Factory)
@@ -155,6 +163,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             composable<CheckoutRoute> {
                 val vm: CheckoutViewModel = viewModel(factory = CheckoutViewModel.Factory)
                 val lines by vm.lines.collectAsStateWithLifecycle()
+                val shop by vm.shop.collectAsStateWithLifecycle()
                 val placedOrderNumber by vm.placedOrderNumber.collectAsStateWithLifecycle()
                 LaunchedEffect(placedOrderNumber) {
                     placedOrderNumber?.let { number ->
@@ -165,7 +174,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                 }
                 CheckoutScreen(
                     lines = lines,
-                    shop = vm.shop,
+                    shop = shop,
                     onBack = { navController.popBackStack() },
                     onConfirm = vm::placeOrder,
                     snackbarHostState = snackbarHostState

@@ -13,10 +13,12 @@ import kotlinx.coroutines.launch
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.MenuRepository
+import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
+import ru.coffeerun.model.Shop
 import ru.coffeerun.model.defaultOptions
 import ru.coffeerun.model.unitPrice
 
@@ -28,7 +30,15 @@ sealed interface MenuUiState {
 }
 
 /** Меню. Выбранная категория — чисто UI-состояние и остаётся в экране. */
-class MenuViewModel(private val menu: MenuRepository, private val cart: CartRepository) : ViewModel() {
+class MenuViewModel(
+    private val menu: MenuRepository,
+    private val cart: CartRepository,
+    private val shops: ShopRepository
+) : ViewModel() {
+    val shop: StateFlow<Shop> = shops.selected
+
+    fun selectShop(shop: Shop) = shops.select(shop)
+
 
     private val _uiState = MutableStateFlow<MenuUiState>(MenuUiState.Loading)
     val uiState: StateFlow<MenuUiState> = _uiState.asStateFlow()
@@ -61,6 +71,6 @@ class MenuViewModel(private val menu: MenuRepository, private val cart: CartRepo
     )
 
     companion object {
-        val Factory = viewModelFactory { initializer { MenuViewModel(container.menu, container.cart) } }
+        val Factory = viewModelFactory { initializer { MenuViewModel(container.menu, container.cart, container.shops) } }
     }
 }

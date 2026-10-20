@@ -9,17 +9,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.OrderRepository
+import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
 
 class CheckoutViewModel(
     private val cart: CartRepository,
-    private val orders: OrderRepository
+    private val orders: OrderRepository,
+    private val shops: ShopRepository
 ) : ViewModel() {
     val lines: StateFlow<List<CartLine>> = cart.lines
 
-    // shortcut: магазин один на всех, пока нет экрана выбора магазина
-    val shop = Shop.MOSKOVSKAYA
+    val shop: StateFlow<Shop> = shops.selected
 
     private val _placedOrderNumber = MutableStateFlow<Int?>(null)
 
@@ -33,7 +34,7 @@ class CheckoutViewModel(
     fun placeOrder() {
         val lines = cart.lines.value
         if (lines.isEmpty()) return
-        _placedOrderNumber.value = orders.place(lines, shop).number
+        _placedOrderNumber.value = orders.place(lines, shops.selected.value).number
         cart.clear()
     }
 
@@ -43,7 +44,7 @@ class CheckoutViewModel(
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { CheckoutViewModel(container.cart, container.orders) }
+            initializer { CheckoutViewModel(container.cart, container.orders, container.shops) }
         }
     }
 }

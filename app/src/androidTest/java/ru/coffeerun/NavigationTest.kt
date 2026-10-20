@@ -21,6 +21,7 @@ import org.junit.Test
 import org.junit.rules.ExternalResource
 import org.junit.runner.RunWith
 import ru.coffeerun.model.Product
+import ru.coffeerun.model.Shop
 
 /**
  * Сценарии навигации из плана (F1–F12, N1). Проверяют поведение через UI,
@@ -190,5 +191,16 @@ class NavigationTest {
         tab(R.string.category_pastry).performClick()
         rule.onNodeWithText(str(LocalMenu.CROISSANT.nameRes)).assertIsDisplayed()
         rule.onNodeWithText(str(LocalMenu.CAPPUCCINO.nameRes)).assertDoesNotExist()
+    }
+
+    @Test
+    fun shopPicker_changesCheckoutShop() {
+        rule.onNodeWithText(str(Shop.MOSKOVSKAYA.addressRes)).performClick()
+        rule.onNodeWithText(str(Shop.STROITELEY.addressRes)).performClick()
+        val name = str(LocalMenu.CAPPUCCINO.nameRes)
+        rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
+        tab(R.string.tab_cart).performClick()
+        rule.onNodeWithText(str(R.string.cart_checkout)).performClick()
+        rule.onNodeWithText(str(Shop.STROITELEY.addressRes)).assertIsDisplayed()
     }
 }

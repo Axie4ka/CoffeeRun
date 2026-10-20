@@ -16,6 +16,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
+import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
@@ -114,7 +115,7 @@ class ProductViewModelTest {
         vm.setNote("  ")
         vm.changeQuantity(+1)
         vm.addToCart()
-        MenuViewModel(LocalMenuRepository(), cart).quickAdd(LocalMenu.ESPRESSO)
+        MenuViewModel(LocalMenuRepository(), cart, InMemoryShopRepository()).quickAdd(LocalMenu.ESPRESSO)
         val lines = cart.lines.value
         assertEquals(1, lines.size)
         assertEquals(3, lines[0].quantity)
