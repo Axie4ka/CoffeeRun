@@ -16,3 +16,10 @@ Product photos are from Wikimedia Commons and used under their licenses.
 | `product_apple_pie.jpg` | [Apple cake with vanilla ice cream 2.jpg](https://commons.wikimedia.org/wiki/File%3AApple_cake_with_vanilla_ice_cream_2.jpg) | W.carter | CC0 |
 | `product_cheesecake.jpg` | [Mondays at Il Forno - Cheesecake with strawberry sauce.jpg](https://commons.wikimedia.org/wiki/File%3AMondays_at_Il_Forno_-_Cheesecake_with_strawberry_sauce.jpg) | Alex Dugger | CC BY 2.0 |
 | `product_cookie.jpg` | [Almond Biscuit Bakery.JPG](https://commons.wikimedia.org/wiki/File%3AAlmond_Biscuit_Bakery.JPG) | Triv.rao | CC BY-SA 4.0 |
+
+# Fonts
+
+| Resource | Font | Source | License |
+|---|---|---|---|
+| `nunito_regular.ttf`, `nunito_semibold.ttf` | Nunito | [Google Fonts](https://fonts.google.com/specimen/Nunito) | SIL Open Font License 1.1 |
+| `yeseva_one_regular.ttf` | Yeseva One | [google/fonts — ofl/yesevaone](https://github.com/google/fonts/tree/main/ofl/yesevaone) | SIL Open Font License 1.1 |

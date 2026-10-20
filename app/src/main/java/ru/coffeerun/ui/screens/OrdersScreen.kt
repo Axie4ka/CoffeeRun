@@ -1,12 +1,12 @@
 package ru.coffeerun.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,12 +29,12 @@ import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.theme.CoffeeRunTheme
+import ru.coffeerun.ui.theme.priceSmall
 import ru.coffeerun.ui.theme.spacing
+import ru.coffeerun.ui.util.ProvidePreviewNotifier
 import ru.coffeerun.ui.util.formatDateTime
 import ru.coffeerun.ui.util.formatTime
 import ru.coffeerun.ui.util.summaryText
-import ru.coffeerun.ui.util.ProvidePreviewNotifier
-import ru.coffeerun.ui.util.snackbar
 
 /**
  * Заказы: активные сверху, выданные — в истории.
@@ -44,21 +44,19 @@ import ru.coffeerun.ui.util.snackbar
 fun OrdersScreen(
     orders: List<Order>,
     onRepeat: (Order) -> Unit,
+    onBrowseMenu: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val notify = MaterialTheme.snackbar
     val (active, history) = orders.partition { it.isActive }
 
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.orders_title))
         if (orders.isEmpty()) {
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = stringResource(R.string.orders_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            EmptyState(
+                text = stringResource(R.string.orders_empty),
+                onBrowseMenu = onBrowseMenu,
+                modifier = Modifier.weight(1f)
+            )
         } else {
             LazyColumn(
                 contentPadding = PaddingValues(
@@ -70,8 +68,8 @@ fun OrdersScreen(
                 if (active.isNotEmpty()) {
                     item(key = "active") { GroupTitle(stringResource(R.string.orders_active)) }
                     items(active, key = { it.number }) { order ->
-                        // Экрана с деталями заказа пока нет
-                        OrderCard(order, stringResource(R.string.order_details), notify::notifyPlaceholder)
+                        // Экрана с деталями заказа пока нет — кнопку не показываем
+                        OrderCard(order)
                     }
                 }
                 if (history.isNotEmpty()) {
@@ -95,7 +93,7 @@ private fun GroupTitle(text: String) {
 }
 
 @Composable
-private fun OrderCard(order: Order, actionLabel: String, onAction: () -> Unit) {
+private fun OrderCard(order: Order, actionLabel: String? = null, onAction: (() -> Unit)? = null) {
     val address = stringResource(order.shop.addressRes)
     val meta = if (order.isActive) {
         stringResource(R.string.order_meta_active, formatTime(order.readyAtMillis), address)
@@ -133,15 +131,25 @@ private fun OrderCard(order: Order, actionLabel: String, onAction: () -> Unit) {
             )
             HorizontalDivider()
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                // Высота как у TextButton: карточки без кнопки не становятся ниже
+                modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp),
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = stringResource(R.string.order_total, order.total),
-                    style = MaterialTheme.typography.titleSmall
+                    text = stringResource(R.string.total_label),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                TextButton(onClick = onAction) { Text(actionLabel) }
+                Text(
+                    text = stringResource(R.string.price_rub, order.total),
+                    style = MaterialTheme.typography.priceSmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.weight(1f)
+                )
+                if (actionLabel != null && onAction != null) {
+                    TextButton(onClick = onAction) { Text(actionLabel) }
+                }
             }
         }
     }
@@ -180,7 +188,8 @@ private fun OrdersScreenPreview() {
                     Order(1042, OrderStatus.PREPARING, listOf(CartLine(Product.CROISSANT, 180, id = 1)), Shop.MOSKOVSKAYA, now),
                     Order(1037, OrderStatus.PICKED_UP, listOf(CartLine(Product.LATTE, 240, 2, id = 2)), Shop.STROITELEY, now - 172_800_000L)
                 ),
-                onRepeat = {}
+                onRepeat = {},
+                onBrowseMenu = {}
             )
         }
     }

@@ -13,19 +13,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,28 +41,19 @@ import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.formatTime
 
-/** Подтверждение оформленного [order]: номер, время готовности и адрес. */
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * Подтверждение оформленного [order]: номер, время готовности и адрес.
+ * Крестика нет: в меню ведут системное «назад» и кнопка [onToMenu].
+ */
 @Composable
 fun OrderPlacedScreen(
     order: Order,
-    onClose: () -> Unit,
     onToOrders: () -> Unit,
     onToMenu: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.action_close))
-                    }
-                }
-            )
-        },
         bottomBar = {
             Column(
                 modifier = Modifier
@@ -193,7 +180,6 @@ private fun OrderPlacedScreenPreview() {
                 shop = Shop.MOSKOVSKAYA,
                 placedAtMillis = System.currentTimeMillis()
             ),
-            onClose = {},
             onToOrders = {},
             onToMenu = {}
         )

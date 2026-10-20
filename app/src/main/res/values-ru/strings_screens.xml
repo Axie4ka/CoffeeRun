@@ -3,9 +3,7 @@
     <string name="tab_cart">Корзина</string>
     <string name="tab_orders">Заказы</string>
     <string name="tab_profile">Профиль</string>
-    <string name="action_close">Закрыть</string>
 
-    <string name="menu_search">Поиск</string>
     <string name="menu_choose_shop">Выбрать кофейню</string>
     <string name="shop_moskovskaya">ул. Московская, 12</string>
     <string name="shop_stroiteley">пр. Строителей, 1</string>
@@ -68,7 +66,6 @@
 
     <string name="cart_title">Корзина</string>
     <string name="cart_empty">Корзина пуста</string>
-    <string name="cart_items_count">Товары (%1$d)</string>
     <string name="cart_hint">Кофейню и время получения выберете на следующем шаге</string>
     <string name="cart_checkout">Оформить заказ</string>
     <string name="cart_remove">Удалить из корзины</string>
@@ -83,12 +80,8 @@
     <string name="pickup_asap">Как можно скорее</string>
     <string name="pickup_asap_hint">Будет готов примерно через 10–15 минут</string>
     <string name="pickup_scheduled">Ко времени</string>
-    <string name="pickup_scheduled_hint">Выбрать время</string>
     <string name="section_payment">Оплата</string>
-    <string name="payment_on_pickup">При получении</string>
     <string name="payment_on_pickup_hint">Картой или наличными в кофейне</string>
-    <string name="payment_online">Картой онлайн</string>
-    <string name="payment_online_hint">Пока недоступно</string>
     <string name="section_order">Ваш заказ</string>
     <string name="checkout_confirm">Подтвердить заказ</string>
 
@@ -108,7 +101,6 @@
     <string name="order_total">Итого %1$d ₽</string>
     <string name="order_meta_active">Сегодня, к %1$s · %2$s</string>
     <string name="order_meta_history">%1$s · %2$s</string>
-    <string name="order_details">Подробнее</string>
     <string name="order_repeat">Повторить</string>
     <string name="status_accepted">Принят</string>
     <string name="status_preparing">Готовится</string>
@@ -126,4 +118,14 @@
     <string name="profile_phone_title">Телефон</string>
     <string name="profile_about">О приложении</string>
     <string name="profile_version">Версия 1.0</string>
+    <!-- Редизайн M3 -->
+    <string name="pickup_soon">Скоро</string>
+    <string name="payment_on_pickup_title">Оплата при получении</string>
+    <string name="browse_menu">Перейти в меню</string>
+    <plurals name="cart_total_items">
+        <item quantity="one">Итого · %d товар</item>
+        <item quantity="few">Итого · %d товара</item>
+        <item quantity="many">Итого · %d товаров</item>
+        <item quantity="other">Итого · %d товара</item>
+    </plurals>
 </resources>

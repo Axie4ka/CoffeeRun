@@ -62,13 +62,13 @@ fun ProfileScreen(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .size(64.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primaryContainer),
+                    .background(MaterialTheme.colorScheme.tertiaryContainer),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = name.first().toString(),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
                 )
             }
             Column(Modifier.weight(1f)) {
@@ -111,7 +111,7 @@ private fun StatCard(value: Int, label: String, modifier: Modifier = Modifier) {
             Text(
                 text = value.toString(),
                 style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.tertiary
             )
             Text(
                 text = label,
