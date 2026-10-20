@@ -20,7 +20,7 @@ interface OrderRepository {
     val orders: StateFlow<List<Order>>
 
     /** Оформляет заказ из [lines]; [lines] не должен быть пустым. */
-    fun place(lines: List<CartLine>, shop: Shop): Order
+    fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long? = null): Order
 
     fun find(number: Int): Order?
 }
@@ -32,14 +32,15 @@ class InMemoryOrderRepository(private val now: () -> Long = System::currentTimeM
 
     private var nextOrderNumber = FIRST_ORDER_NUMBER
 
-    override fun place(lines: List<CartLine>, shop: Shop): Order {
+    override fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?): Order {
         require(lines.isNotEmpty()) { "Пустой заказ" }
         val order = Order(
             number = nextOrderNumber++,
             status = OrderStatus.PREPARING,
             lines = lines,
             shop = shop,
-            placedAtMillis = now()
+            placedAtMillis = now(),
+            pickupAtMillis = pickupAtMillis
         )
         _orders.update { listOf(order) + it }
         return order

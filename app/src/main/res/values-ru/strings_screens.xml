@@ -129,7 +129,9 @@
     <string name="profile_about">О приложении</string>
     <string name="profile_version">Версия 1.0</string>
     <!-- Редизайн M3 -->
-    <string name="pickup_soon">Скоро</string>
+    <string name="pickup_scheduled_hint">Выберите время</string>
+    <string name="pickup_time_title">Время самовывоза</string>
+    <string name="pickup_time_invalid">Выберите время не раньше чем через 15 минут и до 22:00</string>
     <string name="payment_on_pickup_title">Оплата при получении</string>
     <string name="browse_menu">Перейти в меню</string>
     <plurals name="cart_total_items">

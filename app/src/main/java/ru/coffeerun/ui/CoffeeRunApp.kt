@@ -202,6 +202,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                 val vm: CheckoutViewModel = viewModel(factory = CheckoutViewModel.Factory)
                 val lines by vm.lines.collectAsStateWithLifecycle()
                 val shop by vm.shop.collectAsStateWithLifecycle()
+                val pickupAtMillis by vm.pickupAtMillis.collectAsStateWithLifecycle()
                 val placedOrderNumber by vm.placedOrderNumber.collectAsStateWithLifecycle()
                 LaunchedEffect(placedOrderNumber) {
                     placedOrderNumber?.let { number ->
@@ -215,6 +216,9 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                     shop = shop,
                     onBack = { navController.popBackStack() },
                     onConfirm = vm::placeOrder,
+                    pickupAtMillis = pickupAtMillis,
+                    onPickupAsap = vm::pickupAsap,
+                    onPickupTimeChosen = vm::setPickupTime,
                     snackbarHostState = snackbarHostState
                 )
             }

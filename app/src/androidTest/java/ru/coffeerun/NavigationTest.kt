@@ -168,13 +168,15 @@ class NavigationTest {
     }
 
     @Test
-    fun checkout_scheduledPickupIsDisabled() {
+    fun checkout_scheduledPickupOpensTimePicker() {
         val name = str(LocalMenu.CAPPUCCINO.nameRes)
         rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
         tab(R.string.tab_cart).performClick()
         rule.onNodeWithText(str(R.string.cart_checkout)).performClick()
-        rule.onNodeWithText(str(R.string.pickup_scheduled)).assertIsNotEnabled()
         rule.onNodeWithText(str(R.string.pickup_asap)).assertIsSelected()
+        rule.onNodeWithText(str(R.string.pickup_scheduled)).performClick()
+        // Заголовок диалога совпадает с заголовком секции, поэтому проверяем по кнопке «ОК»
+        rule.onNodeWithText(str(android.R.string.ok)).assertIsDisplayed()
     }
 
     @Test

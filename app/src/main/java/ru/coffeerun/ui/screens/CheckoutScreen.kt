@@ -13,7 +13,9 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -24,8 +26,16 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -39,19 +49,27 @@ import ru.coffeerun.ui.components.RadioRow
 import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
+import ru.coffeerun.model.READY_IN_MINUTES
+import ru.coffeerun.ui.util.formatTime
 import ru.coffeerun.ui.util.summaryText
+import java.time.LocalTime
+import kotlinx.coroutines.launch
 
 /**
  * Оформление заказа: кофейня, время получения, способ оплаты и состав заказа.
- * Кофейня одна, заказ «ко времени» и онлайн-оплата пока не реализованы, поэтому
- * кофейня и оплата показаны как информация, а «ко времени» — выключенным вариантом.
+ * Онлайн-оплата пока не реализована, поэтому кофейня и оплата показаны как информация.
+ * «Ко времени» открывает диалог с выбором времени; проверку времени делает ViewModel.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckoutScreen(
     lines: List<CartLine>,
     shop: Shop,
     onBack: () -> Unit,
     onConfirm: () -> Unit,
+    pickupAtMillis: Long? = null,
+    onPickupAsap: () -> Unit = {},
+    onPickupTimeChosen: (hour: Int, minute: Int) -> Boolean = { _, _ -> true },
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
     modifier: Modifier = Modifier
 ) {
@@ -59,6 +77,34 @@ fun CheckoutScreen(
     // имеет собственный отступ и иначе съехал бы относительно остального.
     val gutter = Modifier.padding(horizontal = MaterialTheme.spacing.large)
     val transparentItem = ListItemDefaults.colors(containerColor = Color.Transparent)
+    var showTimePicker by rememberSaveable { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val invalidMessage = stringResource(R.string.pickup_time_invalid)
+
+    if (showTimePicker) {
+        // Начальное время — самое раннее допустимое, округлённое вверх до 5 минут
+        val initial = remember {
+            val t = LocalTime.now().plusMinutes(READY_IN_MINUTES + 4)
+            t.withMinute(t.minute / 5 * 5)
+        }
+        val timeState = rememberTimePickerState(initial.hour, initial.minute, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text(stringResource(R.string.pickup_time_title)) },
+            text = { TimePicker(state = timeState) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showTimePicker = false
+                    if (!onPickupTimeChosen(timeState.hour, timeState.minute)) {
+                        scope.launch { snackbarHostState.showSnackbar(invalidMessage) }
+                    }
+                }) { Text(stringResource(android.R.string.ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) { Text(stringResource(android.R.string.cancel)) }
+            }
+        )
+    }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -106,15 +152,15 @@ fun CheckoutScreen(
                 RadioRow(
                     label = stringResource(R.string.pickup_asap),
                     supporting = stringResource(R.string.pickup_asap_hint),
-                    selected = true,
-                    onClick = {}
+                    selected = pickupAtMillis == null,
+                    onClick = onPickupAsap
                 )
                 RadioRow(
                     label = stringResource(R.string.pickup_scheduled),
-                    supporting = stringResource(R.string.pickup_soon),
-                    selected = false,
-                    onClick = {},
-                    enabled = false
+                    supporting = if (pickupAtMillis != null) formatTime(pickupAtMillis)
+                    else stringResource(R.string.pickup_scheduled_hint),
+                    selected = pickupAtMillis != null,
+                    onClick = { showTimePicker = true }
                 )
             }
             HorizontalDivider(gutter)

@@ -136,7 +136,9 @@
     <string name="profile_about">About the app</string>
     <string name="profile_version">Version 1.0</string>
     <!-- Редизайн M3 -->
-    <string name="pickup_soon">Coming soon</string>
+    <string name="pickup_scheduled_hint">Choose a time</string>
+    <string name="pickup_time_title">Pickup time</string>
+    <string name="pickup_time_invalid">Pick a time at least 15 minutes from now and before 22:00</string>
     <string name="payment_on_pickup_title">Pay on pickup</string>
     <string name="browse_menu">Go to menu</string>
     <plurals name="cart_total_items">

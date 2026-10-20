@@ -11,16 +11,44 @@ import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.OrderRepository
 import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.CLOSING_HOUR
+import ru.coffeerun.model.READY_IN_MINUTES
 import ru.coffeerun.model.Shop
+import java.time.Instant
+import java.time.ZoneId
 
 class CheckoutViewModel(
     private val cart: CartRepository,
     private val orders: OrderRepository,
-    private val shops: ShopRepository
+    private val shops: ShopRepository,
+    private val now: () -> Long = System::currentTimeMillis
 ) : ViewModel() {
     val lines: StateFlow<List<CartLine>> = cart.lines
 
     val shop: StateFlow<Shop> = shops.selected
+
+    private val _pickupAtMillis = MutableStateFlow<Long?>(null)
+
+    /** Выбранное время самовывоза сегодня; null — «Как можно скорее». */
+    val pickupAtMillis: StateFlow<Long?> = _pickupAtMillis.asStateFlow()
+
+    /**
+     * Выбирает время самовывоза сегодня. false (состояние не меняется), если оно
+     * раньше чем через [READY_IN_MINUTES] минут или позже закрытия.
+     */
+    fun setPickupTime(hour: Int, minute: Int): Boolean {
+        val zone = ZoneId.systemDefault()
+        val today = Instant.ofEpochMilli(now()).atZone(zone).toLocalDate()
+        val millis = today.atTime(hour, minute).atZone(zone).toInstant().toEpochMilli()
+        val closing = today.atTime(CLOSING_HOUR, 0).atZone(zone).toInstant().toEpochMilli()
+        if (millis < now() + READY_IN_MINUTES * 60_000L || millis > closing) return false
+        _pickupAtMillis.value = millis
+        return true
+    }
+
+    fun pickupAsap() {
+        _pickupAtMillis.value = null
+    }
 
     private val _placedOrderNumber = MutableStateFlow<Int?>(null)
 
@@ -34,7 +62,7 @@ class CheckoutViewModel(
     fun placeOrder() {
         val lines = cart.lines.value
         if (lines.isEmpty()) return
-        _placedOrderNumber.value = orders.place(lines, shops.selected.value).number
+        _placedOrderNumber.value = orders.place(lines, shops.selected.value, _pickupAtMillis.value).number
         cart.clear()
     }
 
