@@ -1,6 +1,9 @@
 package ru.coffeerun.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -8,6 +11,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,6 +44,7 @@ import ru.coffeerun.ui.screens.OrderPlacedViewModel
 import ru.coffeerun.ui.screens.OrdersScreen
 import ru.coffeerun.ui.screens.OrdersViewModel
 import ru.coffeerun.ui.screens.ProductScreen
+import ru.coffeerun.ui.screens.ProductUiState
 import ru.coffeerun.ui.screens.ProductViewModel
 import ru.coffeerun.ui.screens.ProfileScreen
 import ru.coffeerun.ui.util.snackbar
@@ -120,25 +125,31 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             composable<ProductRoute> {
                 val vm: ProductViewModel = viewModel(factory = ProductViewModel.Factory)
                 val lines by vm.cartLines.collectAsStateWithLifecycle()
-                val form by vm.form.collectAsStateWithLifecycle()
-                ProductScreen(
-                    product = vm.product,
-                    form = form,
-                    unitPrice = vm.unitPrice(form),
-                    cartCount = lines.itemCount,
-                    onSizeSelected = vm::selectSize,
-                    onMilkSelected = vm::selectMilk,
-                    onIcedChange = vm::setIced,
-                    onExtraToggle = vm::toggleExtra,
-                    onNoteChange = vm::setNote,
-                    onQuantityChange = vm::changeQuantity,
-                    onAddToCart = vm::addToCart,
-                    onBack = { navController.popBackStack() },
-                    onFavorite = notify,
-                    onShare = notify,
-                    onCart = { navController.jumpToTab(Tab.CART) },
-                    snackbarHostState = snackbarHostState
-                )
+                val uiState by vm.uiState.collectAsStateWithLifecycle()
+                when (val state = uiState) {
+                    ProductUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                    ProductUiState.NotFound -> LaunchedEffect(Unit) { navController.popBackStack() }
+                    is ProductUiState.Success -> ProductScreen(
+                        product = state.product,
+                        form = state.form,
+                        unitPrice = state.unitPrice,
+                        cartCount = lines.itemCount,
+                        onSizeSelected = vm::selectSize,
+                        onMilkSelected = vm::selectMilk,
+                        onIcedChange = vm::setIced,
+                        onExtraToggle = vm::toggleExtra,
+                        onNoteChange = vm::setNote,
+                        onQuantityChange = vm::changeQuantity,
+                        onAddToCart = vm::addToCart,
+                        onBack = { navController.popBackStack() },
+                        onFavorite = notify,
+                        onShare = notify,
+                        onCart = { navController.jumpToTab(Tab.CART) },
+                        snackbarHostState = snackbarHostState
+                    )
+                }
             }
 
             composable<CheckoutRoute> {

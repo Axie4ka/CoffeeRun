@@ -6,10 +6,16 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.toRoute
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.MAX_NOTE_LENGTH
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.MIN_QUANTITY
@@ -39,17 +45,47 @@ data class ProductForm(
     val quantity: Int = MIN_QUANTITY
 ) : Serializable
 
-/** Экран позиции: товар из аргумента маршрута, форма напитка, добавление в корзину. */
+/** Состояние экрана позиции: товар грузится по id из маршрута. [unitPrice] — производное от товара и формы. */
+sealed interface ProductUiState {
+    data object Loading : ProductUiState
+    data class Success(val product: Product, val form: ProductForm, val unitPrice: Int) : ProductUiState
+    data object NotFound : ProductUiState
+}
+
+/** Результат загрузки товара; вместе с формой собирается в [ProductUiState]. */
+private sealed interface Loaded {
+    data object Loading : Loaded
+    data class Found(val product: Product) : Loaded
+    data object Missing : Loaded
+}
+
+/** Экран позиции: товар по id из маршрута, форма напитка, добавление в корзину. */
 class ProductViewModel(
-    val product: Product,
+    private val productId: String,
+    private val menu: MenuRepository,
     private val cart: CartRepository,
     private val savedState: SavedStateHandle
 ) : ViewModel() {
     val form: StateFlow<ProductForm> = savedState.getStateFlow(FORM_KEY, ProductForm())
     val cartLines: StateFlow<List<CartLine>> = cart.lines
 
-    /** Цена одной порции с выбранными опциями. Производное — в состоянии не хранится. */
-    fun unitPrice(form: ProductForm) = product.unitPrice(form.size, form.milk, form.extras)
+    private val loaded = MutableStateFlow<Loaded>(Loaded.Loading)
+
+    val uiState: StateFlow<ProductUiState> = combine(loaded, form) { loaded, form ->
+        when (loaded) {
+            Loaded.Loading -> ProductUiState.Loading
+            Loaded.Missing -> ProductUiState.NotFound
+            is Loaded.Found -> ProductUiState.Success(
+                loaded.product, form, loaded.product.unitPrice(form.size, form.milk, form.extras)
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductUiState.Loading)
+
+    init {
+        viewModelScope.launch {
+            loaded.value = menu.getProduct(productId)?.let(Loaded::Found) ?: Loaded.Missing
+        }
+    }
 
     fun selectSize(size: DrinkSize) = update { copy(size = size) }
     fun selectMilk(milk: MilkType) = update { copy(milk = milk) }
@@ -64,12 +100,13 @@ class ProductViewModel(
     fun changeQuantity(delta: Int) = update { copy(quantity = (quantity + delta).coerceIn(MIN_QUANTITY, MAX_QUANTITY)) }
 
     fun addToCart() {
+        val product = (loaded.value as? Loaded.Found)?.product ?: return
         val form = form.value
         val features = product.customizations
         cart.add(
             CartLine(
                 product = product,
-                unitPrice = unitPrice(form),
+                unitPrice = product.unitPrice(form.size, form.milk, form.extras),
                 quantity = form.quantity,
                 // Те же опции по умолчанию, что у «+» в меню, — иначе одинаковые строки не сольются
                 options = product.defaultOptions()?.copy(
@@ -91,8 +128,7 @@ class ProductViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val savedState = createSavedStateHandle()
-                val product = checkNotNull(LocalMenu.byId(savedState.toRoute<ProductRoute>().productId))
-                ProductViewModel(product, container.cart, savedState)
+                ProductViewModel(savedState.toRoute<ProductRoute>().productId, container.menu, container.cart, savedState)
             }
         }
     }
