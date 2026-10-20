@@ -6,7 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
-import ru.coffeerun.data.CartRepository
+import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.Product
@@ -31,20 +31,20 @@ class MenuViewModelTest {
 
     @Test
     fun menu_loadsSuccess() {
-        val vm = MenuViewModel(FakeMenuRepository(), CartRepository())
+        val vm = MenuViewModel(FakeMenuRepository(), InMemoryCartRepository())
         assertEquals(MenuUiState.Success(LocalMenu.products), vm.uiState.value)
     }
 
     @Test
     fun menu_networkError_isError() {
-        val vm = MenuViewModel(FakeMenuRepository(fail = true), CartRepository())
+        val vm = MenuViewModel(FakeMenuRepository(fail = true), InMemoryCartRepository())
         assertEquals(MenuUiState.Error, vm.uiState.value)
     }
 
     @Test
     fun retry_afterError_loadsMenu() {
         val fake = FakeMenuRepository(fail = true)
-        val vm = MenuViewModel(fake, CartRepository())
+        val vm = MenuViewModel(fake, InMemoryCartRepository())
         assertEquals(MenuUiState.Error, vm.uiState.value)
         fake.fail = false
         vm.loadMenu()
@@ -54,7 +54,7 @@ class MenuViewModelTest {
     @Test
     fun menu_loadsOnce() = runTest {
         val fake = FakeMenuRepository()
-        val vm = MenuViewModel(fake, CartRepository())
+        val vm = MenuViewModel(fake, InMemoryCartRepository())
         vm.uiState.first()
         vm.uiState.first()
         assertEquals(1, fake.calls)

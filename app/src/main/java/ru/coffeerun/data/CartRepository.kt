@@ -10,16 +10,30 @@ import ru.coffeerun.model.MIN_QUANTITY
 
 /**
  * Корзина — единый источник правды для всех экранов. Наружу только чтение через [lines],
- * менять можно лишь методами ниже. Хранится в памяти.
+ * менять можно лишь методами ниже.
  */
-class CartRepository {
+interface CartRepository {
+    val lines: StateFlow<List<CartLine>>
+
+    /** Одинаковые позиции сливаются в одну строку; количество не превышает [MAX_QUANTITY]. */
+    fun add(line: CartLine)
+
+    /** Меняет количество в пределах [MIN_QUANTITY]…[MAX_QUANTITY]; удаляет позицию [remove]. */
+    fun changeQuantity(id: Int, delta: Int)
+
+    fun remove(id: Int)
+
+    fun clear()
+}
+
+/** Корзина в памяти. */
+class InMemoryCartRepository : CartRepository {
     private val _lines = MutableStateFlow<List<CartLine>>(emptyList())
-    val lines: StateFlow<List<CartLine>> = _lines.asStateFlow()
+    override val lines: StateFlow<List<CartLine>> = _lines.asStateFlow()
 
     private var nextLineId = 1
 
-    /** Одинаковые позиции сливаются в одну строку; количество не превышает [MAX_QUANTITY]. */
-    fun add(line: CartLine) {
+    override fun add(line: CartLine) {
         // id выдаём до update: его лямбда может выполниться повторно
         val id = nextLineId++
         _lines.update { cart ->
@@ -32,16 +46,15 @@ class CartRepository {
         }
     }
 
-    /** Меняет количество в пределах [MIN_QUANTITY]…[MAX_QUANTITY]; удаляет позицию [remove]. */
-    fun changeQuantity(id: Int, delta: Int) = _lines.update { cart ->
+    override fun changeQuantity(id: Int, delta: Int) = _lines.update { cart ->
         val index = cart.indexOfFirst { it.id == id }
         if (index < 0) cart
         else cart.replaceAt(index) { it.copy(quantity = (it.quantity + delta).coerceIn(MIN_QUANTITY, MAX_QUANTITY)) }
     }
 
-    fun remove(id: Int) = _lines.update { cart -> cart.filterNot { it.id == id } }
+    override fun remove(id: Int) = _lines.update { cart -> cart.filterNot { it.id == id } }
 
-    fun clear() {
+    override fun clear() {
         _lines.value = emptyList()
     }
 }

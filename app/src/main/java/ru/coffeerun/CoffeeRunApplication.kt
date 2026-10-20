@@ -5,6 +5,8 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewmodel.CreationExtras
 import ru.coffeerun.data.CartRepository
+import ru.coffeerun.data.InMemoryCartRepository
+import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.data.LocalMenuRepository
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.data.OrderRepository
@@ -12,8 +14,8 @@ import ru.coffeerun.data.OrderRepository
 /** Репозитории в одном экземпляре на процесс — так у всех ViewModel одна корзина и одни заказы. */
 class AppContainer {
     val menu: MenuRepository = LocalMenuRepository()
-    val cart = CartRepository()
-    val orders = OrderRepository()
+    val cart: CartRepository = InMemoryCartRepository()
+    val orders: OrderRepository = InMemoryOrderRepository()
 }
 
 class CoffeeRunApplication : Application() {

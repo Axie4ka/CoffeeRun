@@ -29,7 +29,6 @@ import ru.coffeerun.R
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.MIN_QUANTITY
-import ru.coffeerun.model.itemCount
 import ru.coffeerun.ui.components.EmptyState
 import ru.coffeerun.ui.components.ProductImage
 import ru.coffeerun.ui.components.QuantityStepper
@@ -46,7 +45,7 @@ import ru.coffeerun.ui.util.optionsText
  */
 @Composable
 fun CartScreen(
-    lines: List<CartLine>,
+    uiState: CartUiState,
     onChangeQuantity: (id: Int, delta: Int) -> Unit,
     onRemove: (id: Int) -> Unit,
     onCheckout: () -> Unit,
@@ -55,7 +54,7 @@ fun CartScreen(
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.cart_title))
-        if (lines.isEmpty()) {
+        if (uiState.lines.isEmpty()) {
             EmptyState(
                 text = stringResource(R.string.cart_empty),
                 onBrowseMenu = onBrowseMenu,
@@ -70,7 +69,7 @@ fun CartScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
             ) {
-                items(lines, key = { it.id }) { line ->
+                items(uiState.lines, key = { it.id }) { line ->
                     CartItemCard(
                         line = line,
                         onDecrease = { onChangeQuantity(line.id, -1) },
@@ -95,10 +94,9 @@ fun CartScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
                 ) {
-                    val count = lines.itemCount
                     TotalRow(
-                        total = lines.sumOf { it.total },
-                        label = pluralStringResource(R.plurals.cart_total_items, count, count)
+                        total = uiState.total,
+                        label = pluralStringResource(R.plurals.cart_total_items, uiState.count, uiState.count)
                     )
                     Button(onClick = onCheckout, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.cart_checkout))
@@ -180,9 +178,13 @@ private fun CartItemCard(
 private fun CartScreenPreview() {
     CoffeeRunTheme {
         CartScreen(
-            lines = listOf(
-                CartLine(LocalMenu.CROISSANT, unitPrice = 180, id = 1),
-                CartLine(LocalMenu.LATTE, unitPrice = 240, quantity = 2, id = 2)
+            uiState = CartUiState(
+                lines = listOf(
+                    CartLine(LocalMenu.CROISSANT, unitPrice = 180, id = 1),
+                    CartLine(LocalMenu.LATTE, unitPrice = 240, quantity = 2, id = 2)
+                ),
+                count = 3,
+                total = 660
             ),
             onChangeQuantity = { _, _ -> },
             onRemove = {},

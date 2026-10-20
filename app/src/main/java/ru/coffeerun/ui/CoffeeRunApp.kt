@@ -65,7 +65,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
     }
     val notify: () -> Unit = MaterialTheme.snackbar::notifyPlaceholder
     // Вне NavHost — ViewModel уровня Activity, только ради счётчика на нижней панели
-    val cartLines by viewModel<CartViewModel>(factory = CartViewModel.Factory).lines.collectAsStateWithLifecycle()
+    val cartUiState by viewModel<CartViewModel>(factory = CartViewModel.Factory).uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         // У Product и Checkout свой SnackbarHost с тем же state — иначе сообщение покажется дважды
@@ -73,7 +73,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
         bottomBar = {
             if (currentTab != null) AppNavigationBar(
                 selected = currentTab,
-                cartCount = cartLines.itemCount,
+                cartCount = cartUiState.count,
                 onSelect = navController::openTab
             )
         }
@@ -95,9 +95,9 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
 
             composable<CartRoute> {
                 val vm: CartViewModel = viewModel(factory = CartViewModel.Factory)
-                val lines by vm.lines.collectAsStateWithLifecycle()
+                val cartState by vm.uiState.collectAsStateWithLifecycle()
                 CartScreen(
-                    lines = lines,
+                    uiState = cartState,
                     onChangeQuantity = vm::changeQuantity,
                     onRemove = vm::remove,
                     onCheckout = { navController.navigate(CheckoutRoute) },

@@ -3,12 +3,17 @@ package ru.coffeerun
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.Test
-import ru.coffeerun.data.CartRepository
+import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.data.LocalMenuRepository
 import ru.coffeerun.model.MAX_QUANTITY
-import ru.coffeerun.data.OrderRepository
+import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
@@ -17,6 +22,7 @@ import ru.coffeerun.model.Product
 import ru.coffeerun.model.defaultOptions
 import ru.coffeerun.model.itemCount
 import ru.coffeerun.model.unitPrice
+import ru.coffeerun.ui.screens.CartViewModel
 import ru.coffeerun.ui.screens.CheckoutViewModel
 import ru.coffeerun.ui.screens.MenuViewModel
 import ru.coffeerun.ui.screens.OrderPlacedViewModel
@@ -24,9 +30,22 @@ import ru.coffeerun.ui.screens.OrdersViewModel
 
 /** Цена, слияние строк корзины и оформление заказа — логика, где ошибка стоит денег. */
 class CartTest {
-    private val cart = CartRepository()
-    private val orders = OrderRepository()
+    @get:Rule val mainRule = MainDispatcherRule()
+
+    private val cart = InMemoryCartRepository()
+    private val orders = InMemoryOrderRepository()
     private val lines get() = cart.lines.value
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun cartUiState_countsItemsAndTotal() = runTest {
+        cart.add(CartLine(LocalMenu.CROISSANT, unitPrice = 180, quantity = 2))
+        cart.add(CartLine(LocalMenu.LATTE, unitPrice = 240, options = LocalMenu.LATTE.defaultOptions()))
+        val vm = CartViewModel(cart)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertEquals(3, vm.uiState.value.count)
+        assertEquals(2 * 180 + 240, vm.uiState.value.total)
+    }
 
     @Test
     fun localMenu_idsAreUniqueAndResolvable() {

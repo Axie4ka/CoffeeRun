@@ -15,15 +15,24 @@ import ru.coffeerun.model.Shop
 private const val FIRST_ORDER_NUMBER = 1042
 private const val DAY_MILLIS = 24 * 60 * 60 * 1000L
 
-/** Заказы пользователя, от новых к старым. Хранятся в памяти, стартуют с демо-истории. */
-class OrderRepository(private val now: () -> Long = System::currentTimeMillis) {
+/** Заказы пользователя, от новых к старым. */
+interface OrderRepository {
+    val orders: StateFlow<List<Order>>
+
+    /** Оформляет заказ из [lines]; [lines] не должен быть пустым. */
+    fun place(lines: List<CartLine>, shop: Shop): Order
+
+    fun find(number: Int): Order?
+}
+
+/** Заказы в памяти, стартуют с демо-истории. */
+class InMemoryOrderRepository(private val now: () -> Long = System::currentTimeMillis) : OrderRepository {
     private val _orders = MutableStateFlow(demoHistory(now()))
-    val orders: StateFlow<List<Order>> = _orders.asStateFlow()
+    override val orders: StateFlow<List<Order>> = _orders.asStateFlow()
 
     private var nextOrderNumber = FIRST_ORDER_NUMBER
 
-    /** Оформляет заказ из [lines]; [lines] не должен быть пустым. */
-    fun place(lines: List<CartLine>, shop: Shop): Order {
+    override fun place(lines: List<CartLine>, shop: Shop): Order {
         require(lines.isNotEmpty()) { "Пустой заказ" }
         val order = Order(
             number = nextOrderNumber++,
@@ -36,7 +45,7 @@ class OrderRepository(private val now: () -> Long = System::currentTimeMillis) {
         return order
     }
 
-    fun find(number: Int): Order? = _orders.value.find { it.number == number }
+    override fun find(number: Int): Order? = _orders.value.find { it.number == number }
 }
 
 private fun demoHistory(now: Long): List<Order> {

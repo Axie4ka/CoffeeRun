@@ -13,7 +13,7 @@ import ru.coffeerun.ui.screens.ProductUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
-import ru.coffeerun.data.CartRepository
+import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
@@ -31,7 +31,7 @@ class ProductViewModelTest {
     @get:Rule
     val mainRule = MainDispatcherRule()
 
-    private val cart = CartRepository()
+    private val cart = InMemoryCartRepository()
     private var savedState = SavedStateHandle()
     private fun vm(product: Product) = vm(product.id)
     private fun vm(id: String) = ProductViewModel(id, LocalMenuRepository(), cart, savedState)
