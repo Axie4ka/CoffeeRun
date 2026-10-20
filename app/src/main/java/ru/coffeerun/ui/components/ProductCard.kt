@@ -42,13 +42,13 @@ fun ProductImage(product: Product, size: Dp, modifier: Modifier = Modifier) {
     )
 }
 
-/** Карточка позиции меню: нажатие открывает позицию, «+» кладёт её в корзину. */
+/** Карточка позиции: нажатие открывает позицию, «+» (если передан [onAdd]) кладёт её в корзину. */
 @Composable
 fun ProductCard(
     product: Product,
     onClick: () -> Unit,
-    onAdd: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onAdd: (() -> Unit)? = null
 ) {
     val name = stringResource(product.nameRes)
     Surface(
@@ -85,7 +85,7 @@ fun ProductCard(
                         style = MaterialTheme.typography.priceSmall,
                         color = MaterialTheme.colorScheme.tertiary
                     )
-                    FilledTonalIconButton(onClick = onAdd) {
+                    if (onAdd != null) FilledTonalIconButton(onClick = onAdd) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = stringResource(R.string.add_product, name)

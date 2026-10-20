@@ -123,6 +123,8 @@
     <string name="profile_orders_label">orders</string>
     <string name="profile_favorites_label">in favorites</string>
     <string name="profile_favorites">Favorites</string>
+    <string name="favorites_title">Favorites</string>
+    <string name="favorites_empty">No favorites yet</string>
     <string name="profile_favorites_hint">Cappuccino, Vanilla raf, Latte</string>
     <string name="profile_shop">Favorite coffee shop</string>
     <string name="profile_phone_title">Phone</string>

@@ -194,6 +194,20 @@ class NavigationTest {
     }
 
     @Test
+    fun favorites_flow() {
+        val latte = LocalMenu.LATTE
+        openProduct(latte)
+        rule.onNodeWithContentDescription(str(R.string.action_favorite)).performClick()
+        rule.onNodeWithContentDescription(str(R.string.action_unfavorite)).assertIsDisplayed()
+        rule.onNodeWithContentDescription(str(R.string.action_back)).performClick()
+        tab(R.string.tab_profile).performClick()
+        rule.onNodeWithText(str(R.string.profile_favorites)).performClick()
+        rule.onNodeWithText(str(latte.nameRes)).assertIsDisplayed()
+        rule.onNodeWithText(str(latte.nameRes)).performClick()
+        rule.onNodeWithContentDescription(str(R.string.action_unfavorite)).assertIsDisplayed()
+    }
+
+    @Test
     fun shopPicker_changesCheckoutShop() {
         rule.onNodeWithText(str(Shop.MOSKOVSKAYA.addressRes)).performClick()
         rule.onNodeWithText(str(Shop.STROITELEY.addressRes)).performClick()

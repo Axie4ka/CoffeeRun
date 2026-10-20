@@ -46,13 +46,18 @@ import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.ProvidePreviewNotifier
 import ru.coffeerun.ui.util.snackbar
 
-// Демонстрационная статистика: аккаунтов и избранного в приложении пока нет
+// Демонстрационная статистика: аккаунтов в приложении пока нет
 private const val DEMO_ORDERS_COUNT = 12
-private const val DEMO_FAVORITES_COUNT = 3
 
 /** Профиль: данные пользователя, статистика и список настроек (пока заглушки). */
 @Composable
-fun ProfileScreen(shop: Shop, onShopSelected: (Shop) -> Unit, modifier: Modifier = Modifier) {
+fun ProfileScreen(
+    shop: Shop,
+    favoritesCount: Int,
+    onShopSelected: (Shop) -> Unit,
+    onFavoritesClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     var showShopPicker by rememberSaveable { mutableStateOf(false) }
     val notify = MaterialTheme.snackbar
     val name = stringResource(R.string.profile_name)
@@ -94,10 +99,10 @@ fun ProfileScreen(shop: Shop, onShopSelected: (Shop) -> Unit, modifier: Modifier
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
         ) {
             StatCard(DEMO_ORDERS_COUNT, stringResource(R.string.profile_orders_label), Modifier.weight(1f))
-            StatCard(DEMO_FAVORITES_COUNT, stringResource(R.string.profile_favorites_label), Modifier.weight(1f))
+            StatCard(favoritesCount, stringResource(R.string.profile_favorites_label), Modifier.weight(1f))
         }
         Column(Modifier.padding(top = MaterialTheme.spacing.large)) {
-            ProfileItem(Icons.Default.Favorite, R.string.profile_favorites, stringResource(R.string.profile_favorites_hint), notify::notifyPlaceholder)
+            ProfileItem(Icons.Default.Favorite, R.string.profile_favorites, stringResource(R.string.profile_favorites_hint), onFavoritesClick)
             ProfileItem(Icons.Default.LocationOn, R.string.profile_shop, stringResource(shop.addressRes)) { showShopPicker = true }
             ProfileItem(Icons.Default.Phone, R.string.profile_phone_title, stringResource(R.string.profile_phone), notify::notifyPlaceholder)
             HorizontalDivider()
@@ -144,6 +149,6 @@ private fun ProfileItem(icon: ImageVector, titleRes: Int, supporting: String, on
 @Composable
 private fun ProfileScreenPreview() {
     CoffeeRunTheme(dynamicColor = false) {
-        ProvidePreviewNotifier { ProfileScreen(Shop.MOSKOVSKAYA, {}) }
+        ProvidePreviewNotifier { ProfileScreen(Shop.MOSKOVSKAYA, 3, {}, {}) }
     }
 }

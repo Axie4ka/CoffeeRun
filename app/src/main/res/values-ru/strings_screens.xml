@@ -114,6 +114,8 @@
     <string name="profile_orders_label">заказов</string>
     <string name="profile_favorites_label">в избранном</string>
     <string name="profile_favorites">Избранное</string>
+    <string name="favorites_title">Избранное</string>
+    <string name="favorites_empty">В избранном пока пусто</string>
     <string name="profile_favorites_hint">Капучино, Раф ванильный, Латте</string>
     <string name="profile_shop">Любимая кофейня</string>
     <string name="profile_phone_title">Телефон</string>

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -32,6 +31,7 @@ import ru.coffeerun.ui.components.AppNavigationBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.navigation.CartRoute
 import ru.coffeerun.ui.navigation.CheckoutRoute
+import ru.coffeerun.ui.navigation.FavoritesRoute
 import ru.coffeerun.ui.navigation.MenuRoute
 import ru.coffeerun.ui.navigation.OrdersRoute
 import ru.coffeerun.ui.navigation.PlacedRoute
@@ -41,6 +41,8 @@ import ru.coffeerun.ui.screens.CartScreen
 import ru.coffeerun.ui.screens.CartViewModel
 import ru.coffeerun.ui.screens.CheckoutScreen
 import ru.coffeerun.ui.screens.CheckoutViewModel
+import ru.coffeerun.ui.screens.FavoritesScreen
+import ru.coffeerun.ui.screens.FavoritesViewModel
 import ru.coffeerun.ui.screens.MenuScreen
 import ru.coffeerun.ui.screens.MenuViewModel
 import ru.coffeerun.ui.screens.OrderPlacedScreen
@@ -52,7 +54,6 @@ import ru.coffeerun.ui.screens.ProductUiState
 import ru.coffeerun.ui.screens.ProductViewModel
 import ru.coffeerun.ui.screens.ProfileScreen
 import ru.coffeerun.ui.screens.ProfileViewModel
-import ru.coffeerun.ui.util.snackbar
 
 /**
  * Корень приложения: NavHost внутри одного Scaffold. Нижняя панель видна только
@@ -68,7 +69,6 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
     val currentTab = Tab.entries.find { tab ->
         entry?.destination?.hierarchy?.any { it.hasRoute(tab.route::class) } == true
     }
-    val notify: () -> Unit = MaterialTheme.snackbar::notifyPlaceholder
     // Вне NavHost — ViewModel уровня Activity, только ради счётчика на нижней панели
     val cartUiState by viewModel<CartViewModel>(factory = CartViewModel.Factory).uiState.collectAsStateWithLifecycle()
 
@@ -131,7 +131,25 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             composable<ProfileRoute> {
                 val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
                 val shop by vm.shop.collectAsStateWithLifecycle()
-                ProfileScreen(shop = shop, onShopSelected = vm::selectShop, modifier = tabModifier)
+                val favoritesCount by vm.favoritesCount.collectAsStateWithLifecycle()
+                ProfileScreen(
+                    shop = shop,
+                    favoritesCount = favoritesCount,
+                    onShopSelected = vm::selectShop,
+                    onFavoritesClick = { navController.navigate(FavoritesRoute) },
+                    modifier = tabModifier
+                )
+            }
+
+            composable<FavoritesRoute> {
+                val vm: FavoritesViewModel = viewModel(factory = FavoritesViewModel.Factory)
+                val favoritesState by vm.uiState.collectAsStateWithLifecycle()
+                FavoritesScreen(
+                    uiState = favoritesState,
+                    onProductClick = { navController.navigate(ProductRoute(it)) },
+                    onBrowseMenu = { navController.jumpToTab(Tab.MENU) },
+                    onBack = { navController.popBackStack() }
+                )
             }
 
             composable<ProductRoute> {
@@ -165,7 +183,8 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                             onQuantityChange = vm::changeQuantity,
                             onAddToCart = vm::addToCart,
                             onBack = { navController.popBackStack() },
-                            onFavorite = notify,
+                            isFavorite = state.isFavorite,
+                            onFavorite = vm::toggleFavorite,
                             onShare = {
                                 val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, shareText)
                                 context.startActivity(Intent.createChooser(send, null))
