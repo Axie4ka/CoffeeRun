@@ -4,13 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.stringResource
-import ru.coffeerun.ui.AppViewModel
 import ru.coffeerun.ui.CoffeeRunApp
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.util.LocalPlaceholderNotifier
@@ -18,9 +16,6 @@ import ru.coffeerun.ui.util.PlaceholderNotifier
 import ru.coffeerun.ui.util.showNotImplemented
 
 class MainActivity : ComponentActivity() {
-    // Корзина и заказы — общее состояние приложения, а не одного экрана
-    private val viewModel: AppViewModel by viewModels()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -40,7 +35,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 CompositionLocalProvider(LocalPlaceholderNotifier provides placeholderNotifier) {
-                    CoffeeRunApp(viewModel = viewModel, snackbarHostState = snackbarHostState)
+                    CoffeeRunApp(snackbarHostState = snackbarHostState)
                 }
             }
         }

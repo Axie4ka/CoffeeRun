@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -17,13 +19,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
-import ru.coffeerun.model.CartLine
-import ru.coffeerun.model.DrinkSize
-import ru.coffeerun.model.MilkType
-import ru.coffeerun.model.Shop
-import ru.coffeerun.model.defaultOptions
-import ru.coffeerun.model.unitPrice
+import ru.coffeerun.model.itemCount
 import ru.coffeerun.ui.components.AppNavigationBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.navigation.CartRoute
@@ -34,24 +30,28 @@ import ru.coffeerun.ui.navigation.PlacedRoute
 import ru.coffeerun.ui.navigation.ProductRoute
 import ru.coffeerun.ui.navigation.ProfileRoute
 import ru.coffeerun.ui.screens.CartScreen
+import ru.coffeerun.ui.screens.CartViewModel
 import ru.coffeerun.ui.screens.CheckoutScreen
+import ru.coffeerun.ui.screens.CheckoutViewModel
 import ru.coffeerun.ui.screens.MenuScreen
+import ru.coffeerun.ui.screens.MenuViewModel
 import ru.coffeerun.ui.screens.OrderPlacedScreen
+import ru.coffeerun.ui.screens.OrderPlacedViewModel
 import ru.coffeerun.ui.screens.OrdersScreen
+import ru.coffeerun.ui.screens.OrdersViewModel
 import ru.coffeerun.ui.screens.ProductScreen
+import ru.coffeerun.ui.screens.ProductViewModel
 import ru.coffeerun.ui.screens.ProfileScreen
 import ru.coffeerun.ui.util.snackbar
 
 /**
  * Корень приложения: NavHost внутри одного Scaffold. Нижняя панель видна только
  * на вкладках; Product, Checkout и Placed открываются поверх них.
- * Корзина и заказы живут в общей [AppViewModel], в маршрутах — только аргументы.
+ * У каждого экрана своя ViewModel (живёт, пока экран в стеке); данные — в общих
+ * репозиториях из [ru.coffeerun.AppContainer]. Навигация остаётся здесь, во View.
  */
 @Composable
-fun CoffeeRunApp(
-    viewModel: AppViewModel,
-    snackbarHostState: SnackbarHostState
-) {
+fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
     val navController = rememberNavController()
     val entry by navController.currentBackStackEntryAsState()
     // destination.route — строка, а Tab.route — объект, поэтому сравниваем по классу маршрута
@@ -59,6 +59,8 @@ fun CoffeeRunApp(
         entry?.destination?.hierarchy?.any { it.hasRoute(tab.route::class) } == true
     }
     val notify: () -> Unit = MaterialTheme.snackbar::notifyPlaceholder
+    // Вне NavHost — ViewModel уровня Activity, только ради счётчика на нижней панели
+    val cartLines by viewModel<CartViewModel>(factory = CartViewModel.Factory).lines.collectAsStateWithLifecycle()
 
     Scaffold(
         // У Product и Checkout свой SnackbarHost с тем же state — иначе сообщение покажется дважды
@@ -66,7 +68,7 @@ fun CoffeeRunApp(
         bottomBar = {
             if (currentTab != null) AppNavigationBar(
                 selected = currentTab,
-                cartCount = viewModel.cartCount,
+                cartCount = cartLines.itemCount,
                 onSelect = navController::openTab
             )
         }
@@ -75,27 +77,21 @@ fun CoffeeRunApp(
         val tabModifier = Modifier.padding(innerPadding)
         NavHost(navController, startDestination = MenuRoute) {
             composable<MenuRoute> {
+                val vm: MenuViewModel = viewModel(factory = MenuViewModel.Factory)
                 MenuScreen(
                     onProductClick = { navController.navigate(ProductRoute(it)) },
-                    // Размер S и обычное молоко — с явными опциями, чтобы бариста видел размер
-                    onAddProduct = {
-                        viewModel.addToCart(
-                            CartLine(
-                                product = it,
-                                unitPrice = it.unitPrice(DrinkSize.SMALL, MilkType.REGULAR, emptySet()),
-                                options = it.defaultOptions()
-                            )
-                        )
-                    },
+                    onAddProduct = vm::quickAdd,
                     modifier = tabModifier
                 )
             }
 
             composable<CartRoute> {
+                val vm: CartViewModel = viewModel(factory = CartViewModel.Factory)
+                val lines by vm.lines.collectAsStateWithLifecycle()
                 CartScreen(
-                    lines = viewModel.cart,
-                    onChangeQuantity = viewModel::changeQuantity,
-                    onRemove = viewModel::remove,
+                    lines = lines,
+                    onChangeQuantity = vm::changeQuantity,
+                    onRemove = vm::remove,
                     onCheckout = { navController.navigate(CheckoutRoute) },
                     onBrowseMenu = { navController.openTab(Tab.MENU) },
                     modifier = tabModifier
@@ -103,10 +99,12 @@ fun CoffeeRunApp(
             }
 
             composable<OrdersRoute> {
+                val vm: OrdersViewModel = viewModel(factory = OrdersViewModel.Factory)
+                val orders by vm.orders.collectAsStateWithLifecycle()
                 OrdersScreen(
-                    orders = viewModel.orders,
+                    orders = orders,
                     onRepeat = {
-                        viewModel.repeat(it)
+                        vm.repeat(it)
                         navController.openTab(Tab.CART)
                     },
                     onBrowseMenu = { navController.openTab(Tab.MENU) },
@@ -116,28 +114,32 @@ fun CoffeeRunApp(
 
             composable<ProfileRoute> { ProfileScreen(modifier = tabModifier) }
 
-            composable<ProductRoute> { backStackEntry ->
+            composable<ProductRoute> {
+                val vm: ProductViewModel = viewModel(factory = ProductViewModel.Factory)
+                val lines by vm.cartLines.collectAsStateWithLifecycle()
                 ProductScreen(
-                    product = backStackEntry.toRoute<ProductRoute>().product,
-                    cartCount = viewModel.cartCount,
+                    product = vm.product,
+                    cartCount = lines.itemCount,
                     onBack = { navController.popBackStack() },
                     onFavorite = notify,
                     onShare = notify,
                     onCart = { navController.jumpToTab(Tab.CART) },
-                    onAddToCart = viewModel::addToCart,
+                    onAddToCart = vm::addToCart,
                     snackbarHostState = snackbarHostState
                 )
             }
 
             composable<CheckoutRoute> {
+                val vm: CheckoutViewModel = viewModel(factory = CheckoutViewModel.Factory)
+                val lines by vm.lines.collectAsStateWithLifecycle()
                 CheckoutScreen(
-                    lines = viewModel.cart,
-                    shop = Shop.MOSKOVSKAYA,
+                    lines = lines,
+                    shop = vm.shop,
                     onBack = { navController.popBackStack() },
                     onConfirm = {
-                        if (viewModel.placeOrder(Shop.MOSKOVSKAYA) != null) {
+                        vm.placeOrder()?.let { order ->
                             // Cart и Checkout снимаем: «назад» с «Заказ принят» ведёт в меню
-                            navController.navigate(PlacedRoute) { popUpTo(MenuRoute) }
+                            navController.navigate(PlacedRoute(order.number)) { popUpTo(MenuRoute) }
                         }
                     },
                     snackbarHostState = snackbarHostState
@@ -145,10 +147,11 @@ fun CoffeeRunApp(
             }
 
             composable<PlacedRoute> {
+                val vm: OrderPlacedViewModel = viewModel(factory = OrderPlacedViewModel.Factory)
                 val toMenu: () -> Unit = { navController.popBackStack(MenuRoute, inclusive = false) }
-                val order = viewModel.lastOrder
+                val order = vm.order
                 if (order == null) {
-                    // После смерти процесса стек восстановился, а ViewModel — нет
+                    // После смерти процесса стек восстановился, а заказы в памяти — нет
                     LaunchedEffect(Unit) { toMenu() }
                 } else {
                     OrderPlacedScreen(

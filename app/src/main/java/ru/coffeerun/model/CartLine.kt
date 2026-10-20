@@ -28,3 +28,6 @@ data class CartLine(
     fun isSameItem(other: CartLine) =
         product == other.product && unitPrice == other.unitPrice && options == other.options
 }
+
+/** Сколько порций в корзине — число на бейдже. */
+val List<CartLine>.itemCount: Int get() = sumOf { it.quantity }

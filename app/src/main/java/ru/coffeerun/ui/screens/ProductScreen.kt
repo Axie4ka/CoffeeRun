@@ -84,7 +84,7 @@ import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.defaultOptions
 import ru.coffeerun.model.unitPrice
-import ru.coffeerun.ui.MAX_QUANTITY
+import ru.coffeerun.data.MAX_QUANTITY
 import ru.coffeerun.ui.components.CartBadge
 import ru.coffeerun.ui.components.QuantityStepper
 import ru.coffeerun.ui.theme.CoffeeRunTheme

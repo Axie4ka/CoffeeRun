@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Product
-import ru.coffeerun.ui.MAX_QUANTITY
+import ru.coffeerun.data.MAX_QUANTITY
 import ru.coffeerun.ui.components.ProductImage
 import ru.coffeerun.ui.components.QuantityStepper
 import ru.coffeerun.ui.components.ScreenTopBar

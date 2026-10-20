@@ -14,8 +14,10 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.ExternalResource
 import org.junit.runner.RunWith
 import ru.coffeerun.model.Product
 
@@ -25,7 +27,16 @@ import ru.coffeerun.model.Product
  */
 @RunWith(AndroidJUnit4::class)
 class NavigationTest {
-    @get:Rule
+    // Репозитории живут в Application, а процесс у всех тестов общий: свежие данные — до запуска Activity
+    @get:Rule(order = 0)
+    val freshData = object : ExternalResource() {
+        override fun before() {
+            val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
+            (app as CoffeeRunApplication).container = AppContainer()
+        }
+    }
+
+    @get:Rule(order = 1)
     val rule = createAndroidComposeRule<MainActivity>()
 
     // Тексты из ресурсов: тест проходит и на русской, и на английской локали
