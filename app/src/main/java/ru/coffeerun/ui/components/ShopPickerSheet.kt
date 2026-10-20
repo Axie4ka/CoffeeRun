@@ -2,6 +2,7 @@ package ru.coffeerun.ui.components
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -18,7 +19,7 @@ import ru.coffeerun.ui.theme.spacing
 @Composable
 fun ShopPickerSheet(selected: Shop, onSelect: (Shop) -> Unit, onDismiss: () -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.padding(horizontal = MaterialTheme.spacing.large).padding(bottom = MaterialTheme.spacing.large)) {
+        Column(Modifier.selectableGroup().padding(horizontal = MaterialTheme.spacing.large).padding(bottom = MaterialTheme.spacing.large)) {
             Text(stringResource(R.string.menu_choose_shop), style = MaterialTheme.typography.titleMedium)
             Shop.entries.forEach { shop ->
                 RadioRow(

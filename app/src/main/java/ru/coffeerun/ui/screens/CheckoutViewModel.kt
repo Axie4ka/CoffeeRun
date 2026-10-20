@@ -41,10 +41,17 @@ class CheckoutViewModel(
         val zone = ZoneId.systemDefault()
         val today = Instant.ofEpochMilli(now()).atZone(zone).toLocalDate()
         val millis = today.atTime(hour, minute).atZone(zone).toInstant().toEpochMilli()
-        val closing = today.atTime(CLOSING_HOUR, 0).atZone(zone).toInstant().toEpochMilli()
-        if (millis < now() + READY_IN_MINUTES * 60_000L || millis > closing) return false
+        if (!isPickupValid(millis)) return false
         _pickupAtMillis.value = millis
         return true
+    }
+
+    /** Время допустимо: не раньше now + [READY_IN_MINUTES] и не позже закрытия сегодня. */
+    private fun isPickupValid(millis: Long): Boolean {
+        val zone = ZoneId.systemDefault()
+        val today = Instant.ofEpochMilli(now()).atZone(zone).toLocalDate()
+        val closing = today.atTime(CLOSING_HOUR, 0).atZone(zone).toInstant().toEpochMilli()
+        return millis >= now() + READY_IN_MINUTES * 60_000L && millis <= closing
     }
 
     /**
@@ -77,6 +84,8 @@ class CheckoutViewModel(
     fun placeOrder() {
         val lines = cart.lines.value
         if (lines.isEmpty()) return
+        // Выбранное время могло устареть, пока открыт экран: тогда — «как можно скорее».
+        if (_pickupAtMillis.value?.let(::isPickupValid) == false) _pickupAtMillis.value = null
         _placedOrderNumber.value = orders.place(lines, shops.selected.value, _pickupAtMillis.value).number
         cart.clear()
     }

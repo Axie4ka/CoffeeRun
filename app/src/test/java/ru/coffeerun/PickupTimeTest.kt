@@ -50,6 +50,18 @@ class PickupTimeTest {
     }
 
     @Test
+    fun staleTime_fallsBackToAsapOnPlaceOrder() {
+        var nowMillis = today(12)
+        val clocked = CheckoutViewModel(cart, orders, InMemoryShopRepository(), now = { nowMillis })
+        assertTrue(clocked.setPickupTime(12, 20))
+        nowMillis = today(12, 10)
+        cart.add(CartLine(LocalMenu.CROISSANT, unitPrice = 180))
+        clocked.placeOrder()
+        assertNull(orders.orders.value.first().pickupAtMillis)
+        assertNull(clocked.pickupAtMillis.value)
+    }
+
+    @Test
     fun asap_clearsPickupTime() {
         vm.setPickupTime(13, 0)
         vm.pickupAsap()

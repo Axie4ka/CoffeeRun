@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -39,7 +42,12 @@ fun FavoritesScreen(
                     EmptyState(stringResource(R.string.favorites_empty), onBrowseMenu, Modifier.fillMaxSize())
                 } else {
                     LazyColumn(
-                        contentPadding = PaddingValues(MaterialTheme.spacing.large),
+                        contentPadding = PaddingValues(
+                            start = MaterialTheme.spacing.large,
+                            top = MaterialTheme.spacing.large,
+                            end = MaterialTheme.spacing.large,
+                            bottom = MaterialTheme.spacing.large + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                        ),
                         verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
                     ) {
                         items(uiState.products, key = { it.id }) { product ->

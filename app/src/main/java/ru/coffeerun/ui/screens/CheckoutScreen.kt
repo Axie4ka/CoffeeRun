@@ -40,7 +40,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import java.time.Instant
 import java.time.LocalTime
+import java.time.ZoneId
 import kotlinx.coroutines.launch
 import ru.coffeerun.R
 import ru.coffeerun.data.LocalMenu
@@ -82,7 +84,8 @@ fun CheckoutScreen(
     val invalidMessage = stringResource(R.string.pickup_time_invalid)
 
     if (showTimePicker && earliestPickup != null) {
-        val timeState = rememberTimePickerState(earliestPickup.hour, earliestPickup.minute, is24Hour = true)
+        val initial = pickupAtMillis?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalTime() } ?: earliestPickup
+        val timeState = rememberTimePickerState(initial.hour, initial.minute, is24Hour = true)
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
             title = { Text(stringResource(R.string.pickup_time_title)) },
