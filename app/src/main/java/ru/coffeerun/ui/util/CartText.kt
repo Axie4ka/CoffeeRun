@@ -31,6 +31,7 @@ fun CartLine.optionsText(): String {
         o.milk?.let { add(stringResource(it.labelRes)) }
         if (o.isIced) add(stringResource(R.string.temperature_iced))
         o.extras.forEach { add(stringResource(it.labelRes)) }
+        if (o.note.isNotEmpty()) add("«${o.note}»")
     }
     // Ничего не выбрано (например, эспрессо без добавок) — показываем описание
     return if (parts.isEmpty()) stringResource(product.descriptionRes) else parts.joinToString(" · ")

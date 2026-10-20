@@ -2,6 +2,8 @@ package ru.coffeerun
 
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
@@ -139,5 +141,42 @@ class NavigationTest {
         rule.activityRule.scenario.recreate()
         tab(R.string.tab_orders).assertDoesNotExist()
         rule.onNodeWithText(str(Product.LATTE.nameRes)).assertIsDisplayed()
+    }
+
+    // ---------- Поведение, которое добавил редизайн M3 (спецификация 2026-10-20, раздел 9) ----------
+
+    @Test
+    fun cartEmpty_browseMenuOpensMenu() {
+        tab(R.string.tab_cart).performClick()
+        rule.onNodeWithText(str(R.string.cart_empty)).assertIsDisplayed()
+        tab(R.string.browse_menu).performClick()
+        assertMenuShown()
+        tab(R.string.tab_menu).assertIsSelected()
+    }
+
+    @Test
+    fun checkout_scheduledPickupIsDisabled() {
+        val name = str(Product.CAPPUCCINO.nameRes)
+        rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
+        tab(R.string.tab_cart).performClick()
+        rule.onNodeWithText(str(R.string.cart_checkout)).performClick()
+        rule.onNodeWithText(str(R.string.pickup_scheduled)).assertIsNotEnabled()
+        rule.onNodeWithText(str(R.string.pickup_asap)).assertIsSelected()
+    }
+
+    @Test
+    fun product_minusDisabledAtOne() {
+        openProduct(Product.CAPPUCCINO)
+        rule.onNodeWithContentDescription(str(R.string.action_decrease)).assertIsNotEnabled()
+        rule.onNodeWithContentDescription(str(R.string.action_increase)).performClick()
+        rule.onNodeWithContentDescription(str(R.string.action_decrease)).assertIsEnabled()
+    }
+
+    @Test
+    fun menu_tabsSwitchCategory() {
+        rule.onNodeWithText(str(Product.CAPPUCCINO.nameRes)).assertIsDisplayed()
+        tab(R.string.category_pastry).performClick()
+        rule.onNodeWithText(str(Product.CROISSANT.nameRes)).assertIsDisplayed()
+        rule.onNodeWithText(str(Product.CAPPUCCINO.nameRes)).assertDoesNotExist()
     }
 }
