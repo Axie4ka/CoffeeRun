@@ -29,18 +29,21 @@ class ProfileTest {
     @Test
     fun profile_ordersCountFollowsRepository() = runTest {
         val vm = newVm()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.ordersCount.collect {} }
-        assertEquals(2, vm.ordersCount.value)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertEquals(2, vm.uiState.value.ordersCount)
         orders.place(listOf(CartLine(LocalMenu.CROISSANT, unitPrice = 180)), Shop.MOSKOVSKAYA)
-        assertEquals(3, vm.ordersCount.value)
+        assertEquals(3, vm.uiState.value.ordersCount)
     }
 
     @Test
     fun profile_favoritesCountFollowsRepository() = runTest {
         val vm = newVm()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.favoritesCount.collect {} }
-        assertEquals(0, vm.favoritesCount.value)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertEquals(0, vm.uiState.value.favoritesCount)
         favorites.toggle("latte")
-        assertEquals(1, vm.favoritesCount.value)
+        assertEquals(1, vm.uiState.value.favoritesCount)
+        // Выбор кофейни — в том же состоянии
+        vm.selectShop(Shop.STROITELEY)
+        assertEquals(Shop.STROITELEY, vm.uiState.value.shop)
     }
 }

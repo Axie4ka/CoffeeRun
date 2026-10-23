@@ -125,6 +125,26 @@ class ProductViewModelTest {
     }
 
     @Test
+    fun quickAddAndUntouchedForm_mergeIntoOneLine() {
+        MenuViewModel(LocalMenuRepository(), cart, InMemoryShopRepository()).quickAdd(LocalMenu.CAPPUCCINO)
+        vm(LocalMenu.CAPPUCCINO).addToCart()
+        val lines = cart.lines.value
+        assertEquals(1, lines.size)
+        assertEquals(2, lines[0].quantity)
+        assertEquals(260, lines[0].unitPrice)
+    }
+
+    @Test
+    fun success_hasCartCountForBadge() = runTest {
+        val vm = vm(LocalMenu.LATTE)
+        keepActive(vm)
+        assertEquals(0, (vm.uiState.value as ProductUiState.Success).cartCount)
+        vm.changeQuantity(+1)
+        vm.addToCart()
+        assertEquals(2, (vm.uiState.value as ProductUiState.Success).cartCount)
+    }
+
+    @Test
     fun form_defaults() {
         assertEquals(ProductForm(), vm(LocalMenu.CAPPUCCINO).form.value)
     }

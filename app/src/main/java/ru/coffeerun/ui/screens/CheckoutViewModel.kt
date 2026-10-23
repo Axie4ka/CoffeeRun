@@ -1,11 +1,17 @@
 package ru.coffeerun.ui.screens
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.stateIn
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.OrderRepository
@@ -18,20 +24,56 @@ import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
 
+/**
+ * Состояние экрана оформления. [pickupAtMillis] = null — «как можно скорее»;
+ * [earliestPickup] = null — заказ ко времени сегодня уже невозможен;
+ * [placedOrderNumber] — номер только что оформленного заказа (событие как состояние, см. [CheckoutViewModel.onPlacedOrderShown]).
+ */
+data class CheckoutUiState(
+    val lines: List<CartLine>,
+    val total: Int,
+    val shop: Shop,
+    val pickupAtMillis: Long?,
+    val earliestPickup: LocalTime?,
+    val placedOrderNumber: Int?
+)
+
+/** «Прошла минута»: пока экран открыт, по нему пересчитывается самое раннее время самовывоза. */
+private fun everyMinute(): Flow<Unit> = flow {
+    while (true) {
+        emit(Unit)
+        delay(60_000)
+    }
+}
+
 class CheckoutViewModel(
     private val cart: CartRepository,
     private val orders: OrderRepository,
     private val shops: ShopRepository,
-    private val now: () -> Long = System::currentTimeMillis
+    private val now: () -> Long = System::currentTimeMillis,
+    ticks: Flow<Unit> = everyMinute()
 ) : ViewModel() {
-    val lines: StateFlow<List<CartLine>> = cart.lines
-
-    val shop: StateFlow<Shop> = shops.selected
-
     private val _pickupAtMillis = MutableStateFlow<Long?>(null)
+    private val _placedOrderNumber = MutableStateFlow<Int?>(null)
 
-    /** Выбранное время самовывоза сегодня; null — «Как можно скорее». */
-    val pickupAtMillis: StateFlow<Long?> = _pickupAtMillis.asStateFlow()
+    val uiState: StateFlow<CheckoutUiState> =
+        combine(cart.lines, shops.selected, _pickupAtMillis, _placedOrderNumber, ticks) { lines, shop, pickupAt, placed, _ ->
+            stateOf(lines, shop, pickupAt, placed)
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            // Начальное значение из текущих данных — чтобы экран не мигнул пустым заказом
+            stateOf(cart.lines.value, shops.selected.value, _pickupAtMillis.value, _placedOrderNumber.value)
+        )
+
+    private fun stateOf(lines: List<CartLine>, shop: Shop, pickupAt: Long?, placed: Int?) = CheckoutUiState(
+        lines = lines,
+        total = lines.sumOf { it.total },
+        shop = shop,
+        pickupAtMillis = pickupAt,
+        earliestPickup = earliestPickupTime(),
+        placedOrderNumber = placed
+    )
 
     /**
      * Выбирает время самовывоза сегодня. false (состояние не меняется), если оно
@@ -72,14 +114,6 @@ class CheckoutViewModel(
         _pickupAtMillis.value = null
     }
 
-    private val _placedOrderNumber = MutableStateFlow<Int?>(null)
-
-    /**
-     * Номер только что оформленного заказа — событие как состояние: View переходит
-     * на «Заказ принят» и сообщает об этом через [onPlacedOrderShown].
-     */
-    val placedOrderNumber: StateFlow<Int?> = _placedOrderNumber.asStateFlow()
-
     /** Оформляет заказ из корзины и очищает её. Пустая корзина — ничего не происходит. */
     fun placeOrder() {
         val lines = cart.lines.value
@@ -90,6 +124,7 @@ class CheckoutViewModel(
         cart.clear()
     }
 
+    /** View перешла на «Заказ принят» — событие обработано, повторного перехода не будет. */
     fun onPlacedOrderShown() {
         _placedOrderNumber.value = null
     }

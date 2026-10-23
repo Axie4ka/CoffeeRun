@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -16,13 +17,12 @@ import ru.coffeerun.data.LocalMenuRepository
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.DEFAULT_DRINK_SIZE
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
-import ru.coffeerun.model.defaultOptions
 import ru.coffeerun.model.itemCount
-import ru.coffeerun.model.unitPrice
 import ru.coffeerun.ui.screens.CartViewModel
 import ru.coffeerun.ui.screens.CheckoutViewModel
 import ru.coffeerun.ui.screens.MenuViewModel
@@ -77,7 +77,7 @@ class CartTest {
         assertEquals(2, lines[0].quantity)
 
         MenuViewModel(LocalMenuRepository(), cart, InMemoryShopRepository()).quickAdd(LocalMenu.CAPPUCCINO)
-        assertEquals(DrinkSize.SMALL, lines.last().options?.size)
+        assertEquals(DrinkSize.MEDIUM, lines.last().options?.size)
         assertEquals(3, lines.itemCount)
         assertNull(LocalMenu.CROISSANT.defaultOptions())
     }
@@ -103,21 +103,23 @@ class CartTest {
         assertTrue(lines.isEmpty())
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun placeOrder_movesCartToOrders() {
-        val checkout = CheckoutViewModel(cart, orders, InMemoryShopRepository())
+    fun placeOrder_movesCartToOrders() = runTest {
+        val checkout = CheckoutViewModel(cart, orders, InMemoryShopRepository(), ticks = flowOf(Unit))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { checkout.uiState.collect {} }
         checkout.placeOrder()
-        assertNull("пустая корзина — заказа нет", checkout.placedOrderNumber.value)
+        assertNull("пустая корзина — заказа нет", checkout.uiState.value.placedOrderNumber)
 
         cart.add(quickAdd(LocalMenu.CROISSANT).copy(quantity = 2))
         checkout.placeOrder()
         val order = orders.orders.value.first()
-        assertEquals(order.number, checkout.placedOrderNumber.value)
+        assertEquals(order.number, checkout.uiState.value.placedOrderNumber)
         assertEquals(360, order.total)
         assertTrue(lines.isEmpty())
         // Событие обработано — повторного перехода не будет
         checkout.onPlacedOrderShown()
-        assertNull(checkout.placedOrderNumber.value)
+        assertNull(checkout.uiState.value.placedOrderNumber)
 
         // Экран «Заказ принят» находит заказ по номеру из маршрута
         assertEquals(order, OrderPlacedViewModel(order.number, orders).order)
@@ -136,7 +138,7 @@ class CartTest {
     // Так строку собирает «+» в меню (MenuViewModel.quickAdd)
     private fun quickAdd(p: Product) = CartLine(
         product = p,
-        unitPrice = p.unitPrice(DrinkSize.SMALL, MilkType.REGULAR, emptySet()),
+        unitPrice = p.unitPrice(DEFAULT_DRINK_SIZE, MilkType.REGULAR, emptySet()),
         options = p.defaultOptions()
     )
 }

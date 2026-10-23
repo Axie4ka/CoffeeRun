@@ -64,17 +64,17 @@ import ru.coffeerun.ui.util.summaryText
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckoutScreen(
-    lines: List<CartLine>,
-    shop: Shop,
+    uiState: CheckoutUiState,
     onBack: () -> Unit,
     onConfirm: () -> Unit,
-    pickupAtMillis: Long? = null,
-    earliestPickup: LocalTime? = LocalTime.NOON,
-    onPickupAsap: () -> Unit = {},
-    onPickupTimeChosen: (hour: Int, minute: Int) -> Boolean = { _, _ -> true },
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    modifier: Modifier = Modifier
+    onPickupAsap: () -> Unit,
+    onPickupTimeChosen: (hour: Int, minute: Int) -> Boolean,
+    modifier: Modifier = Modifier,
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
+    val lines = uiState.lines
+    val pickupAtMillis = uiState.pickupAtMillis
+    val earliestPickup = uiState.earliestPickup
     // Горизонтальные поля задаём каждому блоку, а не всей колонке: ListItem уже
     // имеет собственный отступ и иначе съехал бы относительно остального.
     val gutter = Modifier.padding(horizontal = MaterialTheme.spacing.large)
@@ -118,7 +118,7 @@ fun CheckoutScreen(
                         .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.medium),
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
                 ) {
-                    TotalRow(total = lines.sumOf { it.total })
+                    TotalRow(total = uiState.total)
                     Button(onClick = onConfirm, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.checkout_confirm))
                     }
@@ -136,7 +136,7 @@ fun CheckoutScreen(
             SectionTitle(stringResource(R.string.section_shop), gutter)
             // Информация, а не действие: выбрать другую кофейню пока нельзя
             ListItem(
-                headlineContent = { Text(stringResource(shop.addressRes)) },
+                headlineContent = { Text(stringResource(uiState.shop.addressRes)) },
                 supportingContent = { Text(stringResource(R.string.shop_status)) },
                 leadingContent = {
                     Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
@@ -204,14 +204,23 @@ private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 @Composable
 private fun CheckoutScreenPreview() {
     CoffeeRunTheme {
+        val lines = listOf(
+            CartLine(LocalMenu.CROISSANT, unitPrice = 180, id = 1),
+            CartLine(LocalMenu.LATTE, unitPrice = 240, quantity = 2, id = 2)
+        )
         CheckoutScreen(
-            lines = listOf(
-                CartLine(LocalMenu.CROISSANT, unitPrice = 180, id = 1),
-                CartLine(LocalMenu.LATTE, unitPrice = 240, quantity = 2, id = 2)
+            uiState = CheckoutUiState(
+                lines = lines,
+                total = lines.sumOf { it.total },
+                shop = Shop.MOSKOVSKAYA,
+                pickupAtMillis = null,
+                earliestPickup = LocalTime.NOON,
+                placedOrderNumber = null
             ),
-            shop = Shop.MOSKOVSKAYA,
             onBack = {},
-            onConfirm = {}
+            onConfirm = {},
+            onPickupAsap = {},
+            onPickupTimeChosen = { _, _ -> true }
         )
     }
 }

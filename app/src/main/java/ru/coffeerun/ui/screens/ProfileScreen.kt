@@ -52,13 +52,12 @@ import ru.coffeerun.ui.util.snackbar
 /** Профиль: данные пользователя, статистика и список настроек («Изменить» и «Телефон» пока заглушки). */
 @Composable
 fun ProfileScreen(
-    shop: Shop,
-    ordersCount: Int,
-    favoritesCount: Int,
+    uiState: ProfileUiState,
     onShopSelected: (Shop) -> Unit,
     onFavoritesClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val (shop, ordersCount, favoritesCount) = uiState
     var showShopPicker by rememberSaveable { mutableStateOf(false) }
     var showAbout by rememberSaveable { mutableStateOf(false) }
     val notify = MaterialTheme.snackbar
@@ -165,6 +164,6 @@ private fun ProfileItem(icon: ImageVector, titleRes: Int, supporting: String, on
 @Composable
 private fun ProfileScreenPreview() {
     CoffeeRunTheme(dynamicColor = false) {
-        ProvidePreviewNotifier { ProfileScreen(Shop.MOSKOVSKAYA, 2, 3, {}, {}) }
+        ProvidePreviewNotifier { ProfileScreen(ProfileUiState(Shop.MOSKOVSKAYA, ordersCount = 2, favoritesCount = 3), {}, {}) }
     }
 }

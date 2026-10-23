@@ -22,12 +22,12 @@ import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.MIN_QUANTITY
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Customization
+import ru.coffeerun.model.DEFAULT_DRINK_SIZE
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
-import ru.coffeerun.model.defaultOptions
-import ru.coffeerun.model.unitPrice
+import ru.coffeerun.model.itemCount
 import ru.coffeerun.ui.navigation.ProductRoute
 import java.io.Serializable
 
@@ -38,7 +38,7 @@ private const val FORM_KEY = "form"
  * и пережить не только поворот, но и смерть процесса.
  */
 data class ProductForm(
-    val size: DrinkSize = DrinkSize.MEDIUM,
+    val size: DrinkSize = DEFAULT_DRINK_SIZE,
     val milk: MilkType = MilkType.REGULAR,
     val isIced: Boolean = false,
     val extras: Set<Extra> = emptySet(),
@@ -46,10 +46,19 @@ data class ProductForm(
     val quantity: Int = MIN_QUANTITY
 ) : Serializable
 
-/** Состояние экрана позиции: товар грузится по id из маршрута. [unitPrice] — производное от товара и формы. */
+/**
+ * Состояние экрана позиции: товар грузится по id из маршрута. [Success.unitPrice] — производное от товара и формы,
+ * [Success.cartCount] — порций в корзине, для бейджа в шапке.
+ */
 sealed interface ProductUiState {
     data object Loading : ProductUiState
-    data class Success(val product: Product, val form: ProductForm, val unitPrice: Int, val isFavorite: Boolean) : ProductUiState
+    data class Success(
+        val product: Product,
+        val form: ProductForm,
+        val unitPrice: Int,
+        val isFavorite: Boolean,
+        val cartCount: Int
+    ) : ProductUiState
     data object NotFound : ProductUiState
 }
 
@@ -69,17 +78,16 @@ class ProductViewModel(
     private val savedState: SavedStateHandle
 ) : ViewModel() {
     val form: StateFlow<ProductForm> = savedState.getStateFlow(FORM_KEY, ProductForm())
-    val cartLines: StateFlow<List<CartLine>> = cart.lines
-
     private val loaded = MutableStateFlow<Loaded>(Loaded.Loading)
 
-    val uiState: StateFlow<ProductUiState> = combine(loaded, form, favorites.ids) { loaded, form, favoriteIds ->
+    val uiState: StateFlow<ProductUiState> = combine(loaded, form, favorites.ids, cart.lines) { loaded, form, favoriteIds, lines ->
         when (loaded) {
             Loaded.Loading -> ProductUiState.Loading
             Loaded.Missing -> ProductUiState.NotFound
             is Loaded.Found -> ProductUiState.Success(
                 loaded.product, form, loaded.product.unitPrice(form.size, form.milk, form.extras),
-                isFavorite = productId in favoriteIds
+                isFavorite = productId in favoriteIds,
+                cartCount = lines.itemCount
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductUiState.Loading)
