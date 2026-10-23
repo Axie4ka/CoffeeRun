@@ -21,9 +21,7 @@ import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
-import ru.coffeerun.model.defaultOptions
 import ru.coffeerun.model.itemCount
-import ru.coffeerun.model.unitPrice
 import ru.coffeerun.ui.screens.CartViewModel
 import ru.coffeerun.ui.screens.CheckoutViewModel
 import ru.coffeerun.ui.screens.MenuViewModel

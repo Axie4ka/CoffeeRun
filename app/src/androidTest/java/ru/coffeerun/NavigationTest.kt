@@ -24,7 +24,6 @@ import ru.coffeerun.model.DEFAULT_DRINK_SIZE
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop
-import ru.coffeerun.model.unitPrice
 
 /**
  * Сценарии навигации из плана (F1–F12, N1). Проверяют поведение через UI,
