@@ -15,7 +15,7 @@ import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.CartLine
-import ru.coffeerun.model.DrinkSize
+import ru.coffeerun.model.DEFAULT_DRINK_SIZE
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop
@@ -61,11 +61,11 @@ class MenuViewModel(
         }
     }
 
-    /** «+» в меню: размер S и обычное молоко — с явными опциями, чтобы бариста видел размер. */
+    /** «+» в меню: размер по умолчанию и обычное молоко — с явными опциями, чтобы бариста видел размер. */
     fun quickAdd(product: Product) = cart.add(
         CartLine(
             product = product,
-            unitPrice = product.unitPrice(DrinkSize.SMALL, MilkType.REGULAR, emptySet()),
+            unitPrice = product.unitPrice(DEFAULT_DRINK_SIZE, MilkType.REGULAR, emptySet()),
             options = product.defaultOptions()
         )
     )

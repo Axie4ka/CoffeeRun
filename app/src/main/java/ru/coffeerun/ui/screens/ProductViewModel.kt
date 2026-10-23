@@ -22,6 +22,7 @@ import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.MIN_QUANTITY
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Customization
+import ru.coffeerun.model.DEFAULT_DRINK_SIZE
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
@@ -38,7 +39,7 @@ private const val FORM_KEY = "form"
  * и пережить не только поворот, но и смерть процесса.
  */
 data class ProductForm(
-    val size: DrinkSize = DrinkSize.MEDIUM,
+    val size: DrinkSize = DEFAULT_DRINK_SIZE,
     val milk: MilkType = MilkType.REGULAR,
     val isIced: Boolean = false,
     val extras: Set<Extra> = emptySet(),

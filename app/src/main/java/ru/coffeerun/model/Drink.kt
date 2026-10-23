@@ -13,6 +13,9 @@ enum class DrinkSize(@StringRes val labelRes: Int, val price: Int) {
     LARGE(R.string.size_large, 300)
 }
 
+/** Размер по умолчанию и у «+» в меню, и на экране позиции — иначе одинаковые напитки не сольются в одну строку. */
+val DEFAULT_DRINK_SIZE = DrinkSize.MEDIUM
+
 /**
  * Вид молока. [price] — доплата к базовой цене (0 — без доплаты).
  * Варианты с [isAvailable] = false показываются в списке, но выбрать их нельзя.

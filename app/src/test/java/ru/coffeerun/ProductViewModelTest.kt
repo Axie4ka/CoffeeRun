@@ -125,6 +125,16 @@ class ProductViewModelTest {
     }
 
     @Test
+    fun quickAddAndUntouchedForm_mergeIntoOneLine() {
+        MenuViewModel(LocalMenuRepository(), cart, InMemoryShopRepository()).quickAdd(LocalMenu.CAPPUCCINO)
+        vm(LocalMenu.CAPPUCCINO).addToCart()
+        val lines = cart.lines.value
+        assertEquals(1, lines.size)
+        assertEquals(2, lines[0].quantity)
+        assertEquals(260, lines[0].unitPrice)
+    }
+
+    @Test
     fun form_defaults() {
         assertEquals(ProductForm(), vm(LocalMenu.CAPPUCCINO).form.value)
     }

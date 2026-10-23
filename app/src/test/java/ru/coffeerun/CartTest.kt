@@ -16,6 +16,7 @@ import ru.coffeerun.data.LocalMenuRepository
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.DEFAULT_DRINK_SIZE
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
@@ -77,7 +78,7 @@ class CartTest {
         assertEquals(2, lines[0].quantity)
 
         MenuViewModel(LocalMenuRepository(), cart, InMemoryShopRepository()).quickAdd(LocalMenu.CAPPUCCINO)
-        assertEquals(DrinkSize.SMALL, lines.last().options?.size)
+        assertEquals(DrinkSize.MEDIUM, lines.last().options?.size)
         assertEquals(3, lines.itemCount)
         assertNull(LocalMenu.CROISSANT.defaultOptions())
     }
@@ -136,7 +137,7 @@ class CartTest {
     // Так строку собирает «+» в меню (MenuViewModel.quickAdd)
     private fun quickAdd(p: Product) = CartLine(
         product = p,
-        unitPrice = p.unitPrice(DrinkSize.SMALL, MilkType.REGULAR, emptySet()),
+        unitPrice = p.unitPrice(DEFAULT_DRINK_SIZE, MilkType.REGULAR, emptySet()),
         options = p.defaultOptions()
     )
 }

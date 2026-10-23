@@ -50,11 +50,11 @@ data class Product(
 private val Product.hasOptions: Boolean get() = customizations.isNotEmpty() || extras.isNotEmpty()
 
 /**
- * Опции по умолчанию: самый маленький размер, обычное молоко, без добавок.
+ * Опции по умолчанию: размер [DEFAULT_DRINK_SIZE], обычное молоко, без добавок.
  * Их получает и «+» в меню, и экран позиции, поэтому одинаковые строки корзины сливаются.
  */
 fun Product.defaultOptions(): DrinkOptions? = if (!hasOptions) null else DrinkOptions(
-    size = DrinkSize.SMALL.takeIf { Customization.SIZE in customizations },
+    size = DEFAULT_DRINK_SIZE.takeIf { Customization.SIZE in customizations },
     milk = MilkType.REGULAR.takeIf { Customization.MILK in customizations },
     isIced = false,
     extras = emptySet()
