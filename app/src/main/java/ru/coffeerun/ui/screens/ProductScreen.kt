@@ -279,7 +279,7 @@ private fun ProductHeader(
                 .clip(MaterialTheme.shapes.large)
         )
 
-        Spacer(Modifier.width(MaterialTheme.spacing.medium))
+        Spacer(Modifier.height(MaterialTheme.spacing.medium))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
