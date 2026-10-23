@@ -12,8 +12,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
 
-/** Фиксированные роли не зависят от темы: бейдж корзины выглядит одинаково днём и ночью. */
-private fun ColorScheme.withFixedRoles() = copy(
+/**
+ * Фиксированные роли не зависят от темы: бейдж корзины выглядит одинаково днём и ночью.
+ * Не расширение на ColorScheme: внутри него `primaryFixed` значило бы поле самой схемы, а не цвет из Color.kt.
+ */
+private fun withFixedRoles(scheme: ColorScheme) = scheme.copy(
     primaryFixed = primaryFixed,
     primaryFixedDim = primaryFixedDim,
     onPrimaryFixed = onPrimaryFixed,
@@ -28,7 +31,7 @@ private fun ColorScheme.withFixedRoles() = copy(
     onTertiaryFixedVariant = onTertiaryFixedVariant,
 )
 
-private val lightScheme = lightColorScheme(
+internal val lightScheme = withFixedRoles(lightColorScheme(
     primary = primaryLight,
     onPrimary = onPrimaryLight,
     primaryContainer = primaryContainerLight,
@@ -63,9 +66,9 @@ private val lightScheme = lightColorScheme(
     surfaceContainer = surfaceContainerLight,
     surfaceContainerHigh = surfaceContainerHighLight,
     surfaceContainerHighest = surfaceContainerHighestLight,
-).withFixedRoles()
+))
 
-private val darkScheme = darkColorScheme(
+internal val darkScheme = withFixedRoles(darkColorScheme(
     primary = primaryDark,
     onPrimary = onPrimaryDark,
     primaryContainer = primaryContainerDark,
@@ -100,7 +103,7 @@ private val darkScheme = darkColorScheme(
     surfaceContainer = surfaceContainerDark,
     surfaceContainerHigh = surfaceContainerHighDark,
     surfaceContainerHighest = surfaceContainerHighestDark,
-).withFixedRoles()
+))
 
 /**
  * Тема приложения: цветовая схема + шрифты из [AppTypography].
