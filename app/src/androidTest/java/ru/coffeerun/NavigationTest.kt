@@ -20,8 +20,11 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExternalResource
 import org.junit.runner.RunWith
+import ru.coffeerun.model.DEFAULT_DRINK_SIZE
+import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop
+import ru.coffeerun.model.unitPrice
 
 /**
  * Сценарии навигации из плана (F1–F12, N1). Проверяют поведение через UI,
@@ -87,6 +90,18 @@ class NavigationTest {
         Espresso.pressBack()
         tab(R.string.tab_orders).assertIsDisplayed()
         assertMenuShown()
+    }
+
+    @Test
+    fun product_addToCartReturnsToMenu() {
+        val cappuccino = LocalMenu.CAPPUCCINO
+        openProduct(cappuccino)
+        val price = cappuccino.unitPrice(DEFAULT_DRINK_SIZE, MilkType.REGULAR, emptySet())
+        rule.onNodeWithText(str(R.string.add_to_cart, price)).performClick()
+        assertMenuShown()
+        tab(R.string.tab_menu).assertIsSelected()
+        tab(R.string.tab_cart).performClick()
+        rule.onNodeWithText(str(R.string.cart_checkout)).assertIsDisplayed()
     }
 
     @Test // F7

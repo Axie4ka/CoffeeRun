@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -183,7 +184,12 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                             onExtraToggle = vm::toggleExtra,
                             onNoteChange = vm::setNote,
                             onQuantityChange = vm::changeQuantity,
-                            onAddToCart = vm::addToCart,
+                            // Добавили — назад, откуда пришли (меню или избранное). dropUnlessResumed не даст
+                            // второму нажатию во время перехода добавить ещё раз и снять со стека само меню
+                            onAddToCart = dropUnlessResumed {
+                                vm.addToCart()
+                                navController.popBackStack()
+                            },
                             onBack = { navController.popBackStack() },
                             isFavorite = state.isFavorite,
                             onFavorite = vm::toggleFavorite,
