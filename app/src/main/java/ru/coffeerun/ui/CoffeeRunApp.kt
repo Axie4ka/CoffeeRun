@@ -27,7 +27,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import ru.coffeerun.R
-import ru.coffeerun.model.itemCount
 import ru.coffeerun.ui.components.AppNavigationBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.navigation.CartRoute
@@ -133,13 +132,9 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
 
             composable<ProfileRoute> {
                 val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
-                val shop by vm.shop.collectAsStateWithLifecycle()
-                val ordersCount by vm.ordersCount.collectAsStateWithLifecycle()
-                val favoritesCount by vm.favoritesCount.collectAsStateWithLifecycle()
+                val profileState by vm.uiState.collectAsStateWithLifecycle()
                 ProfileScreen(
-                    shop = shop,
-                    ordersCount = ordersCount,
-                    favoritesCount = favoritesCount,
+                    uiState = profileState,
                     onShopSelected = vm::selectShop,
                     onFavoritesClick = { navController.navigate(FavoritesRoute) },
                     modifier = tabModifier
@@ -159,7 +154,6 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
 
             composable<ProductRoute> {
                 val vm: ProductViewModel = viewModel(factory = ProductViewModel.Factory)
-                val lines by vm.cartLines.collectAsStateWithLifecycle()
                 val uiState by vm.uiState.collectAsStateWithLifecycle()
                 when (val state = uiState) {
                     ProductUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -179,7 +173,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                             product = state.product,
                             form = state.form,
                             unitPrice = state.unitPrice,
-                            cartCount = lines.itemCount,
+                            cartCount = state.cartCount,
                             onSizeSelected = vm::selectSize,
                             onMilkSelected = vm::selectMilk,
                             onIcedChange = vm::setIced,
@@ -208,10 +202,8 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
 
             composable<CheckoutRoute> {
                 val vm: CheckoutViewModel = viewModel(factory = CheckoutViewModel.Factory)
-                val lines by vm.lines.collectAsStateWithLifecycle()
-                val shop by vm.shop.collectAsStateWithLifecycle()
-                val pickupAtMillis by vm.pickupAtMillis.collectAsStateWithLifecycle()
-                val placedOrderNumber by vm.placedOrderNumber.collectAsStateWithLifecycle()
+                val checkoutState by vm.uiState.collectAsStateWithLifecycle()
+                val placedOrderNumber = checkoutState.placedOrderNumber
                 LaunchedEffect(placedOrderNumber) {
                     placedOrderNumber?.let { number ->
                         // Cart и Checkout снимаем: «назад» с «Заказ принят» ведёт в меню
@@ -220,12 +212,9 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                     }
                 }
                 CheckoutScreen(
-                    lines = lines,
-                    shop = shop,
+                    uiState = checkoutState,
                     onBack = { navController.popBackStack() },
                     onConfirm = vm::placeOrder,
-                    pickupAtMillis = pickupAtMillis,
-                    earliestPickup = vm.earliestPickupTime(),
                     onPickupAsap = vm::pickupAsap,
                     onPickupTimeChosen = vm::setPickupTime,
                     snackbarHostState = snackbarHostState

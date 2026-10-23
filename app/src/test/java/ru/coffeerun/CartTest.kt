@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -102,21 +103,23 @@ class CartTest {
         assertTrue(lines.isEmpty())
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun placeOrder_movesCartToOrders() {
-        val checkout = CheckoutViewModel(cart, orders, InMemoryShopRepository())
+    fun placeOrder_movesCartToOrders() = runTest {
+        val checkout = CheckoutViewModel(cart, orders, InMemoryShopRepository(), ticks = flowOf(Unit))
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { checkout.uiState.collect {} }
         checkout.placeOrder()
-        assertNull("пустая корзина — заказа нет", checkout.placedOrderNumber.value)
+        assertNull("пустая корзина — заказа нет", checkout.uiState.value.placedOrderNumber)
 
         cart.add(quickAdd(LocalMenu.CROISSANT).copy(quantity = 2))
         checkout.placeOrder()
         val order = orders.orders.value.first()
-        assertEquals(order.number, checkout.placedOrderNumber.value)
+        assertEquals(order.number, checkout.uiState.value.placedOrderNumber)
         assertEquals(360, order.total)
         assertTrue(lines.isEmpty())
         // Событие обработано — повторного перехода не будет
         checkout.onPlacedOrderShown()
-        assertNull(checkout.placedOrderNumber.value)
+        assertNull(checkout.uiState.value.placedOrderNumber)
 
         // Экран «Заказ принят» находит заказ по номеру из маршрута
         assertEquals(order, OrderPlacedViewModel(order.number, orders).order)

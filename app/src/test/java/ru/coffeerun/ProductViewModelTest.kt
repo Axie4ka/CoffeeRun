@@ -135,6 +135,16 @@ class ProductViewModelTest {
     }
 
     @Test
+    fun success_hasCartCountForBadge() = runTest {
+        val vm = vm(LocalMenu.LATTE)
+        keepActive(vm)
+        assertEquals(0, (vm.uiState.value as ProductUiState.Success).cartCount)
+        vm.changeQuantity(+1)
+        vm.addToCart()
+        assertEquals(2, (vm.uiState.value as ProductUiState.Success).cartCount)
+    }
+
+    @Test
     fun form_defaults() {
         assertEquals(ProductForm(), vm(LocalMenu.CAPPUCCINO).form.value)
     }
