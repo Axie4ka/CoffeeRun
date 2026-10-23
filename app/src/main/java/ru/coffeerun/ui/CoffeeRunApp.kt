@@ -80,7 +80,9 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             if (currentTab != null) AppNavigationBar(
                 selected = currentTab,
                 cartCount = cartUiState.count,
-                onSelect = navController::openTab
+                // Уже открытую вкладку не переоткрываем: openTab восстановил бы её старое сохранённое
+                // состояние вместо текущего (например, после «К моим заказам»)
+                onSelect = { tab -> if (tab != currentTab) navController.openTab(tab) }
             )
         }
     ) { innerPadding ->
