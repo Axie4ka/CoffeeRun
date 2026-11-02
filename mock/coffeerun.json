@@ -1,0 +1,119 @@
+{
+  "uuid": "11ee69dd-89ea-4798-b82d-3878650b42d2",
+  "lastMigration": 33,
+  "name": "CoffeeRun API ",
+  "endpointPrefix": "",
+  "latency": 0,
+  "port": 3000,
+  "hostname": "",
+  "folders": [],
+  "routes": [
+    {
+      "uuid": "189eb022-ede9-4089-b344-24bbf8ef3025",
+      "type": "http",
+      "documentation": "Всё меню и цены опций",
+      "method": "get",
+      "endpoint": "menu",
+      "responses": [
+        {
+          "uuid": "bf26b3fa-05ee-47ec-b371-c47d6648b1da",
+          "body": "{\n  \"products\": [\n    {\n      \"id\": \"cappuccino\",\n      \"category\": \"COFFEE\",\n      \"name\": \"Капучино\",\n      \"description\": \"Эспрессо и нежная молочная пена\",\n      \"details\": \"Классический эспрессо с нежной молочной пеной. Готовим на зерне свежей обжарки.\",\n      \"imageUrl\": \"images/cappuccino.jpg\",\n      \"price\": 220,\n      \"priceFrom\": true,\n      \"calories\": 120,\n      \"allergens\": [\n        \"MILK\"\n      ],\n      \"customizations\": [\n        \"SIZE\",\n        \"MILK\",\n        \"ICE\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"VANILLA\",\n        \"CARAMEL\",\n        \"HAZELNUT\",\n        \"CREAM\",\n        \"EXTRA_SHOT\",\n        \"CINNAMON\"\n      ]\n    },\n    {\n      \"id\": \"latte\",\n      \"category\": \"COFFEE\",\n      \"name\": \"Латте\",\n      \"description\": \"Мягкий кофе с большим количеством молока\",\n      \"details\": \"Мягкий кофе с большим количеством горячего молока и тонким слоем пены.\",\n      \"imageUrl\": \"images/latte.jpg\",\n      \"price\": 240,\n      \"priceFrom\": true,\n      \"calories\": 190,\n      \"allergens\": [\n        \"MILK\"\n      ],\n      \"customizations\": [\n        \"SIZE\",\n        \"MILK\",\n        \"ICE\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"VANILLA\",\n        \"CARAMEL\",\n        \"HAZELNUT\",\n        \"CREAM\",\n        \"EXTRA_SHOT\",\n        \"CINNAMON\",\n        \"HONEY\"\n      ]\n    },\n    {\n      \"id\": \"raf\",\n      \"category\": \"COFFEE\",\n      \"name\": \"Раф ванильный\",\n      \"description\": \"Сливки, эспрессо и ванильный сахар\",\n      \"details\": \"Эспрессо, взбитый со сливками и ванильным сахаром. Сладкий и бархатный.\",\n      \"imageUrl\": \"images/raf.jpg\",\n      \"price\": 280,\n      \"priceFrom\": true,\n      \"calories\": 320,\n      \"allergens\": [\n        \"MILK\"\n      ],\n      \"customizations\": [\n        \"SIZE\",\n        \"MILK\",\n        \"ICE\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"CARAMEL\",\n        \"HAZELNUT\",\n        \"EXTRA_SHOT\",\n        \"CINNAMON\"\n      ]\n    },\n    {\n      \"id\": \"espresso\",\n      \"category\": \"COFFEE\",\n      \"name\": \"Эспрессо\",\n      \"description\": \"Крепкий и насыщенный, 40 мл\",\n      \"details\": \"Короткий и крепкий кофе, 40 мл. Подаётся без молока.\",\n      \"imageUrl\": \"images/espresso.jpg\",\n      \"price\": 150,\n      \"priceFrom\": false,\n      \"calories\": 5,\n      \"allergens\": [],\n      \"customizations\": [\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"EXTRA_SHOT\"\n      ]\n    },\n    {\n      \"id\": \"americano\",\n      \"category\": \"COFFEE\",\n      \"name\": \"Американо\",\n      \"description\": \"Эспрессо, разбавленный горячей водой\",\n      \"details\": \"Эспрессо, разбавленный горячей водой. Чистый вкус, без молока.\",\n      \"imageUrl\": \"images/americano.jpg\",\n      \"price\": 160,\n      \"priceFrom\": true,\n      \"calories\": 10,\n      \"allergens\": [],\n      \"customizations\": [\n        \"SIZE\",\n        \"ICE\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"EXTRA_SHOT\",\n        \"VANILLA\",\n        \"CARAMEL\",\n        \"HAZELNUT\",\n        \"HONEY\"\n      ]\n    },\n    {\n      \"id\": \"hot_chocolate\",\n      \"category\": \"NOT_COFFEE\",\n      \"name\": \"Горячий шоколад\",\n      \"description\": \"Густой и сладкий, на какао\",\n      \"details\": \"Густой напиток из настоящего шоколада и какао. Тёплый и сладкий.\",\n      \"imageUrl\": \"images/hot_chocolate.jpg\",\n      \"price\": 220,\n      \"priceFrom\": true,\n      \"calories\": 280,\n      \"allergens\": [\n        \"MILK\"\n      ],\n      \"customizations\": [\n        \"SIZE\",\n        \"MILK\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"CREAM\",\n        \"MARSHMALLOW\",\n        \"CARAMEL\",\n        \"HAZELNUT\",\n        \"CINNAMON\"\n      ]\n    },\n    {\n      \"id\": \"tea\",\n      \"category\": \"NOT_COFFEE\",\n      \"name\": \"Чёрный чай\",\n      \"description\": \"Заварной, с лимоном\",\n      \"details\": \"Чёрный чай, заваренный в чайнике, подаётся с долькой лимона.\",\n      \"imageUrl\": \"images/tea.jpg\",\n      \"price\": 140,\n      \"priceFrom\": true,\n      \"calories\": 2,\n      \"allergens\": [],\n      \"customizations\": [\n        \"SIZE\",\n        \"ICE\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"LEMON\",\n        \"HONEY\",\n        \"MINT\",\n        \"GINGER\"\n      ]\n    },\n    {\n      \"id\": \"croissant\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Круассан\",\n      \"description\": \"Классический, сливочный\",\n      \"details\": \"Классический сливочный круассан, выпекаем каждое утро.\",\n      \"imageUrl\": \"images/croissant.jpg\",\n      \"price\": 180,\n      \"priceFrom\": false,\n      \"calories\": 310,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"MILK\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    },\n    {\n      \"id\": \"cinnamon_roll\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Булочка с корицей\",\n      \"description\": \"Мягкое тесто с корицей и сахаром\",\n      \"details\": \"Мягкая булочка с начинкой из корицы и сахара и лёгкой глазурью.\",\n      \"imageUrl\": \"images/cinnamon_roll.jpg\",\n      \"price\": 170,\n      \"priceFrom\": false,\n      \"calories\": 340,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"MILK\",\n        \"EGGS\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    },\n    {\n      \"id\": \"chocolate_muffin\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Шоколадный маффин\",\n      \"description\": \"С шоколадной крошкой внутри\",\n      \"details\": \"Влажный шоколадный маффин с шоколадной крошкой внутри.\",\n      \"imageUrl\": \"images/chocolate_muffin.jpg\",\n      \"price\": 150,\n      \"priceFrom\": false,\n      \"calories\": 360,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"MILK\",\n        \"EGGS\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    },\n    {\n      \"id\": \"apple_pie\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Яблочный пирог\",\n      \"description\": \"Яблоки, корица и рассыпчатое тесто\",\n      \"details\": \"Пирог с печёными яблоками и корицей на рассыпчатой основе.\",\n      \"imageUrl\": \"images/apple_pie.jpg\",\n      \"price\": 190,\n      \"priceFrom\": false,\n      \"calories\": 290,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"EGGS\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    },\n    {\n      \"id\": \"cheesecake\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Чизкейк\",\n      \"description\": \"Нью-Йорк\",\n      \"details\": \"Чизкейк Нью-Йорк на песочной основе, с нежной сливочной текстурой.\",\n      \"imageUrl\": \"images/cheesecake.jpg\",\n      \"price\": 240,\n      \"priceFrom\": false,\n      \"calories\": 380,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"MILK\",\n        \"EGGS\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    },\n    {\n      \"id\": \"almond_cookie\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Миндальное печенье\",\n      \"description\": \"Хрустящее, с поджаренным миндалём\",\n      \"details\": \"Хрустящее печенье с поджаренными миндальными лепестками.\",\n      \"imageUrl\": \"images/almond_cookie.jpg\",\n      \"price\": 110,\n      \"priceFrom\": false,\n      \"calories\": 220,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"EGGS\",\n        \"NUTS\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    }\n  ],\n  \"sizes\": [\n    {\n      \"code\": \"SMALL\",\n      \"price\": 220\n    },\n    {\n      \"code\": \"MEDIUM\",\n      \"price\": 260\n    },\n    {\n      \"code\": \"LARGE\",\n      \"price\": 300\n    }\n  ],\n  \"milks\": [\n    {\n      \"code\": \"REGULAR\",\n      \"price\": 0,\n      \"available\": true\n    },\n    {\n      \"code\": \"LACTOSE_FREE\",\n      \"price\": 0,\n      \"available\": true\n    },\n    {\n      \"code\": \"OAT\",\n      \"price\": 40,\n      \"available\": true\n    },\n    {\n      \"code\": \"ALMOND\",\n      \"price\": 50,\n      \"available\": true\n    },\n    {\n      \"code\": \"COCONUT\",\n      \"price\": 50,\n      \"available\": false\n    }\n  ],\n  \"extras\": [\n    {\n      \"code\": \"VANILLA\",\n      \"price\": 40\n    },\n    {\n      \"code\": \"CARAMEL\",\n      \"price\": 40\n    },\n    {\n      \"code\": \"HAZELNUT\",\n      \"price\": 40\n    },\n    {\n      \"code\": \"CREAM\",\n      \"price\": 50\n    },\n    {\n      \"code\": \"EXTRA_SHOT\",\n      \"price\": 60\n    },\n    {\n      \"code\": \"CINNAMON\",\n      \"price\": 20\n    },\n    {\n      \"code\": \"HONEY\",\n      \"price\": 30\n    },\n    {\n      \"code\": \"MARSHMALLOW\",\n      \"price\": 40\n    },\n    {\n      \"code\": \"LEMON\",\n      \"price\": 20\n    },\n    {\n      \"code\": \"MINT\",\n      \"price\": 20\n    },\n    {\n      \"code\": \"GINGER\",\n      \"price\": 30\n    }\n  ]\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Меню. Тексты позиций — на языке из Accept-Language.",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "60f14824-2284-40fb-a647-895d988ead87",
+          "body": "{\n  \"message\": \"Internal server error\"\n}",
+          "latency": 0,
+          "statusCode": 500,
+          "label": "Ошибка сервера",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    }
+  ],
+  "rootChildren": [
+    {
+      "type": "route",
+      "uuid": "189eb022-ede9-4089-b344-24bbf8ef3025"
+    }
+  ],
+  "proxyMode": false,
+  "proxyHost": "",
+  "proxyRemovePrefix": false,
+  "tlsOptions": {
+    "enabled": false,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "",
+    "keyPath": "",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": true,
+  "headers": [
+    {
+      "key": "Access-Control-Allow-Origin",
+      "value": "*"
+    },
+    {
+      "key": "Access-Control-Allow-Methods",
+      "value": "GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS"
+    },
+    {
+      "key": "Access-Control-Allow-Headers",
+      "value": "Content-Type, Origin, Accept, Authorization, Content-Length, X-Requested-With"
+    }
+  ],
+  "proxyReqHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "proxyResHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "data": [],
+  "callbacks": []
+}
