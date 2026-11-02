@@ -23,11 +23,11 @@ import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.itemCount
-import ru.coffeerun.ui.screens.CartViewModel
-import ru.coffeerun.ui.screens.CheckoutViewModel
-import ru.coffeerun.ui.screens.MenuViewModel
-import ru.coffeerun.ui.screens.OrderPlacedViewModel
-import ru.coffeerun.ui.screens.OrdersViewModel
+import ru.coffeerun.ui.cart.CartViewModel
+import ru.coffeerun.ui.checkout.CheckoutViewModel
+import ru.coffeerun.ui.menu.MenuViewModel
+import ru.coffeerun.ui.checkout.OrderPlacedViewModel
+import ru.coffeerun.ui.orders.OrdersViewModel
 
 /** Цена, слияние строк корзины и оформление заказа — логика, где ошибка стоит денег. */
 class CartTest {

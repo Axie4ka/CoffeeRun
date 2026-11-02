@@ -13,7 +13,7 @@ import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
-import ru.coffeerun.ui.screens.ProfileViewModel
+import ru.coffeerun.ui.profile.ProfileViewModel
 
 /** Профиль: счётчики заказов и избранного следуют за репозиториями. */
 @OptIn(ExperimentalCoroutinesApi::class)

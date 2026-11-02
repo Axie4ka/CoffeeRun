@@ -1,4 +1,4 @@
-package ru.coffeerun.ui.screens
+package ru.coffeerun.ui.orders
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.initializer

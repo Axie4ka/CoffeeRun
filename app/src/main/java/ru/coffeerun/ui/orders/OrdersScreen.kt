@@ -1,4 +1,4 @@
-package ru.coffeerun.ui.screens
+package ru.coffeerun.ui.orders
 
 import ru.coffeerun.data.LocalMenu
 import androidx.compose.foundation.layout.Arrangement
@@ -50,6 +50,7 @@ fun OrdersScreen(
 ) {
     val (active, history) = orders.partition { it.isActive }
 
+//    Column(modifier = modifier.fillMaxSize()) {
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.orders_title))
         if (orders.isEmpty()) {

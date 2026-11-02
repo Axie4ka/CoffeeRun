@@ -1,4 +1,4 @@
-package ru.coffeerun.ui.screens
+package ru.coffeerun.ui.checkout
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

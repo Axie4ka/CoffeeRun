@@ -1,4 +1,4 @@
-package ru.coffeerun.ui.screens
+package ru.coffeerun.ui.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

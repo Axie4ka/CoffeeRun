@@ -33,7 +33,9 @@ data class CartLine(
 
     /** Та же позиция с теми же опциями — такие строки в корзине объединяются. */
     fun isSameItem(other: CartLine) =
-        product == other.product && unitPrice == other.unitPrice && options == other.options
+        product == other.product &&
+        unitPrice == other.unitPrice &&
+        options == other.options
 }
 
 /** Сколько порций в корзине — число на бейдже. */

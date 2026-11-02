@@ -20,7 +20,7 @@ import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.OrderStatus
-import ru.coffeerun.ui.screens.CheckoutViewModel
+import ru.coffeerun.ui.checkout.CheckoutViewModel
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId

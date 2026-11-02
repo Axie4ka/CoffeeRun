@@ -2,6 +2,7 @@ package ru.coffeerun.ui
 
 import android.content.Intent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
@@ -37,23 +38,23 @@ import ru.coffeerun.ui.navigation.OrdersRoute
 import ru.coffeerun.ui.navigation.PlacedRoute
 import ru.coffeerun.ui.navigation.ProductRoute
 import ru.coffeerun.ui.navigation.ProfileRoute
-import ru.coffeerun.ui.screens.CartScreen
-import ru.coffeerun.ui.screens.CartViewModel
-import ru.coffeerun.ui.screens.CheckoutScreen
-import ru.coffeerun.ui.screens.CheckoutViewModel
-import ru.coffeerun.ui.screens.FavoritesScreen
-import ru.coffeerun.ui.screens.FavoritesViewModel
-import ru.coffeerun.ui.screens.MenuScreen
-import ru.coffeerun.ui.screens.MenuViewModel
-import ru.coffeerun.ui.screens.OrderPlacedScreen
-import ru.coffeerun.ui.screens.OrderPlacedViewModel
-import ru.coffeerun.ui.screens.OrdersScreen
-import ru.coffeerun.ui.screens.OrdersViewModel
-import ru.coffeerun.ui.screens.ProductScreen
-import ru.coffeerun.ui.screens.ProductUiState
-import ru.coffeerun.ui.screens.ProductViewModel
-import ru.coffeerun.ui.screens.ProfileScreen
-import ru.coffeerun.ui.screens.ProfileViewModel
+import ru.coffeerun.ui.cart.CartScreen
+import ru.coffeerun.ui.cart.CartViewModel
+import ru.coffeerun.ui.checkout.CheckoutScreen
+import ru.coffeerun.ui.checkout.CheckoutViewModel
+import ru.coffeerun.ui.profile.FavoritesScreen
+import ru.coffeerun.ui.profile.FavoritesViewModel
+import ru.coffeerun.ui.menu.MenuScreen
+import ru.coffeerun.ui.menu.MenuViewModel
+import ru.coffeerun.ui.checkout.OrderPlacedScreen
+import ru.coffeerun.ui.checkout.OrderPlacedViewModel
+import ru.coffeerun.ui.orders.OrdersScreen
+import ru.coffeerun.ui.orders.OrdersViewModel
+import ru.coffeerun.ui.product.ProductScreen
+import ru.coffeerun.ui.product.ProductUiState
+import ru.coffeerun.ui.product.ProductViewModel
+import ru.coffeerun.ui.profile.ProfileScreen
+import ru.coffeerun.ui.profile.ProfileViewModel
 
 /**
  * Корень приложения: NavHost внутри одного Scaffold. Нижняя панель видна только
@@ -73,6 +74,9 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
     val cartUiState by viewModel<CartViewModel>(factory = CartViewModel.Factory).uiState.collectAsStateWithLifecycle()
 
     Scaffold(
+        // Статус-бар учитывают сами вкладки (TopAppBar / statusBarsPadding), иначе отступ сверху двойной;
+        // снизу отступ даёт NavigationBar, он сам учитывает системную панель
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         // У Product и Checkout свой SnackbarHost с тем же state — иначе сообщение покажется дважды
         snackbarHost = { if (currentTab != null) SnackbarHost(snackbarHostState) },
         bottomBar = {

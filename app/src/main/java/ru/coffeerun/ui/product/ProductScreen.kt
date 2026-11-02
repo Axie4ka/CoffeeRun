@@ -1,4 +1,4 @@
-package ru.coffeerun.ui.screens
+package ru.coffeerun.ui.product
 
 import ru.coffeerun.data.LocalMenu
 import androidx.compose.foundation.Image
