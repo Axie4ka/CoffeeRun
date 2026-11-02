@@ -67,12 +67,47 @@
       "responseMode": null,
       "streamingMode": null,
       "streamingInterval": 0
+    },
+    {
+      "uuid": "964bb39d-07c3-4680-b2d7-cb9b6ee39da3",
+      "type": "http",
+      "documentation": "Фото позиции меню",
+      "method": "get",
+      "endpoint": "images/:file",
+      "responses": [
+        {
+          "uuid": "65a3cacd-3d28-4bff-9815-d93cfd6debf4",
+          "body": "",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Файл из mock/images",
+          "headers": [],
+          "bodyType": "FILE",
+          "filePath": "images/{{urlParam 'file'}}",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": true,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
     }
   ],
   "rootChildren": [
     {
       "type": "route",
       "uuid": "189eb022-ede9-4089-b344-24bbf8ef3025"
+    },
+    {
+      "type": "route",
+      "uuid": "964bb39d-07c3-4680-b2d7-cb9b6ee39da3"
     }
   ],
   "proxyMode": false,

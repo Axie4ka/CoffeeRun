@@ -28,6 +28,29 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /images/{file}:
+    get:
+      operationId: getImage
+      summary: Фото позиции меню (путь из Product.imageUrl)
+      security: []  # картинки доступны без входа
+      parameters:
+        - name: file
+          in: path
+          required: true
+          schema:
+            type: string
+            example: latte.jpg
+      responses:
+        '200':
+          description: Файл фото
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Такого файла нет
+
 components:
   parameters:
     AcceptLanguage:
