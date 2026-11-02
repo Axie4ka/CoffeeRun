@@ -1,0 +1,1148 @@
+{
+  "uuid": "11ee69dd-89ea-4798-b82d-3878650b42d2",
+  "lastMigration": 33,
+  "name": "CoffeeRun API ",
+  "endpointPrefix": "",
+  "latency": 0,
+  "port": 3000,
+  "hostname": "",
+  "folders": [],
+  "routes": [
+    {
+      "uuid": "189eb022-ede9-4089-b344-24bbf8ef3025",
+      "type": "http",
+      "documentation": "Всё меню и цены опций",
+      "method": "get",
+      "endpoint": "menu",
+      "responses": [
+        {
+          "uuid": "bf26b3fa-05ee-47ec-b371-c47d6648b1da",
+          "body": "{\n  \"products\": [\n    {\n      \"id\": \"cappuccino\",\n      \"category\": \"COFFEE\",\n      \"name\": \"Капучино\",\n      \"description\": \"Эспрессо и нежная молочная пена\",\n      \"details\": \"Классический эспрессо с нежной молочной пеной. Готовим на зерне свежей обжарки.\",\n      \"imageUrl\": \"images/cappuccino.jpg\",\n      \"price\": 220,\n      \"priceFrom\": true,\n      \"calories\": 120,\n      \"allergens\": [\n        \"MILK\"\n      ],\n      \"customizations\": [\n        \"SIZE\",\n        \"MILK\",\n        \"ICE\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"VANILLA\",\n        \"CARAMEL\",\n        \"HAZELNUT\",\n        \"CREAM\",\n        \"EXTRA_SHOT\",\n        \"CINNAMON\"\n      ]\n    },\n    {\n      \"id\": \"latte\",\n      \"category\": \"COFFEE\",\n      \"name\": \"Латте\",\n      \"description\": \"Мягкий кофе с большим количеством молока\",\n      \"details\": \"Мягкий кофе с большим количеством горячего молока и тонким слоем пены.\",\n      \"imageUrl\": \"images/latte.jpg\",\n      \"price\": 240,\n      \"priceFrom\": true,\n      \"calories\": 190,\n      \"allergens\": [\n        \"MILK\"\n      ],\n      \"customizations\": [\n        \"SIZE\",\n        \"MILK\",\n        \"ICE\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"VANILLA\",\n        \"CARAMEL\",\n        \"HAZELNUT\",\n        \"CREAM\",\n        \"EXTRA_SHOT\",\n        \"CINNAMON\",\n        \"HONEY\"\n      ]\n    },\n    {\n      \"id\": \"raf\",\n      \"category\": \"COFFEE\",\n      \"name\": \"Раф ванильный\",\n      \"description\": \"Сливки, эспрессо и ванильный сахар\",\n      \"details\": \"Эспрессо, взбитый со сливками и ванильным сахаром. Сладкий и бархатный.\",\n      \"imageUrl\": \"images/raf.jpg\",\n      \"price\": 280,\n      \"priceFrom\": true,\n      \"calories\": 320,\n      \"allergens\": [\n        \"MILK\"\n      ],\n      \"customizations\": [\n        \"SIZE\",\n        \"MILK\",\n        \"ICE\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"CARAMEL\",\n        \"HAZELNUT\",\n        \"EXTRA_SHOT\",\n        \"CINNAMON\"\n      ]\n    },\n    {\n      \"id\": \"espresso\",\n      \"category\": \"COFFEE\",\n      \"name\": \"Эспрессо\",\n      \"description\": \"Крепкий и насыщенный, 40 мл\",\n      \"details\": \"Короткий и крепкий кофе, 40 мл. Подаётся без молока.\",\n      \"imageUrl\": \"images/espresso.jpg\",\n      \"price\": 150,\n      \"priceFrom\": false,\n      \"calories\": 5,\n      \"allergens\": [],\n      \"customizations\": [\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"EXTRA_SHOT\"\n      ]\n    },\n    {\n      \"id\": \"americano\",\n      \"category\": \"COFFEE\",\n      \"name\": \"Американо\",\n      \"description\": \"Эспрессо, разбавленный горячей водой\",\n      \"details\": \"Эспрессо, разбавленный горячей водой. Чистый вкус, без молока.\",\n      \"imageUrl\": \"images/americano.jpg\",\n      \"price\": 160,\n      \"priceFrom\": true,\n      \"calories\": 10,\n      \"allergens\": [],\n      \"customizations\": [\n        \"SIZE\",\n        \"ICE\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"EXTRA_SHOT\",\n        \"VANILLA\",\n        \"CARAMEL\",\n        \"HAZELNUT\",\n        \"HONEY\"\n      ]\n    },\n    {\n      \"id\": \"hot_chocolate\",\n      \"category\": \"NOT_COFFEE\",\n      \"name\": \"Горячий шоколад\",\n      \"description\": \"Густой и сладкий, на какао\",\n      \"details\": \"Густой напиток из настоящего шоколада и какао. Тёплый и сладкий.\",\n      \"imageUrl\": \"images/hot_chocolate.jpg\",\n      \"price\": 220,\n      \"priceFrom\": true,\n      \"calories\": 280,\n      \"allergens\": [\n        \"MILK\"\n      ],\n      \"customizations\": [\n        \"SIZE\",\n        \"MILK\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"CREAM\",\n        \"MARSHMALLOW\",\n        \"CARAMEL\",\n        \"HAZELNUT\",\n        \"CINNAMON\"\n      ]\n    },\n    {\n      \"id\": \"tea\",\n      \"category\": \"NOT_COFFEE\",\n      \"name\": \"Чёрный чай\",\n      \"description\": \"Заварной, с лимоном\",\n      \"details\": \"Чёрный чай, заваренный в чайнике, подаётся с долькой лимона.\",\n      \"imageUrl\": \"images/tea.jpg\",\n      \"price\": 140,\n      \"priceFrom\": true,\n      \"calories\": 2,\n      \"allergens\": [],\n      \"customizations\": [\n        \"SIZE\",\n        \"ICE\",\n        \"NOTE\"\n      ],\n      \"extras\": [\n        \"LEMON\",\n        \"HONEY\",\n        \"MINT\",\n        \"GINGER\"\n      ]\n    },\n    {\n      \"id\": \"croissant\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Круассан\",\n      \"description\": \"Классический, сливочный\",\n      \"details\": \"Классический сливочный круассан, выпекаем каждое утро.\",\n      \"imageUrl\": \"images/croissant.jpg\",\n      \"price\": 180,\n      \"priceFrom\": false,\n      \"calories\": 310,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"MILK\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    },\n    {\n      \"id\": \"cinnamon_roll\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Булочка с корицей\",\n      \"description\": \"Мягкое тесто с корицей и сахаром\",\n      \"details\": \"Мягкая булочка с начинкой из корицы и сахара и лёгкой глазурью.\",\n      \"imageUrl\": \"images/cinnamon_roll.jpg\",\n      \"price\": 170,\n      \"priceFrom\": false,\n      \"calories\": 340,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"MILK\",\n        \"EGGS\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    },\n    {\n      \"id\": \"chocolate_muffin\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Шоколадный маффин\",\n      \"description\": \"С шоколадной крошкой внутри\",\n      \"details\": \"Влажный шоколадный маффин с шоколадной крошкой внутри.\",\n      \"imageUrl\": \"images/chocolate_muffin.jpg\",\n      \"price\": 150,\n      \"priceFrom\": false,\n      \"calories\": 360,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"MILK\",\n        \"EGGS\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    },\n    {\n      \"id\": \"apple_pie\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Яблочный пирог\",\n      \"description\": \"Яблоки, корица и рассыпчатое тесто\",\n      \"details\": \"Пирог с печёными яблоками и корицей на рассыпчатой основе.\",\n      \"imageUrl\": \"images/apple_pie.jpg\",\n      \"price\": 190,\n      \"priceFrom\": false,\n      \"calories\": 290,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"EGGS\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    },\n    {\n      \"id\": \"cheesecake\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Чизкейк\",\n      \"description\": \"Нью-Йорк\",\n      \"details\": \"Чизкейк Нью-Йорк на песочной основе, с нежной сливочной текстурой.\",\n      \"imageUrl\": \"images/cheesecake.jpg\",\n      \"price\": 240,\n      \"priceFrom\": false,\n      \"calories\": 380,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"MILK\",\n        \"EGGS\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    },\n    {\n      \"id\": \"almond_cookie\",\n      \"category\": \"PASTRY\",\n      \"name\": \"Миндальное печенье\",\n      \"description\": \"Хрустящее, с поджаренным миндалём\",\n      \"details\": \"Хрустящее печенье с поджаренными миндальными лепестками.\",\n      \"imageUrl\": \"images/almond_cookie.jpg\",\n      \"price\": 110,\n      \"priceFrom\": false,\n      \"calories\": 220,\n      \"allergens\": [\n        \"GLUTEN\",\n        \"EGGS\",\n        \"NUTS\"\n      ],\n      \"customizations\": [],\n      \"extras\": []\n    }\n  ],\n  \"sizes\": [\n    {\n      \"code\": \"SMALL\",\n      \"price\": 220\n    },\n    {\n      \"code\": \"MEDIUM\",\n      \"price\": 260\n    },\n    {\n      \"code\": \"LARGE\",\n      \"price\": 300\n    }\n  ],\n  \"milks\": [\n    {\n      \"code\": \"REGULAR\",\n      \"price\": 0,\n      \"available\": true\n    },\n    {\n      \"code\": \"LACTOSE_FREE\",\n      \"price\": 0,\n      \"available\": true\n    },\n    {\n      \"code\": \"OAT\",\n      \"price\": 40,\n      \"available\": true\n    },\n    {\n      \"code\": \"ALMOND\",\n      \"price\": 50,\n      \"available\": true\n    },\n    {\n      \"code\": \"COCONUT\",\n      \"price\": 50,\n      \"available\": false\n    }\n  ],\n  \"extras\": [\n    {\n      \"code\": \"VANILLA\",\n      \"price\": 40\n    },\n    {\n      \"code\": \"CARAMEL\",\n      \"price\": 40\n    },\n    {\n      \"code\": \"HAZELNUT\",\n      \"price\": 40\n    },\n    {\n      \"code\": \"CREAM\",\n      \"price\": 50\n    },\n    {\n      \"code\": \"EXTRA_SHOT\",\n      \"price\": 60\n    },\n    {\n      \"code\": \"CINNAMON\",\n      \"price\": 20\n    },\n    {\n      \"code\": \"HONEY\",\n      \"price\": 30\n    },\n    {\n      \"code\": \"MARSHMALLOW\",\n      \"price\": 40\n    },\n    {\n      \"code\": \"LEMON\",\n      \"price\": 20\n    },\n    {\n      \"code\": \"MINT\",\n      \"price\": 20\n    },\n    {\n      \"code\": \"GINGER\",\n      \"price\": 30\n    }\n  ]\n}",
+          "latency": 1500,
+          "statusCode": 200,
+          "label": "Меню. Тексты позиций — на языке из Accept-Language.",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "60f14824-2284-40fb-a647-895d988ead87",
+          "body": "{\n  \"message\": \"Internal server error\"\n}",
+          "latency": 0,
+          "statusCode": 500,
+          "label": "Ошибка сервера",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "964bb39d-07c3-4680-b2d7-cb9b6ee39da3",
+      "type": "http",
+      "documentation": "Фото позиции меню",
+      "method": "get",
+      "endpoint": "images/:file",
+      "responses": [
+        {
+          "uuid": "65a3cacd-3d28-4bff-9815-d93cfd6debf4",
+          "body": "",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Файл из mock/images",
+          "headers": [],
+          "bodyType": "FILE",
+          "filePath": "images/{{urlParam 'file'}}",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": true,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "26eb41cb-955d-4f32-ae9e-0d199dc82cd4",
+      "type": "http",
+      "documentation": "Регистрация. Занят только телефон демо-аккаунта",
+      "method": "post",
+      "endpoint": "auth/register",
+      "responses": [
+        {
+          "uuid": "6abbb8b8-8fc7-4697-ae73-a225bd970acd",
+          "body": "{\n  \"message\": \"Invalid name, phone or password\"\n}",
+          "latency": 0,
+          "statusCode": 400,
+          "label": "Поле пустое, телефон не +7XXXXXXXXXX или пароль короче 6",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "name",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            },
+            {
+              "target": "body",
+              "modifier": "name",
+              "value": "^\\s*$",
+              "invert": false,
+              "operator": "regex"
+            },
+            {
+              "target": "body",
+              "modifier": "phone",
+              "value": "^\\+7\\d{10}$",
+              "invert": true,
+              "operator": "regex"
+            },
+            {
+              "target": "body",
+              "modifier": "password",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            },
+            {
+              "target": "body",
+              "modifier": "password",
+              "value": "^.{0,5}$",
+              "invert": false,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "037ea6b3-d748-4774-a9bd-489aead9c2a2",
+          "body": "{\n  \"message\": \"Phone already registered\"\n}",
+          "latency": 0,
+          "statusCode": 409,
+          "label": "Телефон уже зарегистрирован",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "phone",
+              "value": "+79990000000",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "5710f9c1-2c11-43cb-9c38-823b9c877d74",
+          "body": "{{setData 'set' 'user' 'name' (body 'name')}}{{setData 'set' 'user' 'phone' (body 'phone')}}{\n  \"token\": \"demo-token\",\n  \"user\": {\n    \"name\": \"{{data 'user' 'name'}}\",\n    \"phone\": \"{{data 'user' 'phone'}}\"\n  }\n}",
+          "latency": 0,
+          "statusCode": 201,
+          "label": "Аккаунт создан",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "c4a3be3a-42fe-4468-ac42-c265c92177a1",
+      "type": "http",
+      "documentation": "Вход. Демо: +79990000000 / coffee123",
+      "method": "post",
+      "endpoint": "auth/login",
+      "responses": [
+        {
+          "uuid": "b5d512ed-bde5-4967-b7c1-4a34a37c7180",
+          "body": "{\n  \"token\": \"demo-token\",\n  \"user\": {\n    \"name\": \"Денис\",\n    \"phone\": \"+79990000000\"\n  }\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Демо-аккаунт",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "phone",
+              "value": "+79990000000",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "password",
+              "value": "coffee123",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "06bf3587-ebf6-4635-b7e9-bc2a18c437be",
+          "body": "{\n  \"message\": \"Phone and password are required\"\n}",
+          "latency": 0,
+          "statusCode": 400,
+          "label": "Нет телефона или пароля",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "phone",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            },
+            {
+              "target": "body",
+              "modifier": "password",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "bab25ca5-9b6d-4bf6-9430-685c2f45b7b7",
+          "body": "{\n  \"message\": \"Wrong phone or password\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Неверный телефон или пароль",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "59d3f5b6-3d0d-4543-9219-42ed1a678ac3",
+      "type": "http",
+      "documentation": "Профиль (токен обязателен)",
+      "method": "get",
+      "endpoint": "me",
+      "responses": [
+        {
+          "uuid": "31a49ab1-6e2e-4b5e-8691-64bbf59714f4",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "59dbd4fd-883b-4b93-a004-a9ad42d40e1e",
+          "body": "",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Профиль из хранилища user",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "DATABUCKET",
+          "filePath": "",
+          "databucketID": "usr1",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "6e63d8e1-1dda-4d50-a732-0b85d1a662a3",
+      "type": "http",
+      "documentation": "Изменить имя и телефон (токен обязателен)",
+      "method": "put",
+      "endpoint": "me",
+      "responses": [
+        {
+          "uuid": "4bfbc85e-36d9-42ae-b4f9-d9418b5ef568",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "c621bbd1-6d0d-4b20-91a3-015a0d40df83",
+          "body": "{\n  \"message\": \"Invalid name or phone\"\n}",
+          "latency": 0,
+          "statusCode": 400,
+          "label": "Имя пустое или телефон не +7XXXXXXXXXX",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "name",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            },
+            {
+              "target": "body",
+              "modifier": "name",
+              "value": "^\\s*$",
+              "invert": false,
+              "operator": "regex"
+            },
+            {
+              "target": "body",
+              "modifier": "phone",
+              "value": "^\\+7\\d{10}$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "070da29e-569b-498b-b8b9-80df6844caf3",
+          "body": "{{setData 'set' 'user' 'name' (body 'name')}}{{setData 'set' 'user' 'phone' (body 'phone')}}{\n  \"name\": \"{{data 'user' 'name'}}\",\n  \"phone\": \"{{data 'user' 'phone'}}\"\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Сохранено в хранилище user",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "1b2606af-9814-4880-93ea-ae69e8fbd151",
+      "type": "http",
+      "documentation": "Id позиций в избранном",
+      "method": "get",
+      "endpoint": "me/favorites",
+      "responses": [
+        {
+          "uuid": "a206b8d9-0a1a-489f-b996-7dbec8df106e",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "a85af2e0-e38c-48da-a4e6-085fdc92b0e6",
+          "body": "[{{#each (dataRaw 'favorites')}}\"{{@key}}\"{{#unless @last}}, {{/unless}}{{/each}}]",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Ключи хранилища favorites",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "50c145ab-f632-48b0-8234-681873513a58",
+      "type": "http",
+      "documentation": "Добавить в избранное",
+      "method": "put",
+      "endpoint": "me/favorites/:productId",
+      "responses": [
+        {
+          "uuid": "0a71d017-7318-4d5a-90d7-9ef06ee4dd63",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "76d9a6ec-d7aa-4e04-9d5a-71cc8b3e7142",
+          "body": "{{setData 'set' 'favorites' (urlParam 'productId') true}}",
+          "latency": 0,
+          "statusCode": 204,
+          "label": "Добавлено",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "33003a28-4c60-4c51-bfbe-2c9a90b59b75",
+      "type": "http",
+      "documentation": "Убрать из избранного",
+      "method": "delete",
+      "endpoint": "me/favorites/:productId",
+      "responses": [
+        {
+          "uuid": "e22fd9af-0f52-407c-ba3f-cc4c6c1a1ceb",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "8cdf8f71-6bd3-4948-b030-9631de09307c",
+          "body": "{{setData 'del' 'favorites' (urlParam 'productId')}}",
+          "latency": 0,
+          "statusCode": 204,
+          "label": "Убрано",
+          "headers": [],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "c4b78db2-89d4-4ed9-94c6-d02ff00dc90f",
+      "type": "http",
+      "documentation": "Оформить заказ",
+      "method": "post",
+      "endpoint": "orders",
+      "responses": [
+        {
+          "uuid": "4b7d326b-b546-4513-ba5c-6fad2838ae4e",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "e9f433c1-754e-4236-9a75-01ec22e89032",
+          "body": "{\n  \"message\": \"Order is empty\"\n}",
+          "latency": 0,
+          "statusCode": 400,
+          "label": "Пустой заказ",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "lines",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            },
+            {
+              "target": "body",
+              "modifier": "lines",
+              "value": "",
+              "invert": false,
+              "operator": "empty_array"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "5605cf54-c567-415e-a17c-ded400e2e133",
+          "body": "{\n  \"message\": \"Option unavailable: COCONUT\"\n}",
+          "latency": 0,
+          "statusCode": 409,
+          "label": "Кокосовое молоко закончилось",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "$.lines[*].options.milk",
+              "value": "COCONUT",
+              "invert": false,
+              "operator": "array_includes"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "0692e4f5-b9ce-4fd2-8aeb-11980873c717",
+          "body": "{{setVar 'order' (object number=(dataRaw 'nextOrder') status='ACCEPTED' shop=(bodyRaw 'shop') placedAt=(now \"yyyy-MM-dd'T'HH:mm:ssXXX\") pickupAt=(bodyRaw 'pickupAt') lines=(bodyRaw 'lines'))}}{{setData 'push' 'orders' '' @order}}{{setData 'inc' 'nextOrder' '' 1}}{{{stringify @order}}}",
+          "latency": 0,
+          "statusCode": 201,
+          "label": "Ко времени — ACCEPTED",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "pickupAt",
+              "value": "",
+              "invert": true,
+              "operator": "null"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "de50a1de-eb0f-439e-8922-264809b4eedb",
+          "body": "{{setVar 'order' (object number=(dataRaw 'nextOrder') status='PREPARING' shop=(bodyRaw 'shop') placedAt=(now \"yyyy-MM-dd'T'HH:mm:ssXXX\") pickupAt=(bodyRaw 'pickupAt') lines=(bodyRaw 'lines'))}}{{setData 'push' 'orders' '' @order}}{{setData 'inc' 'nextOrder' '' 1}}{{{stringify @order}}}",
+          "latency": 0,
+          "statusCode": 201,
+          "label": "Как можно скорее — PREPARING",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "8e92c0d9-895c-4038-9f31-4cacde90a2aa",
+      "type": "http",
+      "documentation": "Заказы, от новых к старым",
+      "method": "get",
+      "endpoint": "orders",
+      "responses": [
+        {
+          "uuid": "b29b46c1-c8d0-4f13-86cd-24b3d18742aa",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "ddc57cde-fa17-4b56-b3e0-9a8896abc33d",
+          "body": "{{{stringify (sortBy (dataRaw 'orders') 'number' 'desc')}}}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Хранилище orders по убыванию номера",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "032a4812-b0fc-41a2-abfc-bdf6771b0f44",
+      "type": "http",
+      "documentation": "Один заказ",
+      "method": "get",
+      "endpoint": "orders/:number",
+      "responses": [
+        {
+          "uuid": "b7c6e441-c5a9-48b0-91e7-ac7653537672",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "9c89d9e3-25ac-40e8-9ae6-046515f9e2d3",
+          "body": "{{setVar 'found' (find (dataRaw 'orders') (object number=(parseInt (urlParam 'number'))))}}{{#if @found}}{{{stringify @found}}}{{else}}{{status 404}}{\"message\": \"Order not found\"}{{/if}}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Заказ или 404",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    }
+  ],
+  "rootChildren": [
+    {
+      "type": "route",
+      "uuid": "189eb022-ede9-4089-b344-24bbf8ef3025"
+    },
+    {
+      "type": "route",
+      "uuid": "964bb39d-07c3-4680-b2d7-cb9b6ee39da3"
+    },
+    {
+      "type": "route",
+      "uuid": "26eb41cb-955d-4f32-ae9e-0d199dc82cd4"
+    },
+    {
+      "type": "route",
+      "uuid": "c4a3be3a-42fe-4468-ac42-c265c92177a1"
+    },
+    {
+      "type": "route",
+      "uuid": "59d3f5b6-3d0d-4543-9219-42ed1a678ac3"
+    },
+    {
+      "type": "route",
+      "uuid": "6e63d8e1-1dda-4d50-a732-0b85d1a662a3"
+    },
+    {
+      "type": "route",
+      "uuid": "1b2606af-9814-4880-93ea-ae69e8fbd151"
+    },
+    {
+      "type": "route",
+      "uuid": "50c145ab-f632-48b0-8234-681873513a58"
+    },
+    {
+      "type": "route",
+      "uuid": "33003a28-4c60-4c51-bfbe-2c9a90b59b75"
+    },
+    {
+      "type": "route",
+      "uuid": "c4b78db2-89d4-4ed9-94c6-d02ff00dc90f"
+    },
+    {
+      "type": "route",
+      "uuid": "8e92c0d9-895c-4038-9f31-4cacde90a2aa"
+    },
+    {
+      "type": "route",
+      "uuid": "032a4812-b0fc-41a2-abfc-bdf6771b0f44"
+    }
+  ],
+  "proxyMode": false,
+  "proxyHost": "",
+  "proxyRemovePrefix": false,
+  "tlsOptions": {
+    "enabled": false,
+    "type": "CERT",
+    "pfxPath": "",
+    "certPath": "",
+    "keyPath": "",
+    "caPath": "",
+    "passphrase": ""
+  },
+  "cors": true,
+  "headers": [
+    {
+      "key": "Access-Control-Allow-Origin",
+      "value": "*"
+    },
+    {
+      "key": "Access-Control-Allow-Methods",
+      "value": "GET,POST,PUT,PATCH,DELETE,HEAD,OPTIONS"
+    },
+    {
+      "key": "Access-Control-Allow-Headers",
+      "value": "Content-Type, Origin, Accept, Authorization, Content-Length, X-Requested-With"
+    }
+  ],
+  "proxyReqHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "proxyResHeaders": [
+    {
+      "key": "",
+      "value": ""
+    }
+  ],
+  "data": [
+    {
+      "uuid": "05a55408-5d24-40d2-827e-67f2a8baf7f0",
+      "id": "usr1",
+      "name": "user",
+      "documentation": "Текущий пользователь; меняют регистрация и PUT /me",
+      "value": "{\n  \"name\": \"Денис\",\n  \"phone\": \"+79990000000\"\n}"
+    },
+    {
+      "uuid": "0abe85a3-6add-4dbd-8d65-dbaf6aa160e2",
+      "id": "fav1",
+      "name": "favorites",
+      "documentation": "Избранное: ключи — id позиций",
+      "value": "{\n  \"latte\": true\n}"
+    },
+    {
+      "uuid": "572a99a9-ba16-495f-ac44-2edab0b34dff",
+      "id": "ord1",
+      "name": "orders",
+      "documentation": "Заказы пользователя",
+      "value": "[\n  {\n    \"number\": 1037,\n    \"status\": \"PICKED_UP\",\n    \"shop\": \"MOSKOVSKAYA\",\n    \"placedAt\": \"2026-10-31T09:15:00+03:00\",\n    \"pickupAt\": null,\n    \"lines\": [\n      {\n        \"productId\": \"latte\",\n        \"quantity\": 2,\n        \"unitPrice\": 240,\n        \"options\": {\n          \"size\": \"MEDIUM\",\n          \"milk\": \"REGULAR\",\n          \"iced\": false,\n          \"extras\": [],\n          \"note\": \"\"\n        }\n      }\n    ]\n  },\n  {\n    \"number\": 1029,\n    \"status\": \"PICKED_UP\",\n    \"shop\": \"STROITELEY\",\n    \"placedAt\": \"2026-10-27T18:40:00+03:00\",\n    \"pickupAt\": null,\n    \"lines\": [\n      {\n        \"productId\": \"raf\",\n        \"quantity\": 1,\n        \"unitPrice\": 300,\n        \"options\": {\n          \"size\": \"LARGE\",\n          \"milk\": \"REGULAR\",\n          \"iced\": false,\n          \"extras\": [],\n          \"note\": \"\"\n        }\n      },\n      {\n        \"productId\": \"espresso\",\n        \"quantity\": 1,\n        \"unitPrice\": 150,\n        \"options\": null\n      }\n    ]\n  }\n]"
+    },
+    {
+      "uuid": "4dd3dffd-143b-42d7-b6d1-e74eed958814",
+      "id": "ord2",
+      "name": "nextOrder",
+      "documentation": "Номер следующего заказа",
+      "value": "1042"
+    }
+  ],
+  "callbacks": []
+}
