@@ -1,0 +1,173 @@
+openapi: 3.0.3
+info:
+  title: CoffeeRun API
+  version: 1.0.0
+  description: |
+    Контракт между приложением CoffeeRun и сервером. Для ЛР-5 сервер изображает Mockoon.
+    Цены в рублях, целые числа. Коды (категория, аллергены, размеры, молоко, добавки)
+    совпадают с именами enum в приложении; подписи к ним лежат в ресурсах приложения.
+servers:
+  - url: http://localhost:3000
+    description: Mockoon на компьютере (с эмулятора — http://10.0.2.2:3000)
+
+paths:
+  /menu:
+    get:
+      operationId: getMenu
+      summary: Всё меню и цены опций
+      security: []  # меню доступно без входа
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Меню. Тексты позиций — на языке из Accept-Language.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Menu'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  parameters:
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: Язык текстов позиций. Без заголовка — ru.
+      schema:
+        type: string
+        enum: [ru, en]
+        default: ru
+
+  responses:
+    ServerError:
+      description: Ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Menu:
+      type: object
+      required: [products, sizes, milks, extras]
+      properties:
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        sizes:
+          type: array
+          items:
+            $ref: '#/components/schemas/SizeOption'
+        milks:
+          type: array
+          items:
+            $ref: '#/components/schemas/MilkOption'
+        extras:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtraOption'
+
+    Product:
+      type: object
+      required: [id, category, name, description, details, imageUrl, price, priceFrom, calories,
+                 allergens, customizations, extras]
+      properties:
+        id:
+          type: string
+          example: latte
+        category:
+          type: string
+          enum: [COFFEE, NOT_COFFEE, PASTRY]
+        name:
+          type: string
+          example: Латте
+        description:
+          type: string
+          description: Короткое описание для списка меню
+          example: Мягкий кофе с большим количеством молока
+        details:
+          type: string
+          description: Подробное описание для экрана позиции
+          example: Мягкий кофе с большим количеством горячего молока и тонким слоем пены.
+        imageUrl:
+          type: string
+          description: Путь к фото относительно адреса сервера
+          example: images/latte.jpg
+        price:
+          type: integer
+          description: Цена в рублях; при priceFrom = true — цена размера S
+          example: 240
+        priceFrom:
+          type: boolean
+          description: true — показывать «от 240 ₽», итог зависит от опций
+        calories:
+          type: integer
+          example: 190
+        allergens:
+          type: array
+          items:
+            type: string
+            enum: [MILK, GLUTEN, EGGS, NUTS]
+        customizations:
+          type: array
+          description: Что можно настроить, кроме добавок
+          items:
+            type: string
+            enum: [SIZE, MILK, ICE, NOTE]
+        extras:
+          type: array
+          description: Коды добавок, доступных этой позиции, в порядке показа
+          items:
+            type: string
+            example: VANILLA
+
+    SizeOption:
+      type: object
+      required: [code, price]
+      properties:
+        code:
+          type: string
+          enum: [SMALL, MEDIUM, LARGE]
+        price:
+          type: integer
+          description: Цена капучино в этом размере; доплата за размер = price − price(SMALL)
+          example: 260
+
+    MilkOption:
+      type: object
+      required: [code, price, available]
+      properties:
+        code:
+          type: string
+          enum: [REGULAR, LACTOSE_FREE, OAT, ALMOND, COCONUT]
+        price:
+          type: integer
+          description: Доплата за молоко
+          example: 40
+        available:
+          type: boolean
+          description: false — молоко закончилось, в списке видно, но выбрать нельзя
+
+    ExtraOption:
+      type: object
+      required: [code, price]
+      properties:
+        code:
+          type: string
+          enum: [VANILLA, CARAMEL, HAZELNUT, CREAM, EXTRA_SHOT, CINNAMON, HONEY, MARSHMALLOW,
+                 LEMON, MINT, GINGER]
+        price:
+          type: integer
+          description: Доплата за каждую добавку
+          example: 40
+
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: Internal server error
