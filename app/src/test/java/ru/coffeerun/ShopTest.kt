@@ -9,7 +9,7 @@ import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
-import ru.coffeerun.ui.screens.CheckoutViewModel
+import ru.coffeerun.ui.checkout.CheckoutViewModel
 
 class ShopTest {
     @get:Rule

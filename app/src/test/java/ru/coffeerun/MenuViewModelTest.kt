@@ -12,8 +12,8 @@ import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.Product
-import ru.coffeerun.ui.screens.MenuUiState
-import ru.coffeerun.ui.screens.MenuViewModel
+import ru.coffeerun.ui.menu.MenuUiState
+import ru.coffeerun.ui.menu.MenuViewModel
 
 private class FakeMenuRepository(var fail: Boolean = false) : MenuRepository {
     var calls = 0

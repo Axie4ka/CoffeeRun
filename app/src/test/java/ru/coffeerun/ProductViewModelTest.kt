@@ -11,7 +11,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
-import ru.coffeerun.ui.screens.ProductUiState
+import ru.coffeerun.ui.product.ProductUiState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -25,9 +25,9 @@ import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.MAX_NOTE_LENGTH
 import ru.coffeerun.model.MIN_QUANTITY
-import ru.coffeerun.ui.screens.MenuViewModel
-import ru.coffeerun.ui.screens.ProductForm
-import ru.coffeerun.ui.screens.ProductViewModel
+import ru.coffeerun.ui.menu.MenuViewModel
+import ru.coffeerun.ui.product.ProductForm
+import ru.coffeerun.ui.product.ProductViewModel
 
 /** Форма напитка: правила выбора, цена и строка, которая уходит в корзину. */
 @OptIn(ExperimentalCoroutinesApi::class)

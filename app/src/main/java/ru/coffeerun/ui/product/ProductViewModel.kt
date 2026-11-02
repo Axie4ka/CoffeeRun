@@ -1,4 +1,4 @@
-package ru.coffeerun.ui.screens
+package ru.coffeerun.ui.product
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel

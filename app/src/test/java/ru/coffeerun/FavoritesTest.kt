@@ -13,10 +13,10 @@ import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.InMemoryFavoritesRepository
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.data.LocalMenuRepository
-import ru.coffeerun.ui.screens.FavoritesUiState
-import ru.coffeerun.ui.screens.FavoritesViewModel
-import ru.coffeerun.ui.screens.ProductUiState
-import ru.coffeerun.ui.screens.ProductViewModel
+import ru.coffeerun.ui.profile.FavoritesUiState
+import ru.coffeerun.ui.profile.FavoritesViewModel
+import ru.coffeerun.ui.product.ProductUiState
+import ru.coffeerun.ui.product.ProductViewModel
 
 /** Избранное: репозиторий, экран списка и признак на экране позиции. */
 @OptIn(ExperimentalCoroutinesApi::class)

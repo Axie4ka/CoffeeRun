@@ -1,4 +1,4 @@
-package ru.coffeerun.ui.screens
+package ru.coffeerun.ui.cart
 
 import ru.coffeerun.data.LocalMenu
 import androidx.compose.foundation.layout.Arrangement
