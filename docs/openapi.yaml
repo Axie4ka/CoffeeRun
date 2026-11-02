@@ -143,6 +143,52 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /me/favorites:
+    get:
+      operationId: getFavorites
+      summary: Id позиций в избранном
+      responses:
+        '200':
+          description: Список id; сами позиции приложение берёт из меню
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example: [latte, croissant]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/favorites/{productId}:
+    parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: string
+          example: croissant
+    put:
+      operationId: addFavorite
+      summary: Добавить в избранное (повтор ничего не меняет)
+      responses:
+        '204':
+          description: Позиция в избранном
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+    delete:
+      operationId: removeFavorite
+      summary: Убрать из избранного (если не было — тоже 204)
+      responses:
+        '204':
+          description: Позиции в избранном нет
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ProductNotFound'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -171,6 +217,12 @@ components:
             $ref: '#/components/schemas/Error'
     Unauthorized:
       description: Нет токена или он недействителен — приложение стирает токен и просит войти
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ProductNotFound:
+      description: Такой позиции нет в меню
       content:
         application/json:
           schema:
