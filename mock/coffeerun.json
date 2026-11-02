@@ -200,7 +200,7 @@
         },
         {
           "uuid": "5710f9c1-2c11-43cb-9c38-823b9c877d74",
-          "body": "{\n  \"token\": \"demo-token\",\n  \"user\": {\n    \"name\": \"{{body 'name'}}\",\n    \"phone\": \"{{body 'phone'}}\"\n  }\n}",
+          "body": "{{setData 'set' 'user' 'name' (body 'name')}}{{setData 'set' 'user' 'phone' (body 'phone')}}{\n  \"token\": \"demo-token\",\n  \"user\": {\n    \"name\": \"{{data 'user' 'name'}}\",\n    \"phone\": \"{{data 'user' 'phone'}}\"\n  }\n}",
           "latency": 0,
           "statusCode": 201,
           "label": "Аккаунт создан",
@@ -340,6 +340,188 @@
       "responseMode": null,
       "streamingMode": null,
       "streamingInterval": 0
+    },
+    {
+      "uuid": "59d3f5b6-3d0d-4543-9219-42ed1a678ac3",
+      "type": "http",
+      "documentation": "Профиль (токен обязателен)",
+      "method": "get",
+      "endpoint": "me",
+      "responses": [
+        {
+          "uuid": "31a49ab1-6e2e-4b5e-8691-64bbf59714f4",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "59dbd4fd-883b-4b93-a004-a9ad42d40e1e",
+          "body": "",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Профиль из хранилища user",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "DATABUCKET",
+          "filePath": "",
+          "databucketID": "usr1",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "6e63d8e1-1dda-4d50-a732-0b85d1a662a3",
+      "type": "http",
+      "documentation": "Изменить имя и телефон (токен обязателен)",
+      "method": "put",
+      "endpoint": "me",
+      "responses": [
+        {
+          "uuid": "4bfbc85e-36d9-42ae-b4f9-d9418b5ef568",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "c621bbd1-6d0d-4b20-91a3-015a0d40df83",
+          "body": "{\n  \"message\": \"Invalid name or phone\"\n}",
+          "latency": 0,
+          "statusCode": 400,
+          "label": "Имя пустое или телефон не +7XXXXXXXXXX",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "name",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            },
+            {
+              "target": "body",
+              "modifier": "name",
+              "value": "^\\s*$",
+              "invert": false,
+              "operator": "regex"
+            },
+            {
+              "target": "body",
+              "modifier": "phone",
+              "value": "^\\+7\\d{10}$",
+              "invert": true,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "070da29e-569b-498b-b8b9-80df6844caf3",
+          "body": "{{setData 'set' 'user' 'name' (body 'name')}}{{setData 'set' 'user' 'phone' (body 'phone')}}{\n  \"name\": \"{{data 'user' 'name'}}\",\n  \"phone\": \"{{data 'user' 'phone'}}\"\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Сохранено в хранилище user",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
     }
   ],
   "rootChildren": [
@@ -358,6 +540,14 @@
     {
       "type": "route",
       "uuid": "c4a3be3a-42fe-4468-ac42-c265c92177a1"
+    },
+    {
+      "type": "route",
+      "uuid": "59d3f5b6-3d0d-4543-9219-42ed1a678ac3"
+    },
+    {
+      "type": "route",
+      "uuid": "6e63d8e1-1dda-4d50-a732-0b85d1a662a3"
     }
   ],
   "proxyMode": false,
@@ -399,6 +589,14 @@
       "value": ""
     }
   ],
-  "data": [],
+  "data": [
+    {
+      "uuid": "05a55408-5d24-40d2-827e-67f2a8baf7f0",
+      "id": "usr1",
+      "name": "user",
+      "documentation": "Текущий пользователь; меняют регистрация и PUT /me",
+      "value": "{\n  \"name\": \"Денис\",\n  \"phone\": \"+79990000000\"\n}"
+    }
+  ],
   "callbacks": []
 }

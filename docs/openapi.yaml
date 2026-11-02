@@ -109,6 +109,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /me:
+    get:
+      operationId: getMe
+      summary: Профиль вошедшего пользователя
+      responses:
+        '200':
+          description: Профиль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      operationId: updateMe
+      summary: Изменить имя и телефон
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Профиль после изменения
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -131,6 +165,12 @@ components:
   responses:
     BadRequest:
       description: Поле не заполнено или заполнено неверно
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Нет токена или он недействителен — приложение стирает токен и просит войти
       content:
         application/json:
           schema:
@@ -294,6 +334,7 @@ components:
       properties:
         name:
           type: string
+          minLength: 1
           example: Денис
         phone:
           $ref: '#/components/schemas/Phone'
