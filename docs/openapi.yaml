@@ -189,6 +189,78 @@ paths:
         '404':
           $ref: '#/components/responses/ProductNotFound'
 
+  /orders:
+    post:
+      operationId: placeOrder
+      summary: Оформить заказ из корзины
+      description: |
+        unitPrice присылает приложение (считает по ценам из /menu). Настоящий сервер
+        пересчитал бы цену сам и не доверял клиенту; Mockoon считать не умеет.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+      responses:
+        '201':
+          description: Заказ принят. ACCEPTED, если указан pickupAt, иначе PREPARING.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Выбранная опция закончилась (например, кокосовое молоко)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      operationId: getOrders
+      summary: Заказы пользователя, от новых к старым
+      responses:
+        '200':
+          description: Список заказов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /orders/{number}:
+    get:
+      operationId: getOrder
+      summary: Один заказ по номеру
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1042
+      responses:
+        '200':
+          description: Заказ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Такого заказа нет
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -401,6 +473,97 @@ components:
           example: demo-token
         user:
           $ref: '#/components/schemas/User'
+
+    Shop:
+      type: string
+      enum: [MOSKOVSKAYA, STROITELEY]
+
+    DrinkOptions:
+      type: object
+      description: Опции напитка; null у позиции, добавленной кнопкой «+» из меню
+      nullable: true
+      required: [iced, extras, note]
+      properties:
+        size:
+          type: string
+          nullable: true
+          enum: [SMALL, MEDIUM, LARGE]
+        milk:
+          type: string
+          nullable: true
+          enum: [REGULAR, LACTOSE_FREE, OAT, ALMOND, COCONUT]
+        iced:
+          type: boolean
+        extras:
+          type: array
+          items:
+            type: string
+            example: VANILLA
+        note:
+          type: string
+          maxLength: 100
+          description: Примечание для бариста; пустая строка — нет
+
+    OrderLine:
+      type: object
+      required: [productId, quantity, unitPrice]
+      properties:
+        productId:
+          type: string
+          example: latte
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 10
+          example: 2
+        unitPrice:
+          type: integer
+          description: Цена одной порции с опциями, ₽
+          example: 240
+        options:
+          $ref: '#/components/schemas/DrinkOptions'
+
+    OrderRequest:
+      type: object
+      required: [shop, lines]
+      properties:
+        shop:
+          $ref: '#/components/schemas/Shop'
+        pickupAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Ко скольки приготовить, не позже 22:00; null — как можно скорее
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderLine'
+
+    Order:
+      type: object
+      description: Итог и время готовности приложение считает само из lines, placedAt и pickupAt
+      required: [number, status, shop, placedAt, lines]
+      properties:
+        number:
+          type: integer
+          example: 1042
+        status:
+          type: string
+          enum: [ACCEPTED, PREPARING, READY, PICKED_UP]
+        shop:
+          $ref: '#/components/schemas/Shop'
+        placedAt:
+          type: string
+          format: date-time
+        pickupAt:
+          type: string
+          format: date-time
+          nullable: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLine'
 
     Error:
       type: object

@@ -716,6 +716,313 @@
       "responseMode": null,
       "streamingMode": null,
       "streamingInterval": 0
+    },
+    {
+      "uuid": "c4b78db2-89d4-4ed9-94c6-d02ff00dc90f",
+      "type": "http",
+      "documentation": "Оформить заказ",
+      "method": "post",
+      "endpoint": "orders",
+      "responses": [
+        {
+          "uuid": "4b7d326b-b546-4513-ba5c-6fad2838ae4e",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "e9f433c1-754e-4236-9a75-01ec22e89032",
+          "body": "{\n  \"message\": \"Order is empty\"\n}",
+          "latency": 0,
+          "statusCode": 400,
+          "label": "Пустой заказ",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "lines",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            },
+            {
+              "target": "body",
+              "modifier": "lines",
+              "value": "",
+              "invert": false,
+              "operator": "empty_array"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "5605cf54-c567-415e-a17c-ded400e2e133",
+          "body": "{\n  \"message\": \"Option unavailable: COCONUT\"\n}",
+          "latency": 0,
+          "statusCode": 409,
+          "label": "Кокосовое молоко закончилось",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "$.lines[*].options.milk",
+              "value": "COCONUT",
+              "invert": false,
+              "operator": "array_includes"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "0692e4f5-b9ce-4fd2-8aeb-11980873c717",
+          "body": "{{setVar 'order' (object number=(dataRaw 'nextOrder') status='ACCEPTED' shop=(bodyRaw 'shop') placedAt=(now \"yyyy-MM-dd'T'HH:mm:ssXXX\") pickupAt=(bodyRaw 'pickupAt') lines=(bodyRaw 'lines'))}}{{setData 'push' 'orders' '' @order}}{{setData 'inc' 'nextOrder' '' 1}}{{{stringify @order}}}",
+          "latency": 0,
+          "statusCode": 201,
+          "label": "Ко времени — ACCEPTED",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "pickupAt",
+              "value": "",
+              "invert": true,
+              "operator": "null"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "de50a1de-eb0f-439e-8922-264809b4eedb",
+          "body": "{{setVar 'order' (object number=(dataRaw 'nextOrder') status='PREPARING' shop=(bodyRaw 'shop') placedAt=(now \"yyyy-MM-dd'T'HH:mm:ssXXX\") pickupAt=(bodyRaw 'pickupAt') lines=(bodyRaw 'lines'))}}{{setData 'push' 'orders' '' @order}}{{setData 'inc' 'nextOrder' '' 1}}{{{stringify @order}}}",
+          "latency": 0,
+          "statusCode": 201,
+          "label": "Как можно скорее — PREPARING",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "8e92c0d9-895c-4038-9f31-4cacde90a2aa",
+      "type": "http",
+      "documentation": "Заказы, от новых к старым",
+      "method": "get",
+      "endpoint": "orders",
+      "responses": [
+        {
+          "uuid": "b29b46c1-c8d0-4f13-86cd-24b3d18742aa",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "ddc57cde-fa17-4b56-b3e0-9a8896abc33d",
+          "body": "{{{stringify (sortBy (dataRaw 'orders') 'number' 'desc')}}}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Хранилище orders по убыванию номера",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "032a4812-b0fc-41a2-abfc-bdf6771b0f44",
+      "type": "http",
+      "documentation": "Один заказ",
+      "method": "get",
+      "endpoint": "orders/:number",
+      "responses": [
+        {
+          "uuid": "b7c6e441-c5a9-48b0-91e7-ac7653537672",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "9c89d9e3-25ac-40e8-9ae6-046515f9e2d3",
+          "body": "{{setVar 'found' (find (dataRaw 'orders') (object number=(parseInt (urlParam 'number'))))}}{{#if @found}}{{{stringify @found}}}{{else}}{{status 404}}{\"message\": \"Order not found\"}{{/if}}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Заказ или 404",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
     }
   ],
   "rootChildren": [
@@ -754,6 +1061,18 @@
     {
       "type": "route",
       "uuid": "33003a28-4c60-4c51-bfbe-2c9a90b59b75"
+    },
+    {
+      "type": "route",
+      "uuid": "c4b78db2-89d4-4ed9-94c6-d02ff00dc90f"
+    },
+    {
+      "type": "route",
+      "uuid": "8e92c0d9-895c-4038-9f31-4cacde90a2aa"
+    },
+    {
+      "type": "route",
+      "uuid": "032a4812-b0fc-41a2-abfc-bdf6771b0f44"
     }
   ],
   "proxyMode": false,
@@ -809,6 +1128,20 @@
       "name": "favorites",
       "documentation": "Избранное: ключи — id позиций",
       "value": "{\n  \"latte\": true\n}"
+    },
+    {
+      "uuid": "572a99a9-ba16-495f-ac44-2edab0b34dff",
+      "id": "ord1",
+      "name": "orders",
+      "documentation": "Заказы пользователя",
+      "value": "[\n  {\n    \"number\": 1037,\n    \"status\": \"PICKED_UP\",\n    \"shop\": \"MOSKOVSKAYA\",\n    \"placedAt\": \"2026-10-31T09:15:00+03:00\",\n    \"pickupAt\": null,\n    \"lines\": [\n      {\n        \"productId\": \"latte\",\n        \"quantity\": 2,\n        \"unitPrice\": 240,\n        \"options\": {\n          \"size\": \"MEDIUM\",\n          \"milk\": \"REGULAR\",\n          \"iced\": false,\n          \"extras\": [],\n          \"note\": \"\"\n        }\n      }\n    ]\n  },\n  {\n    \"number\": 1029,\n    \"status\": \"PICKED_UP\",\n    \"shop\": \"STROITELEY\",\n    \"placedAt\": \"2026-10-27T18:40:00+03:00\",\n    \"pickupAt\": null,\n    \"lines\": [\n      {\n        \"productId\": \"raf\",\n        \"quantity\": 1,\n        \"unitPrice\": 300,\n        \"options\": {\n          \"size\": \"LARGE\",\n          \"milk\": \"REGULAR\",\n          \"iced\": false,\n          \"extras\": [],\n          \"note\": \"\"\n        }\n      },\n      {\n        \"productId\": \"espresso\",\n        \"quantity\": 1,\n        \"unitPrice\": 150,\n        \"options\": null\n      }\n    ]\n  }\n]"
+    },
+    {
+      "uuid": "4dd3dffd-143b-42d7-b6d1-e74eed958814",
+      "id": "ord2",
+      "name": "nextOrder",
+      "documentation": "Номер следующего заказа",
+      "value": "1042"
     }
   ],
   "callbacks": []
