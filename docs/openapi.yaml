@@ -10,6 +10,10 @@ servers:
   - url: http://localhost:3000
     description: Mockoon на компьютере (с эмулятора — http://10.0.2.2:3000)
 
+# По умолчанию нужен токен; открытые запросы помечены security: []
+security:
+  - bearerAuth: []
+
 paths:
   /menu:
     get:
@@ -51,7 +55,68 @@ paths:
         '404':
           description: Такого файла нет
 
+  /auth/register:
+    post:
+      operationId: register
+      summary: Регистрация; сразу возвращает токен
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Аккаунт создан, пользователь вошёл
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Телефон уже зарегистрирован
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/login:
+    post:
+      operationId: login
+      summary: Вход по телефону и паролю
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Пользователь вошёл
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Неверный телефон или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Токен из ответа /auth/login или /auth/register
+
+
   parameters:
     AcceptLanguage:
       name: Accept-Language
@@ -64,6 +129,12 @@ components:
         default: ru
 
   responses:
+    BadRequest:
+      description: Поле не заполнено или заполнено неверно
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     ServerError:
       description: Ошибка сервера
       content:
@@ -186,6 +257,57 @@ components:
           type: integer
           description: Доплата за каждую добавку
           example: 40
+
+    Phone:
+      type: string
+      pattern: '^\+7\d{10}$'
+      example: '+79990000000'
+
+    RegisterRequest:
+      type: object
+      required: [name, phone, password]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Денис
+        phone:
+          $ref: '#/components/schemas/Phone'
+        password:
+          type: string
+          minLength: 6
+          example: coffee123
+
+    LoginRequest:
+      type: object
+      required: [phone, password]
+      properties:
+        phone:
+          $ref: '#/components/schemas/Phone'
+        password:
+          type: string
+          example: coffee123
+
+    User:
+      type: object
+      required: [name, phone]
+      properties:
+        name:
+          type: string
+          example: Денис
+        phone:
+          $ref: '#/components/schemas/Phone'
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+          description: 'Передавать в заголовке Authorization: Bearer <token>'
+          example: demo-token
+        user:
+          $ref: '#/components/schemas/User'
 
     Error:
       type: object

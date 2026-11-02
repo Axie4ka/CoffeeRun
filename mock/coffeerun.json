@@ -98,6 +98,248 @@
       "responseMode": null,
       "streamingMode": null,
       "streamingInterval": 0
+    },
+    {
+      "uuid": "26eb41cb-955d-4f32-ae9e-0d199dc82cd4",
+      "type": "http",
+      "documentation": "Регистрация. Занят только телефон демо-аккаунта",
+      "method": "post",
+      "endpoint": "auth/register",
+      "responses": [
+        {
+          "uuid": "6abbb8b8-8fc7-4697-ae73-a225bd970acd",
+          "body": "{\n  \"message\": \"Invalid name, phone or password\"\n}",
+          "latency": 0,
+          "statusCode": 400,
+          "label": "Поле пустое, телефон не +7XXXXXXXXXX или пароль короче 6",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "name",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            },
+            {
+              "target": "body",
+              "modifier": "name",
+              "value": "^\\s*$",
+              "invert": false,
+              "operator": "regex"
+            },
+            {
+              "target": "body",
+              "modifier": "phone",
+              "value": "^\\+7\\d{10}$",
+              "invert": true,
+              "operator": "regex"
+            },
+            {
+              "target": "body",
+              "modifier": "password",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            },
+            {
+              "target": "body",
+              "modifier": "password",
+              "value": "^.{0,5}$",
+              "invert": false,
+              "operator": "regex"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "037ea6b3-d748-4774-a9bd-489aead9c2a2",
+          "body": "{\n  \"message\": \"Phone already registered\"\n}",
+          "latency": 0,
+          "statusCode": 409,
+          "label": "Телефон уже зарегистрирован",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "phone",
+              "value": "+79990000000",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "5710f9c1-2c11-43cb-9c38-823b9c877d74",
+          "body": "{\n  \"token\": \"demo-token\",\n  \"user\": {\n    \"name\": \"{{body 'name'}}\",\n    \"phone\": \"{{body 'phone'}}\"\n  }\n}",
+          "latency": 0,
+          "statusCode": 201,
+          "label": "Аккаунт создан",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
+    },
+    {
+      "uuid": "c4a3be3a-42fe-4468-ac42-c265c92177a1",
+      "type": "http",
+      "documentation": "Вход. Демо: +79990000000 / coffee123",
+      "method": "post",
+      "endpoint": "auth/login",
+      "responses": [
+        {
+          "uuid": "b5d512ed-bde5-4967-b7c1-4a34a37c7180",
+          "body": "{\n  \"token\": \"demo-token\",\n  \"user\": {\n    \"name\": \"Денис\",\n    \"phone\": \"+79990000000\"\n  }\n}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Демо-аккаунт",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "phone",
+              "value": "+79990000000",
+              "invert": false,
+              "operator": "equals"
+            },
+            {
+              "target": "body",
+              "modifier": "password",
+              "value": "coffee123",
+              "invert": false,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "AND",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "06bf3587-ebf6-4635-b7e9-bc2a18c437be",
+          "body": "{\n  \"message\": \"Phone and password are required\"\n}",
+          "latency": 0,
+          "statusCode": 400,
+          "label": "Нет телефона или пароля",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "body",
+              "modifier": "phone",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            },
+            {
+              "target": "body",
+              "modifier": "password",
+              "value": "",
+              "invert": false,
+              "operator": "null"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "bab25ca5-9b6d-4bf6-9430-685c2f45b7b7",
+          "body": "{\n  \"message\": \"Wrong phone or password\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Неверный телефон или пароль",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
     }
   ],
   "rootChildren": [
@@ -108,6 +350,14 @@
     {
       "type": "route",
       "uuid": "964bb39d-07c3-4680-b2d7-cb9b6ee39da3"
+    },
+    {
+      "type": "route",
+      "uuid": "26eb41cb-955d-4f32-ae9e-0d199dc82cd4"
+    },
+    {
+      "type": "route",
+      "uuid": "c4a3be3a-42fe-4468-ac42-c265c92177a1"
     }
   ],
   "proxyMode": false,
