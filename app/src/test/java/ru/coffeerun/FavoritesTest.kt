@@ -1,14 +1,18 @@
 package ru.coffeerun
 
 import androidx.lifecycle.SavedStateHandle
+import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import ru.coffeerun.data.FavoritesRepository
 import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.InMemoryFavoritesRepository
 import ru.coffeerun.data.LocalMenu
@@ -73,5 +77,34 @@ class FavoritesTest {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         vm.toggleFavorite()
         assertTrue((vm.uiState.value as ProductUiState.Success).isFavorite)
+    }
+
+    /** Сервер избранного: refresh и toggle падают, пока [fail]. */
+    private class FlakyFavorites(var fail: Boolean) : FavoritesRepository {
+        override val ids = MutableStateFlow(setOf("latte"))
+        override suspend fun refresh() {
+            if (fail) throw IOException("нет сети")
+        }
+        override suspend fun toggle(productId: String) = !fail
+    }
+
+    @Test
+    fun favoritesNotLoaded_isError_thenRetryLoads() = runTest {
+        val flaky = FlakyFavorites(fail = true)
+        val vm = FavoritesViewModel(LocalMenuRepository(), flaky)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertEquals("меню есть, а избранное с сервера не пришло — тоже ошибка", FavoritesUiState.Error, vm.uiState.value)
+        flaky.fail = false
+        vm.retry()
+        assertEquals(FavoritesUiState.Success(listOf(LocalMenu.LATTE)), vm.uiState.value)
+    }
+
+    @Test
+    fun product_heartRejected_showsMessage() = runTest {
+        val vm = ProductViewModel(LocalMenu.LATTE.id, LocalMenuRepository(), InMemoryCartRepository(), FlakyFavorites(fail = true), SavedStateHandle())
+        vm.toggleFavorite()
+        assertEquals(R.string.favorites_toggle_error, vm.message.value)
+        vm.onMessageShown()
+        assertNull(vm.message.value)
     }
 }

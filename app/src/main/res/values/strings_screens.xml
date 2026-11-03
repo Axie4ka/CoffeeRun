@@ -140,4 +140,5 @@
     <string name="profile_edit_title">Edit profile</string>
     <string name="profile_save">Save</string>
     <string name="profile_saved">Profile saved</string>
+    <string name="favorites_toggle_error">Couldn\'t update favorites</string>
 </resources>

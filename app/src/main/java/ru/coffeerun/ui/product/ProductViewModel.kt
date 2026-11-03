@@ -10,11 +10,13 @@ import androidx.lifecycle.viewModelScope
 import java.io.IOException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import ru.coffeerun.R
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.FavoritesRepository
@@ -147,8 +149,18 @@ class ProductViewModel(
 
     fun changeQuantity(delta: Int) = update { copy(quantity = (quantity + delta).coerceIn(MIN_QUANTITY, MAX_QUANTITY)) }
 
+    /** Разовое сообщение для снэкбара: сервер не принял сердечко, и оно откатилось. */
+    private val _message = MutableStateFlow<Int?>(null)
+    val message: StateFlow<Int?> = _message.asStateFlow()
+
     fun toggleFavorite() {
-        viewModelScope.launch { favorites.toggle(productId) }
+        viewModelScope.launch {
+            if (!favorites.toggle(productId)) _message.value = R.string.favorites_toggle_error
+        }
+    }
+
+    fun onMessageShown() {
+        _message.value = null
     }
 
     fun addToCart() {
