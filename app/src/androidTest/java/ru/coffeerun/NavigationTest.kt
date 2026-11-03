@@ -54,11 +54,11 @@ class NavigationTest {
     }
 
     private fun openProduct(product: Product) {
-        rule.onNodeWithText(str(product.nameRes)).performClick()
+        rule.onNodeWithText(product.name).performClick()
     }
 
     private fun placeCappuccinoOrder() {
-        val name = str(LocalMenu.CAPPUCCINO.nameRes)
+        val name = LocalMenu.CAPPUCCINO.name
         rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
         tab(R.string.tab_cart).performClick()
         rule.onNodeWithText(str(R.string.cart_checkout)).performClick()
@@ -121,7 +121,7 @@ class NavigationTest {
 
     @Test // F8
     fun checkout_backReturnsToCart() {
-        val name = str(LocalMenu.CAPPUCCINO.nameRes)
+        val name = LocalMenu.CAPPUCCINO.name
         rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
         tab(R.string.tab_cart).performClick()
         rule.onNodeWithText(str(R.string.cart_checkout)).performClick()
@@ -176,7 +176,7 @@ class NavigationTest {
         openProduct(LocalMenu.LATTE)
         rule.activityRule.scenario.recreate()
         tab(R.string.tab_orders).assertDoesNotExist()
-        rule.onNodeWithText(str(LocalMenu.LATTE.nameRes)).assertIsDisplayed()
+        rule.onNodeWithText(LocalMenu.LATTE.name).assertIsDisplayed()
     }
 
     // ---------- Поведение, которое добавил редизайн M3 (спецификация 2026-10-20, раздел 9) ----------
@@ -192,7 +192,7 @@ class NavigationTest {
 
     @Test
     fun checkout_scheduledPickupOpensTimePicker() {
-        val name = str(LocalMenu.CAPPUCCINO.nameRes)
+        val name = LocalMenu.CAPPUCCINO.name
         rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
         tab(R.string.tab_cart).performClick()
         rule.onNodeWithText(str(R.string.cart_checkout)).performClick()
@@ -212,10 +212,10 @@ class NavigationTest {
 
     @Test
     fun menu_tabsSwitchCategory() {
-        rule.onNodeWithText(str(LocalMenu.CAPPUCCINO.nameRes)).assertIsDisplayed()
+        rule.onNodeWithText(LocalMenu.CAPPUCCINO.name).assertIsDisplayed()
         tab(R.string.category_pastry).performClick()
-        rule.onNodeWithText(str(LocalMenu.CROISSANT.nameRes)).assertIsDisplayed()
-        rule.onNodeWithText(str(LocalMenu.CAPPUCCINO.nameRes)).assertDoesNotExist()
+        rule.onNodeWithText(LocalMenu.CROISSANT.name).assertIsDisplayed()
+        rule.onNodeWithText(LocalMenu.CAPPUCCINO.name).assertDoesNotExist()
     }
 
     @Test
@@ -227,8 +227,8 @@ class NavigationTest {
         rule.onNodeWithContentDescription(str(R.string.action_back)).performClick()
         tab(R.string.tab_profile).performClick()
         rule.onNodeWithText(str(R.string.profile_favorites)).performClick()
-        rule.onNodeWithText(str(latte.nameRes)).assertIsDisplayed()
-        rule.onNodeWithText(str(latte.nameRes)).performClick()
+        rule.onNodeWithText(latte.name).assertIsDisplayed()
+        rule.onNodeWithText(latte.name).performClick()
         rule.onNodeWithContentDescription(str(R.string.action_unfavorite)).assertIsDisplayed()
     }
 
@@ -245,7 +245,7 @@ class NavigationTest {
     fun shopPicker_changesCheckoutShop() {
         rule.onNodeWithText(str(Shop.MOSKOVSKAYA.addressRes)).performClick()
         rule.onNodeWithText(str(Shop.STROITELEY.addressRes)).performClick()
-        val name = str(LocalMenu.CAPPUCCINO.nameRes)
+        val name = LocalMenu.CAPPUCCINO.name
         rule.onNodeWithContentDescription(str(R.string.add_product, name)).performClick()
         tab(R.string.tab_cart).performClick()
         rule.onNodeWithText(str(R.string.cart_checkout)).performClick()

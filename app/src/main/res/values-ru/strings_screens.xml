@@ -65,6 +65,7 @@
     <string name="allergen_gluten">глютен</string>
     <string name="allergen_eggs">яйца</string>
     <string name="allergen_nuts">орехи</string>
+    <string name="allergen_other">другие — уточните у бариста</string>
 
     <string name="cart_title">Корзина</string>
     <string name="cart_empty">Корзина пуста</string>

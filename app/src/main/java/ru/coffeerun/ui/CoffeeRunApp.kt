@@ -167,7 +167,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                     is ProductUiState.Success -> {
                         val context = LocalContext.current
                         val product = state.product
-                        val name = stringResource(product.nameRes)
+                        val name = product.name
                         val price = stringResource(
                             if (product.isPriceFrom) R.string.price_from else R.string.price_rub,
                             product.price

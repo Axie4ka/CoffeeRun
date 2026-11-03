@@ -51,7 +51,7 @@ class ShareTest {
     fun share_launchesChooserWithProductText() {
         // Чузер не должен открываться по-настоящему
         intending(anyIntent()).respondWith(Instrumentation.ActivityResult(Activity.RESULT_OK, null))
-        val name = rule.activity.getString(LocalMenu.LATTE.nameRes)
+        val name = LocalMenu.LATTE.name
 
         rule.onNodeWithText(name).performClick()
         rule.onNodeWithContentDescription(rule.activity.getString(R.string.action_share)).performClick()

@@ -68,6 +68,7 @@
     <string name="allergen_gluten">gluten</string>
     <string name="allergen_eggs">eggs</string>
     <string name="allergen_nuts">nuts</string>
+    <string name="allergen_other">other — ask the barista</string>
 
     <!-- Корзина -->
     <string name="cart_title">Cart</string>

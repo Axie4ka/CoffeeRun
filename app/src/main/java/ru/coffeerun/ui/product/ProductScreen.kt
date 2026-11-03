@@ -1,7 +1,7 @@
 package ru.coffeerun.ui.product
 
 import ru.coffeerun.data.LocalMenu
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -64,8 +64,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import coil3.compose.AsyncImage
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -267,8 +267,8 @@ private fun ProductHeader(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Image(
-            painter = painterResource(product.imageRes),
+        AsyncImage(
+            model = product.imageUrl,
             // Фото декоративное: название идёт текстом ниже,
             // поэтому TalkBack картинку пропускает.
             contentDescription = null,
@@ -277,6 +277,8 @@ private fun ProductHeader(
                 .fillMaxWidth()
                 .height(240.dp)
                 .clip(MaterialTheme.shapes.large)
+                // Фон виден, пока фото грузится или если не загрузилось
+                .background(MaterialTheme.colorScheme.surfaceVariant)
         )
 
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
@@ -286,7 +288,7 @@ private fun ProductHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = stringResource(product.nameRes),
+                text = product.name,
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.weight(1f)
             )
@@ -300,7 +302,7 @@ private fun ProductHeader(
         Spacer(Modifier.height(MaterialTheme.spacing.small))
 
         Text(
-            text = stringResource(product.detailsRes),
+            text = product.details,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
