@@ -27,7 +27,7 @@ class FavoritesTest {
     private val favorites = InMemoryFavoritesRepository()
 
     @Test
-    fun toggle_addsAndRemoves() {
+    fun toggle_addsAndRemoves() = runTest {
         favorites.toggle("latte")
         assertEquals(setOf("latte"), favorites.ids.value)
         favorites.toggle("latte")

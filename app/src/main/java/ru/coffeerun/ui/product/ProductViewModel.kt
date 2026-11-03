@@ -147,7 +147,9 @@ class ProductViewModel(
 
     fun changeQuantity(delta: Int) = update { copy(quantity = (quantity + delta).coerceIn(MIN_QUANTITY, MAX_QUANTITY)) }
 
-    fun toggleFavorite() = favorites.toggle(productId)
+    fun toggleFavorite() {
+        viewModelScope.launch { favorites.toggle(productId) }
+    }
 
     fun addToCart() {
         val (product, prices) = loaded.value as? Loaded.Found ?: return
