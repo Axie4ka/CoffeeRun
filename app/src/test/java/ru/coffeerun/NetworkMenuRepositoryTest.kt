@@ -13,10 +13,8 @@ import retrofit2.HttpException
 import retrofit2.Response
 import ru.coffeerun.data.NetworkMenuRepository
 import ru.coffeerun.data.network.CoffeeRunApi
-import ru.coffeerun.data.network.LoginRequest
 import ru.coffeerun.data.network.MenuDto
 import ru.coffeerun.data.network.ProductDto
-import ru.coffeerun.data.network.RegisterRequest
 
 /** Сетевое меню: один запрос на всё, ошибки — только [IOException], смена языка — новый запрос. */
 class NetworkMenuRepositoryTest {
@@ -27,15 +25,12 @@ class NetworkMenuRepositoryTest {
     )
     private val dto = MenuDto(listOf(latte), sizes = emptyList(), milks = emptyList(), extras = emptyList())
 
-    private class FakeApi(var answer: () -> MenuDto) : CoffeeRunApi {
+    private class FakeApi(var answer: () -> MenuDto) : StubApi() {
         var calls = 0
         override suspend fun getMenu(): MenuDto {
             calls++
             return answer()
         }
-
-        override suspend fun login(request: LoginRequest) = error("не нужен для меню")
-        override suspend fun register(request: RegisterRequest) = error("не нужен для меню")
     }
 
     private var language = "ru"

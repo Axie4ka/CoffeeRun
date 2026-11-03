@@ -27,6 +27,14 @@ class TokenStore(private val dataStore: DataStore<Preferences>) {
         dataStore.edit { it.remove(TOKEN) }
     }
 
+    /**
+     * Стирает токен, только если сохранён всё ещё [token]. Сервер отклонил старый токен,
+     * а пользователь за это время мог войти заново — новый токен трогать нельзя.
+     */
+    suspend fun clearIfStill(token: String) {
+        dataStore.edit { if (it[TOKEN] == token) it.remove(TOKEN) }
+    }
+
     private companion object {
         val TOKEN = stringPreferencesKey("token")
     }

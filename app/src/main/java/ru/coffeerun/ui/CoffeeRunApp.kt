@@ -13,6 +13,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -29,6 +30,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import kotlinx.coroutines.launch
 import ru.coffeerun.R
 import ru.coffeerun.ui.components.AppNavigationBar
 import ru.coffeerun.ui.components.RetryMessage
@@ -42,6 +44,7 @@ import ru.coffeerun.ui.auth.RegisterScreen
 import ru.coffeerun.ui.auth.RegisterViewModel
 import ru.coffeerun.ui.auth.SessionViewModel
 import ru.coffeerun.ui.navigation.FavoritesRoute
+import ru.coffeerun.ui.navigation.EditProfileRoute
 import ru.coffeerun.ui.navigation.LoginRoute
 import ru.coffeerun.ui.navigation.MenuRoute
 import ru.coffeerun.ui.navigation.RegisterRoute
@@ -64,6 +67,8 @@ import ru.coffeerun.ui.orders.OrdersViewModel
 import ru.coffeerun.ui.product.ProductScreen
 import ru.coffeerun.ui.product.ProductUiState
 import ru.coffeerun.ui.product.ProductViewModel
+import ru.coffeerun.ui.profile.EditProfileScreen
+import ru.coffeerun.ui.profile.EditProfileViewModel
 import ru.coffeerun.ui.profile.ProfileScreen
 import ru.coffeerun.ui.profile.ProfileViewModel
 
@@ -85,6 +90,8 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
     val cartUiState by viewModel<CartViewModel>(factory = CartViewModel.Factory).uiState.collectAsStateWithLifecycle()
     // Вошёл ли пользователь: оформление, заказы и избранное — только после входа
     val isLoggedIn by viewModel<SessionViewModel>(factory = SessionViewModel.Factory).isLoggedIn.collectAsStateWithLifecycle()
+    // Для снэкбаров, которые должны пережить закрытие экрана (например, «Профиль сохранён»)
+    val appScope = rememberCoroutineScope()
 
     Scaffold(
         // Статус-бар учитывают сами вкладки (TopAppBar / statusBarsPadding), иначе отступ сверху двойной;
@@ -150,16 +157,49 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                 )
             }
 
-            composable<ProfileRoute> {
+            composable<ProfileRoute> { entry ->
                 val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
                 val profileState by vm.uiState.collectAsStateWithLifecycle()
+                // Профиль сохранили на экране «Изменить» — показываем то, что теперь на сервере
+                val saved by entry.savedStateHandle.getStateFlow(PROFILE_SAVED, false).collectAsStateWithLifecycle()
+                LaunchedEffect(saved) {
+                    if (saved) {
+                        vm.retry()
+                        entry.savedStateHandle[PROFILE_SAVED] = false
+                    }
+                }
                 ProfileScreen(
                     uiState = profileState,
                     onShopSelected = vm::selectShop,
                     onFavoritesClick = { navController.navigate(FavoritesRoute) },
                     onLogin = { navController.navigate(LoginRoute()) },
                     onLogout = vm::logout,
+                    onRetry = vm::retry,
+                    onEdit = { navController.navigate(EditProfileRoute(it.name, it.phone)) },
                     modifier = tabModifier
+                )
+            }
+
+            composable<EditProfileRoute> {
+                val vm: EditProfileViewModel = viewModel(factory = EditProfileViewModel.Factory)
+                val state by vm.uiState.collectAsStateWithLifecycle()
+                val savedText = stringResource(R.string.profile_saved)
+                LaunchedEffect(state.isDone) {
+                    if (state.isDone) {
+                        navController.previousBackStackEntry?.savedStateHandle?.set(PROFILE_SAVED, true)
+                        navController.popBackStack()
+                        // Снэкбар живёт дольше экрана: показываем его уже на профиле
+                        appScope.launch { snackbarHostState.showSnackbar(savedText) }
+                    }
+                }
+                EditProfileScreen(
+                    uiState = state,
+                    onNameChange = vm::onNameChange,
+                    onPhoneChange = vm::onPhoneChange,
+                    onSave = vm::save,
+                    onMessageShown = vm::onMessageShown,
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    snackbarHostState = snackbarHostState
                 )
             }
 
@@ -309,6 +349,9 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
 }
 
 /** Нижняя панель: переключение вкладок с сохранением их состояния. */
+
+/** Ключ результата «профиль сохранён» в SavedStateHandle профиля. */
+private const val PROFILE_SAVED = "profileSaved"
 
 /** После входа или регистрации: закрыть вход (и регистрацию над ним) и, если гость шёл оформлять, открыть оформление. */
 private fun NavController.afterLogin(toCheckout: Boolean) {

@@ -27,6 +27,7 @@ import org.junit.rules.ExternalResource
 import org.junit.runner.RunWith
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.data.InMemoryAuthRepository
+import ru.coffeerun.data.InMemoryProfileRepository
 import ru.coffeerun.data.LocalMenuRepository
 
 /** «Поделиться» на экране позиции открывает системный выбор приложения с текстом о позиции. */
@@ -36,7 +37,7 @@ class ShareTest {
     val freshData = object : ExternalResource() {
         override fun before() {
             val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
-            (app as CoffeeRunApplication).container = AppContainer(menu = LocalMenuRepository(), auth = InMemoryAuthRepository(loggedIn = true))
+            (app as CoffeeRunApplication).container = AppContainer(menu = LocalMenuRepository(), auth = InMemoryAuthRepository(loggedIn = true), profile = InMemoryProfileRepository())
         }
     }
 

@@ -81,8 +81,6 @@
 
     <!-- Профиль (данные демонстрационные) -->
     <string name="profile_title">Profile</string>
-    <string name="profile_name">Denis</string>
-    <string name="profile_phone" translatable="false">+7 900 123-45-67</string>
     <string name="profile_edit">Edit profile</string>
     <string name="profile_orders_label">orders</string>
     <string name="profile_favorites_label">in favorites</string>
@@ -139,4 +137,7 @@
     <string name="profile_logout">Sign out</string>
     <string name="orders_guest_title">Sign in to see your orders</string>
     <string name="orders_guest_text">Your orders and their status will appear here</string>
+    <string name="profile_edit_title">Edit profile</string>
+    <string name="profile_save">Save</string>
+    <string name="profile_saved">Profile saved</string>
 </resources>

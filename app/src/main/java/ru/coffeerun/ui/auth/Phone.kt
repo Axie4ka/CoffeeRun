@@ -37,6 +37,10 @@ fun isValidPhone(digits: String): Boolean = digits.length == PHONE_DIGITS && dig
 /** Номер в формате контракта: +7 и 10 цифр. */
 fun fullPhone(digits: String): String = "+7$digits"
 
+/** «+79990000000» → «+7 999 000-00-00» для показа. Номер не в формате контракта показывается как есть. */
+fun displayPhone(phone: String): String =
+    if (phone.startsWith("+7") && phone.length == 2 + PHONE_DIGITS) "+7 " + formatPhone(phone.drop(2)) else phone
+
 /** «9990000000» → «999 000-00-00». Пробел после 3-й цифры, дефисы после 6-й и 8-й. */
 fun formatPhone(digits: String): String = buildString {
     digits.forEachIndexed { i, c ->
