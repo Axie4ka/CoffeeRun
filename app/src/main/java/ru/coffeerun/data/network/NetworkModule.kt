@@ -5,6 +5,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import ru.coffeerun.data.local.TokenStore
 
 /**
  * Язык текстов меню для сервера: «ru» для русского интерфейса, иначе «en» — других у сервера нет.
@@ -12,12 +13,16 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
  */
 fun Context.serverLanguage(): String = if (resources.configuration.locales[0].language == "ru") "ru" else "en"
 
-/** Retrofit-клиент сервера. [language] спрашивается на каждый запрос: язык телефона могут сменить на ходу. */
-fun createCoffeeRunApi(baseUrl: String, language: () -> String): CoffeeRunApi {
+/**
+ * Retrofit-клиент сервера. [language] спрашивается на каждый запрос: язык телефона могут сменить на ходу.
+ * Токен из [tokens] добавляется к запросам, а при ответе 401 стирается — см. [AuthInterceptor].
+ */
+fun createCoffeeRunApi(baseUrl: String, language: () -> String, tokens: TokenStore): CoffeeRunApi {
     val client = OkHttpClient.Builder()
         .addInterceptor { chain ->
             chain.proceed(chain.request().newBuilder().header("Accept-Language", language()).build())
         }
+        .addInterceptor(AuthInterceptor(tokens))
         .build()
     return Retrofit.Builder()
         .baseUrl(baseUrl)

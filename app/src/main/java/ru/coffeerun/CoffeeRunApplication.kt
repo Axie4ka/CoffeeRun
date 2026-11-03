@@ -49,10 +49,11 @@ class CoffeeRunApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         val language = { serverLanguage() } // спрашивается на каждый запрос: язык могут сменить на ходу
-        val api = createCoffeeRunApi(BuildConfig.BASE_URL, language)
+        val tokens = TokenStore(authDataStore) // один на процесс: им пользуются и запросы, и вход
+        val api = createCoffeeRunApi(BuildConfig.BASE_URL, language, tokens)
         container = AppContainer(
             menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language),
-            auth = NetworkAuthRepository(api, TokenStore(authDataStore))
+            auth = NetworkAuthRepository(api, tokens)
         )
     }
 }
