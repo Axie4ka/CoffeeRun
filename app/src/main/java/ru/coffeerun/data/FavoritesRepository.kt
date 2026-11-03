@@ -82,16 +82,3 @@ class NetworkFavoritesRepository(
         throw IOException("Ответ сервера не по контракту", e)
     }
 }
-
-/** Избранное в памяти — для UI-тестов и превью. */
-class InMemoryFavoritesRepository : FavoritesRepository {
-    private val _ids = MutableStateFlow<Set<String>>(emptySet())
-    override val ids: StateFlow<Set<String>> = _ids.asStateFlow()
-
-    override suspend fun refresh() = Unit
-
-    override suspend fun toggle(productId: String): Boolean {
-        _ids.update { if (productId in it) it - productId else it + productId }
-        return true
-    }
-}
