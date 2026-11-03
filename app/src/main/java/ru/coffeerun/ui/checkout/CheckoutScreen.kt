@@ -13,7 +13,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
+import ru.coffeerun.ui.auth.SubmitButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -70,6 +72,7 @@ fun CheckoutScreen(
     onPickupAsap: () -> Unit,
     onPickupTimeChosen: (hour: Int, minute: Int) -> Boolean,
     modifier: Modifier = Modifier,
+    onMessageShown: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     val lines = uiState.lines
@@ -82,6 +85,14 @@ fun CheckoutScreen(
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val invalidMessage = stringResource(R.string.pickup_time_invalid)
+    val context = LocalContext.current
+    LaunchedEffect(uiState.message) {
+        uiState.message?.let {
+            // Сначала показать, потом сбросить: сброс меняет ключ эффекта и отменил бы снэкбар
+            snackbarHostState.showSnackbar(context.getString(it))
+            onMessageShown()
+        }
+    }
 
     if (showTimePicker && earliestPickup != null) {
         val initial = pickupAtMillis?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalTime() } ?: earliestPickup
@@ -119,9 +130,7 @@ fun CheckoutScreen(
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
                 ) {
                     TotalRow(total = uiState.total)
-                    Button(onClick = onConfirm, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.checkout_confirm))
-                    }
+                    SubmitButton(R.string.checkout_confirm, isLoading = uiState.isPlacing, onClick = onConfirm)
                 }
             }
         }

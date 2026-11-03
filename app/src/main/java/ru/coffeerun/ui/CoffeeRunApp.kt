@@ -144,8 +144,11 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             composable<OrdersRoute> {
                 val vm: OrdersViewModel = viewModel(factory = OrdersViewModel.Factory)
                 val orders by vm.orders.collectAsStateWithLifecycle()
+                val load by vm.load.collectAsStateWithLifecycle()
                 OrdersScreen(
                     orders = orders,
+                    load = load,
+                    onRetry = vm::retry,
                     onRepeat = {
                         vm.repeat(it)
                         navController.openTab(Tab.CART)
@@ -334,6 +337,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                     onConfirm = vm::placeOrder,
                     onPickupAsap = vm::pickupAsap,
                     onPickupTimeChosen = vm::setPickupTime,
+                    onMessageShown = vm::onMessageShown,
                     snackbarHostState = snackbarHostState
                 )
             }

@@ -140,8 +140,8 @@ class CartTest {
     @Test
     fun repeat_putsOrderLinesBackToCart() {
         val past = orders.orders.value.first { it.lines.size == 1 }
-        OrdersViewModel(orders, cart).repeat(past)
-        OrdersViewModel(orders, cart).repeat(past)
+        OrdersViewModel(orders, cart, flowOf(false)).repeat(past)
+        OrdersViewModel(orders, cart, flowOf(false)).repeat(past)
         assertEquals(1, lines.size)
         assertEquals(past.lines[0].quantity * 2, lines[0].quantity)
     }
