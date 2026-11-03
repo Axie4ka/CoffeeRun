@@ -2,6 +2,7 @@ package ru.coffeerun.ui
 
 import android.content.Intent
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import ru.coffeerun.R
 import ru.coffeerun.ui.components.AppNavigationBar
+import ru.coffeerun.ui.components.RetryMessage
+import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.navigation.CartRoute
 import ru.coffeerun.ui.navigation.CheckoutRoute
@@ -152,7 +155,8 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                     uiState = favoritesState,
                     onProductClick = { navController.navigate(ProductRoute(it)) },
                     onBrowseMenu = { navController.jumpToTab(Tab.MENU) },
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onRetry = vm::retry
                 )
             }
 
@@ -164,10 +168,15 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                         CircularProgressIndicator()
                     }
                     ProductUiState.NotFound -> LaunchedEffect(Unit) { navController.popBackStack<ProductRoute>(inclusive = true) }
+                    // Без шапки экрана позиции некуда нажать «назад», поэтому своя панель с одной стрелкой
+                    ProductUiState.Error -> Column(Modifier.fillMaxSize()) {
+                        ScreenTopBar(title = "", onBack = { navController.popBackStack() })
+                        RetryMessage(stringResource(R.string.load_error), vm::retry)
+                    }
                     is ProductUiState.Success -> {
                         val context = LocalContext.current
                         val product = state.product
-                        val name = stringResource(product.nameRes)
+                        val name = product.name
                         val price = stringResource(
                             if (product.isPriceFrom) R.string.price_from else R.string.price_rub,
                             product.price
@@ -177,6 +186,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                             product = state.product,
                             form = state.form,
                             unitPrice = state.unitPrice,
+                            prices = state.prices,
                             cartCount = state.cartCount,
                             onSizeSelected = vm::selectSize,
                             onMilkSelected = vm::selectMilk,

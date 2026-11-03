@@ -1,6 +1,5 @@
 package ru.coffeerun.model
 
-import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import ru.coffeerun.R
 
@@ -21,23 +20,27 @@ enum class Allergen(@StringRes val labelRes: Int) {
     MILK(R.string.allergen_milk),
     GLUTEN(R.string.allergen_gluten),
     EGGS(R.string.allergen_eggs),
-    NUTS(R.string.allergen_nuts)
+    NUTS(R.string.allergen_nuts),
+
+    /** Код с сервера, которого приложение не знает. Не выбрасываем: для аллергена «не показать» опаснее, чем «уточните». */
+    OTHER(R.string.allergen_other)
 }
 
 /**
  * Позиция меню. [price] — цена в рублях; если [isPriceFrom] = true, это цена
  * самого маленького размера («от 220 ₽»), а итог зависит от выбранных опций.
- * [descriptionRes] — короткое описание для списка, [detailsRes] — для экрана позиции.
+ * Тексты приходят с сервера на языке пользователя: [description] — короткое описание для списка,
+ * [details] — для экрана позиции. [imageUrl] — полный адрес фото.
  * [extras] — добавки, подходящие именно этой позиции (порядок сохраняется);
  * пустой набор — блока добавок нет.
  */
 data class Product(
     val id: String,
     val category: ProductCategory,
-    @StringRes val nameRes: Int,
-    @StringRes val descriptionRes: Int,
-    @StringRes val detailsRes: Int,
-    @DrawableRes val imageRes: Int,
+    val name: String,
+    val description: String,
+    val details: String,
+    val imageUrl: String,
     val price: Int,
     val calories: Int,
     val allergens: Set<Allergen> = emptySet(),
@@ -60,12 +63,15 @@ data class Product(
     )
 
     /**
-     * Цена одной порции с выбранными опциями, в рублях. [DrinkSize.price] — цена капучино
-     * в этом размере, поэтому для остальных позиций берётся только доплата к размеру S.
+     * Цена одной порции с выбранными опциями, в рублях. Цена размера в [prices] — это цена капучино,
+     * поэтому для остальных позиций берётся только доплата к размеру S.
+     * Опции без цены в [prices] (её нет в кофейне) ничего не добавляют — экран их и не предлагает.
      */
-    fun unitPrice(size: DrinkSize, milk: MilkType, selectedExtras: Set<Extra>): Int {
-        val sizeSurcharge = if (Customization.SIZE in customizations) size.price - DrinkSize.SMALL.price else 0
-        val milkSurcharge = if (Customization.MILK in customizations) milk.price else 0
-        return price + sizeSurcharge + milkSurcharge + selectedExtras.sumOf { it.price }
+    fun unitPrice(size: DrinkSize, milk: MilkType, selectedExtras: Set<Extra>, prices: OptionPrices): Int {
+        val sizeSurcharge = if (Customization.SIZE in customizations) {
+            (prices.sizePrice(size) ?: 0) - (prices.sizePrice(DrinkSize.SMALL) ?: prices.sizePrice(size) ?: 0)
+        } else 0
+        val milkSurcharge = if (Customization.MILK in customizations) prices.milk(milk)?.price ?: 0 else 0
+        return price + sizeSurcharge + milkSurcharge + selectedExtras.sumOf { prices.extras[it] ?: 0 }
     }
 }

@@ -21,7 +21,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // 10.0.2.2 — это localhost компьютера, видимый из эмулятора; там работает Mockoon
+            buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:3000/\"")
+        }
         release {
+            // shortcut: настоящего сервера нет; появится — подставить его https-адрес
+            buildConfigField("String", "BASE_URL", "\"https://api.coffeerun.example/\"")
             optimization {
                 enable = false
             }
@@ -33,6 +39,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -49,6 +56,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(platform(libs.androidx.compose.bom))

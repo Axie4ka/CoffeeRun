@@ -44,6 +44,30 @@ class FavoritesTest {
     }
 
     @Test
+    fun networkError_isError_thenRetryLoads() = runTest {
+        favorites.toggle("latte")
+        val repo = FakeMenuRepository(fail = true)
+        val vm = FavoritesViewModel(repo, favorites)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertEquals(FavoritesUiState.Error, vm.uiState.value)
+        repo.fail = false
+        vm.retry()
+        assertEquals(FavoritesUiState.Success(listOf(LocalMenu.LATTE)), vm.uiState.value)
+    }
+
+    @Test
+    fun product_networkError_isError_thenRetryLoads() = runTest {
+        val repo = FakeMenuRepository(fail = true)
+        val vm = ProductViewModel(LocalMenu.LATTE.id, repo, InMemoryCartRepository(), favorites, SavedStateHandle())
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertEquals(ProductUiState.Error, vm.uiState.value)
+        vm.addToCart() // без загруженной позиции ничего не происходит
+        repo.fail = false
+        vm.retry()
+        assertEquals(LocalMenu.LATTE, (vm.uiState.value as ProductUiState.Success).product)
+    }
+
+    @Test
     fun product_isFavoriteReflectsRepo() = runTest {
         val vm = ProductViewModel(LocalMenu.LATTE.id, LocalMenuRepository(), InMemoryCartRepository(), favorites, SavedStateHandle())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }

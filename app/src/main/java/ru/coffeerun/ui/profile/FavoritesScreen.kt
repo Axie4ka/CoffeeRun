@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import ru.coffeerun.R
 import ru.coffeerun.ui.components.EmptyState
 import ru.coffeerun.ui.components.ProductCard
+import ru.coffeerun.ui.components.RetryMessage
 import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.theme.spacing
 
@@ -29,6 +30,7 @@ fun FavoritesScreen(
     onProductClick: (String) -> Unit,
     onBrowseMenu: () -> Unit,
     onBack: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier.fillMaxSize()) {
@@ -37,6 +39,7 @@ fun FavoritesScreen(
             FavoritesUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
+            FavoritesUiState.Error -> RetryMessage(stringResource(R.string.load_error), onRetry)
             is FavoritesUiState.Success ->
                 if (uiState.products.isEmpty()) {
                     EmptyState(stringResource(R.string.favorites_empty), onBrowseMenu, Modifier.fillMaxSize())

@@ -8,7 +8,7 @@ import ru.coffeerun.model.CartLine
 /** «Капучино L × 1» — короткая строка позиции для заказа. */
 @Composable
 fun CartLine.summaryText(): String {
-    val name = stringResource(product.nameRes)
+    val name = product.name
     val size = options?.size?.let { stringResource(it.labelRes).substringBefore(' ') }
     return if (size != null) {
         stringResource(R.string.line_summary_sized, name, size, quantity)
@@ -20,7 +20,7 @@ fun CartLine.summaryText(): String {
 /** «L · Овсяное · Ваниль» для напитка с опциями, иначе описание позиции. */
 @Composable
 fun CartLine.optionsText(): String {
-    val o = options ?: return stringResource(product.descriptionRes)
+    val o = options ?: return product.description
     val parts = buildList {
         // Метка размера выглядит как «M · 350 мл» — в корзине нужна только буква
         o.size?.let { add(stringResource(it.labelRes).substringBefore(' ')) }
@@ -30,5 +30,5 @@ fun CartLine.optionsText(): String {
         if (o.note.isNotEmpty()) add("«${o.note}»")
     }
     // Ничего не выбрано (например, эспрессо без добавок) — показываем описание
-    return if (parts.isEmpty()) stringResource(product.descriptionRes) else parts.joinToString(" · ")
+    return if (parts.isEmpty()) product.description else parts.joinToString(" · ")
 }

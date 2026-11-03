@@ -72,6 +72,7 @@ class ProductViewModelTest {
         val slow = object : MenuRepository {
             override suspend fun getMenu(): List<Product> = LocalMenu.products
             override suspend fun getProduct(id: String): Product? = gate.await()
+            override suspend fun getOptionPrices() = LocalMenu.prices
         }
         val vm = ProductViewModel(LocalMenu.LATTE.id, slow, cart, InMemoryFavoritesRepository(), savedState)
         keepActive(vm)
@@ -122,6 +123,32 @@ class ProductViewModelTest {
         assertEquals(3, lines[0].quantity)
         assertNull(lines[0].options?.milk)
         assertEquals("", lines[0].options?.note)
+    }
+
+    @Test
+    fun goneOptions_replacedByAvailable_inScreenAndQuickAdd() = runTest {
+        // В кофейне закончилось обычное молоко и убрали размер M — выбор по умолчанию недоступен
+        val prices = LocalMenu.prices.copy(
+            sizes = LocalMenu.prices.sizes.filter { it.size != DrinkSize.MEDIUM },
+            milks = LocalMenu.prices.milks.map { if (it.milk == MilkType.REGULAR) it.copy(isAvailable = false) else it }
+        )
+        val repo = object : MenuRepository {
+            override suspend fun getMenu(): List<Product> = LocalMenu.products
+            override suspend fun getProduct(id: String): Product? = LocalMenu.byId(id)
+            override suspend fun getOptionPrices() = prices
+        }
+        val vm = ProductViewModel(LocalMenu.LATTE.id, repo, cart, InMemoryFavoritesRepository(), savedState)
+        keepActive(vm)
+        val form = (vm.uiState.value as ProductUiState.Success).form
+        assertEquals(DrinkSize.SMALL, form.size)
+        assertEquals(MilkType.LACTOSE_FREE, form.milk)
+
+        vm.addToCart()
+        MenuViewModel(repo, cart, InMemoryShopRepository()).quickAdd(LocalMenu.LATTE)
+        val lines = cart.lines.value
+        assertEquals("экран и «+» дают одну строку", 1, lines.size)
+        assertEquals(MilkType.LACTOSE_FREE, lines[0].options?.milk)
+        assertEquals(240, lines[0].unitPrice)
     }
 
     @Test

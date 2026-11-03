@@ -40,6 +40,7 @@
     <string name="action_back">Назад</string>
     <string name="action_retry">Повторить</string>
     <string name="menu_error">Не удалось загрузить меню</string>
+    <string name="load_error">Не удалось загрузить. Проверьте соединение</string>
     <string name="menu_empty">Меню пока пустое</string>
     <string name="action_favorite">В избранное</string>
     <string name="action_unfavorite">Убрать из избранного</string>

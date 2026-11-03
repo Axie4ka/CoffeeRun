@@ -17,13 +17,14 @@ import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.DEFAULT_DRINK_SIZE
 import ru.coffeerun.model.MilkType
+import ru.coffeerun.model.OptionPrices
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop
 
 /** Состояние загрузки меню. */
 sealed interface MenuUiState {
     data object Loading : MenuUiState
-    data class Success(val products: List<Product>) : MenuUiState
+    data class Success(val products: List<Product>, val prices: OptionPrices) : MenuUiState
     data object Error : MenuUiState
 }
 
@@ -52,21 +53,31 @@ class MenuViewModel(
         _uiState.value = MenuUiState.Loading
         loadJob = viewModelScope.launch {
             _uiState.value = try {
-                MenuUiState.Success(menu.getMenu())
+                MenuUiState.Success(menu.getMenu(), menu.getOptionPrices())
             } catch (e: IOException) {
                 MenuUiState.Error
             }
         }
     }
 
-    /** «+» в меню: размер по умолчанию и обычное молоко — с явными опциями, чтобы бариста видел размер. */
-    fun quickAdd(product: Product) = cart.add(
-        CartLine(
-            product = product,
-            unitPrice = product.unitPrice(DEFAULT_DRINK_SIZE, MilkType.REGULAR, emptySet()),
-            options = product.defaultOptions()
+    /**
+     * «+» в меню: размер по умолчанию и обычное молоко — с явными опциями, чтобы бариста видел размер.
+     * Если их нет в кофейне — то же, что подставит экран позиции, иначе строки корзины не сольются.
+     * Кнопка видна только при загруженном меню, поэтому цены уже есть.
+     */
+    fun quickAdd(product: Product) {
+        val prices = (_uiState.value as? MenuUiState.Success)?.prices ?: return
+        val size = prices.fitSize(DEFAULT_DRINK_SIZE)
+        val milk = prices.fitMilk(MilkType.REGULAR)
+        cart.add(
+            CartLine(
+                product = product,
+                unitPrice = product.unitPrice(size, milk, emptySet(), prices),
+                // null у опции остаётся null: у эспрессо нет выбора молока
+                options = product.defaultOptions()?.run { copy(size = this.size?.let { size }, milk = this.milk?.let { milk }) }
+            )
         )
-    )
+    }
 
     companion object {
         val Factory = viewModelFactory { initializer { MenuViewModel(container.menu, container.cart, container.shops) } }

@@ -130,7 +130,7 @@ private fun CartItemCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = stringResource(line.product.nameRes),
+                        text = line.product.name,
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f)
                     )

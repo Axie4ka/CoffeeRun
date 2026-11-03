@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -48,6 +47,7 @@ import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.ProductCategory
 import ru.coffeerun.model.Shop
+import ru.coffeerun.ui.components.RetryMessage
 import ru.coffeerun.ui.components.ProductCard
 import ru.coffeerun.ui.components.ShopPickerSheet
 import ru.coffeerun.ui.theme.CoffeeRunTheme
@@ -77,9 +77,9 @@ fun MenuScreen(
             MenuUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-            MenuUiState.Error -> MenuMessage(stringResource(R.string.menu_error), onRetry)
+            MenuUiState.Error -> RetryMessage(stringResource(R.string.menu_error), onRetry)
             is MenuUiState.Success -> if (uiState.products.isEmpty()) {
-                MenuMessage(stringResource(R.string.menu_empty), onRetry)
+                RetryMessage(stringResource(R.string.menu_empty), onRetry)
             } else {
                 MenuFeed(
                     products = uiState.products,
@@ -90,19 +90,6 @@ fun MenuScreen(
         }
     }
     if (showShopPicker) ShopPickerSheet(shop, onShopSelected, onDismiss = { showShopPicker = false })
-}
-
-/** Сообщение по центру с кнопкой «Повторить»: ошибка загрузки или пустое меню. */
-@Composable
-private fun MenuMessage(text: String, onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium, Alignment.CenterVertically)
-    ) {
-        Text(text)
-        Button(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
-    }
 }
 
 /** Вкладки разделов и список позиций; показывается, только когда меню загружено. */
@@ -231,7 +218,7 @@ private fun MenuHeader(shop: Shop, onShopClick: () -> Unit) {
 private fun MenuScreenPreview() {
     CoffeeRunTheme {
         ProvidePreviewNotifier { MenuScreen(
-                uiState = MenuUiState.Success(LocalMenu.products),
+                uiState = MenuUiState.Success(LocalMenu.products, LocalMenu.prices),
                 shop = Shop.MOSKOVSKAYA,
                 onShopSelected = {},
                 onRetry = {},

@@ -1,6 +1,6 @@
 package ru.coffeerun.ui.components
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,10 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import ru.coffeerun.R
 import ru.coffeerun.model.Product
 import ru.coffeerun.ui.theme.priceSmall
@@ -31,14 +31,16 @@ import ru.coffeerun.ui.theme.spacing
 /** Квадратное фото позиции со скруглёнными углами. */
 @Composable
 fun ProductImage(product: Product, size: Dp, modifier: Modifier = Modifier) {
-    Image(
-        painter = painterResource(product.imageRes),
+    AsyncImage(
+        model = product.imageUrl,
         // Декоративное: название позиции рядом идёт текстом
         contentDescription = null,
         contentScale = ContentScale.Crop,
         modifier = modifier
             .size(size)
             .clip(MaterialTheme.shapes.medium)
+            // Фон виден, пока фото грузится или если не загрузилось
+            .background(MaterialTheme.colorScheme.surfaceVariant)
     )
 }
 
@@ -50,7 +52,7 @@ fun ProductCard(
     modifier: Modifier = Modifier,
     onAdd: (() -> Unit)? = null
 ) {
-    val name = stringResource(product.nameRes)
+    val name = product.name
     Surface(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
@@ -68,7 +70,7 @@ fun ProductCard(
             ) {
                 Text(text = name, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = stringResource(product.descriptionRes),
+                    text = product.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
