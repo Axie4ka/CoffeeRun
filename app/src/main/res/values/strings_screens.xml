@@ -17,48 +17,9 @@
     <string name="price_from">from %1$d ₽</string>
     <string name="add_product">Add %1$s to cart</string>
 
-    <string name="product_cappuccino">Cappuccino</string>
-    <string name="product_cappuccino_description">Espresso and gentle milk foam</string>
-    <string name="product_latte">Latte</string>
-    <string name="product_latte_description">Soft coffee with lots of milk</string>
-    <string name="product_raf">Vanilla raf</string>
-    <string name="product_raf_description">Cream, espresso and vanilla sugar</string>
-    <string name="product_espresso">Espresso</string>
-    <string name="product_espresso_description">Strong and rich, 40 ml</string>
-    <string name="product_americano">Americano</string>
-    <string name="product_americano_description">Espresso diluted with hot water</string>
-    <string name="product_hot_chocolate">Hot chocolate</string>
-    <string name="product_hot_chocolate_description">Thick and sweet, made with cocoa</string>
-    <string name="product_tea">Black tea</string>
-    <string name="product_tea_description">Brewed in a pot, with lemon</string>
-    <string name="product_croissant">Croissant</string>
-    <string name="product_croissant_description">Classic, buttery</string>
-    <string name="product_cheesecake">Cheesecake</string>
-    <string name="product_cheesecake_description">New York style</string>
 
-    <string name="product_cinnamon_roll">Cinnamon roll</string>
-    <string name="product_cinnamon_roll_description">Soft dough with cinnamon and sugar</string>
-    <string name="product_muffin">Chocolate muffin</string>
-    <string name="product_muffin_description">With chocolate chips inside</string>
-    <string name="product_apple_pie">Apple pie</string>
-    <string name="product_apple_pie_description">Apples, cinnamon and crumbly crust</string>
-    <string name="product_cookie">Almond cookie</string>
-    <string name="product_cookie_description">Crunchy, with toasted almonds</string>
 
     <!-- Описания на экране позиции -->
-    <string name="product_cappuccino_details">Classic espresso with gentle milk foam. Made from freshly roasted beans.</string>
-    <string name="product_latte_details">Soft coffee with a lot of steamed milk and a thin layer of foam.</string>
-    <string name="product_raf_details">Espresso blended with cream and vanilla sugar. Sweet and velvety.</string>
-    <string name="product_espresso_details">A short, strong shot of 40 ml. Served without milk.</string>
-    <string name="product_americano_details">Espresso diluted with hot water. Clean taste, no milk.</string>
-    <string name="product_hot_chocolate_details">Thick drink made from real chocolate and cocoa. Warm and sweet.</string>
-    <string name="product_tea_details">Black tea brewed in a pot, served with a slice of lemon.</string>
-    <string name="product_croissant_details">Classic buttery croissant, baked every morning.</string>
-    <string name="product_cinnamon_roll_details">Soft roll with cinnamon and sugar filling and a light glaze.</string>
-    <string name="product_muffin_details">Moist chocolate muffin with chocolate chips inside.</string>
-    <string name="product_apple_pie_details">Pie with baked apples and cinnamon on a crumbly shortcrust base.</string>
-    <string name="product_cheesecake_details">New York style cheesecake on a biscuit base, with a creamy texture.</string>
-    <string name="product_cookie_details">Crunchy cookie with toasted almond flakes.</string>
     <string name="extra_cinnamon">Cinnamon</string>
     <string name="extra_honey">Honey</string>
     <string name="extra_marshmallow">Marshmallow</string>
