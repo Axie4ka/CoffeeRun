@@ -24,9 +24,7 @@ import ru.coffeerun.data.AuthResult
 import ru.coffeerun.data.NetworkAuthRepository
 import ru.coffeerun.data.local.TokenStore
 import ru.coffeerun.data.network.AuthResponse
-import ru.coffeerun.data.network.CoffeeRunApi
 import ru.coffeerun.data.network.LoginRequest
-import ru.coffeerun.data.network.MenuDto
 import ru.coffeerun.data.network.RegisterRequest
 import ru.coffeerun.data.network.UserDto
 import ru.coffeerun.model.User
@@ -45,9 +43,8 @@ class NetworkAuthRepositoryTest {
     private val ok = AuthResponse("demo-token", UserDto("Денис", "+79990000000"))
 
     /** API, которое на любой вход и регистрацию отвечает [answer]. */
-    private class FakeApi(val answer: () -> AuthResponse) : CoffeeRunApi {
+    private class FakeApi(val answer: () -> AuthResponse) : StubApi() {
         var lastLogin: LoginRequest? = null
-        override suspend fun getMenu(): MenuDto = error("не нужен для входа")
         override suspend fun login(request: LoginRequest): AuthResponse = answer().also { lastLogin = request }
         override suspend fun register(request: RegisterRequest): AuthResponse = answer()
     }

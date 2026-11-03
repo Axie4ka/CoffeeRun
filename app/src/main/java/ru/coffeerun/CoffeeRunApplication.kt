@@ -6,7 +6,10 @@ import androidx.annotation.VisibleForTesting
 import androidx.datastore.preferences.preferencesDataStore
 import ru.coffeerun.data.AuthRepository
 import ru.coffeerun.data.InMemoryAuthRepository
+import ru.coffeerun.data.InMemoryProfileRepository
 import ru.coffeerun.data.NetworkAuthRepository
+import ru.coffeerun.data.NetworkProfileRepository
+import ru.coffeerun.data.ProfileRepository
 import ru.coffeerun.data.local.AUTH_DATASTORE
 import ru.coffeerun.data.local.TokenStore
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
@@ -27,10 +30,10 @@ import ru.coffeerun.data.ShopRepository
 
 /**
  * Репозитории в одном экземпляре на процесс — так у всех ViewModel одна корзина и одни заказы.
- * [menu] и [auth] передаются снаружи: приложение даёт сетевые, UI-тесты — [LocalMenuRepository]
- * и [InMemoryAuthRepository], чтобы не нужны были ни сервер, ни файл DataStore.
+ * [menu], [auth] и [profile] передаются снаружи: приложение даёт сетевые, UI-тесты — [LocalMenuRepository],
+ * [InMemoryAuthRepository] и [InMemoryProfileRepository], чтобы не нужны были ни сервер, ни файл DataStore.
  */
-class AppContainer(val menu: MenuRepository, val auth: AuthRepository) {
+class AppContainer(val menu: MenuRepository, val auth: AuthRepository, val profile: ProfileRepository) {
     val cart: CartRepository = InMemoryCartRepository()
     val orders: OrderRepository = InMemoryOrderRepository()
     val shops: ShopRepository = InMemoryShopRepository()
@@ -53,7 +56,8 @@ class CoffeeRunApplication : Application() {
         val api = createCoffeeRunApi(BuildConfig.BASE_URL, language, tokens)
         container = AppContainer(
             menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language),
-            auth = NetworkAuthRepository(api, tokens)
+            auth = NetworkAuthRepository(api, tokens),
+            profile = NetworkProfileRepository(api)
         )
     }
 }
