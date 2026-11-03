@@ -2,6 +2,7 @@ package ru.coffeerun
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.datastore.preferences.preferencesDataStore
 import ru.coffeerun.data.AuthRepository
@@ -66,7 +67,9 @@ class CoffeeRunApplication : Application() {
         super.onCreate()
         val language = { serverLanguage() } // спрашивается на каждый запрос: язык могут сменить на ходу
         val tokens = TokenStore(authDataStore) // один на процесс: им пользуются и запросы, и вход
-        val api = createCoffeeRunApi(BuildConfig.BASE_URL, language, tokens)
+        // Запросы в Logcat (тег CoffeeRunHttp) — только в debug-сборке
+        val log = if (BuildConfig.DEBUG) { line: String -> Log.d("CoffeeRunHttp", line); Unit } else null
+        val api = createCoffeeRunApi(BuildConfig.BASE_URL, language, tokens, log)
         val auth = NetworkAuthRepository(api, tokens)
         val menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language)
         container = AppContainer(

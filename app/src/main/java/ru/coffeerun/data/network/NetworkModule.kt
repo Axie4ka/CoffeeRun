@@ -16,14 +16,17 @@ fun Context.serverLanguage(): String = if (resources.configuration.locales[0].la
 /**
  * Retrofit-клиент сервера. [language] спрашивается на каждый запрос: язык телефона могут сменить на ходу.
  * Токен из [tokens] добавляется к запросам, а при ответе 401 стирается — см. [AuthInterceptor].
+ * [log] — строка на каждый запрос (см. [RequestLogInterceptor]); null — не логировать.
  */
-fun createCoffeeRunApi(baseUrl: String, language: () -> String, tokens: TokenStore): CoffeeRunApi {
-    val client = OkHttpClient.Builder()
+fun createCoffeeRunApi(baseUrl: String, language: () -> String, tokens: TokenStore, log: ((String) -> Unit)? = null): CoffeeRunApi {
+    val builder = OkHttpClient.Builder()
         .addInterceptor { chain ->
             chain.proceed(chain.request().newBuilder().header("Accept-Language", language()).build())
         }
         .addInterceptor(AuthInterceptor(tokens))
-        .build()
+    // Последним: видит запрос уже с токеном, а время — только сеть и сервер
+    if (log != null) builder.addInterceptor(RequestLogInterceptor(log))
+    val client = builder.build()
     return Retrofit.Builder()
         .baseUrl(baseUrl)
         .client(client)
