@@ -73,7 +73,6 @@
     <string name="status_picked_up">Выдан</string>
 
     <string name="profile_title">Профиль</string>
-    <string name="profile_name">Денис</string>
     <string name="profile_edit">Редактировать профиль</string>
     <string name="profile_orders_label">заказов</string>
     <string name="profile_favorites_label">в избранном</string>

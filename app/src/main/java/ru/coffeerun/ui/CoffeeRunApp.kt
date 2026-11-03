@@ -159,6 +159,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                     onFavoritesClick = { navController.navigate(FavoritesRoute) },
                     onLogin = { navController.navigate(LoginRoute()) },
                     onLogout = vm::logout,
+                    onRetry = vm::retry,
                     modifier = tabModifier
                 )
             }

@@ -81,8 +81,6 @@
 
     <!-- Профиль (данные демонстрационные) -->
     <string name="profile_title">Profile</string>
-    <string name="profile_name">Denis</string>
-    <string name="profile_phone" translatable="false">+7 900 123-45-67</string>
     <string name="profile_edit">Edit profile</string>
     <string name="profile_orders_label">orders</string>
     <string name="profile_favorites_label">in favorites</string>

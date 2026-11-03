@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +44,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.model.Shop
+import ru.coffeerun.model.User
+import ru.coffeerun.ui.auth.displayPhone
+import ru.coffeerun.ui.components.RetryMessage
 import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.ShopPickerSheet
 import ru.coffeerun.ui.components.SignInPrompt
@@ -62,7 +66,8 @@ fun ProfileScreen(
     onFavoritesClick: () -> Unit,
     onLogin: () -> Unit,
     onLogout: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRetry: () -> Unit = {}
 ) {
     when (uiState.isLoggedIn) {
         null -> Box(modifier.fillMaxSize())
@@ -73,12 +78,23 @@ fun ProfileScreen(
             onLogin = onLogin,
             modifier = modifier
         )
-        true -> AccountProfile(uiState, onShopSelected, onFavoritesClick, onLogout, modifier)
+        true -> when (val account = uiState.account) {
+            AccountState.Loading -> Column(modifier.fillMaxSize()) {
+                ScreenTopBar(title = stringResource(R.string.profile_title))
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            }
+            AccountState.Error -> Column(modifier.fillMaxSize()) {
+                ScreenTopBar(title = stringResource(R.string.profile_title))
+                RetryMessage(stringResource(R.string.load_error), onRetry)
+            }
+            is AccountState.Loaded -> AccountProfile(account.user, uiState, onShopSelected, onFavoritesClick, onLogout, modifier)
+        }
     }
 }
 
 @Composable
 private fun AccountProfile(
+    user: User,
     uiState: ProfileUiState,
     onShopSelected: (Shop) -> Unit,
     onFavoritesClick: () -> Unit,
@@ -89,7 +105,8 @@ private fun AccountProfile(
     var showShopPicker by rememberSaveable { mutableStateOf(false) }
     var showAbout by rememberSaveable { mutableStateOf(false) }
     val notify = MaterialTheme.snackbar
-    val name = stringResource(R.string.profile_name)
+    val name = user.name
+    val phone = displayPhone(user.phone)
 
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.profile_title))
@@ -106,7 +123,8 @@ private fun AccountProfile(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = name.first().toString(),
+                    // Пустое имя сервер не пропускает, но на всякий случай кружок не должен падать
+                    text = name.firstOrNull()?.uppercase() ?: "",
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer
                 )
@@ -114,7 +132,7 @@ private fun AccountProfile(
             Column(Modifier.weight(1f)) {
                 Text(text = name, style = MaterialTheme.typography.titleLarge)
                 Text(
-                    text = stringResource(R.string.profile_phone),
+                    text = phone,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -134,7 +152,7 @@ private fun AccountProfile(
             ProfileItem(Icons.Default.Favorite, R.string.profile_favorites, if (favoritesCount == 0) stringResource(R.string.profile_favorites_none)
                 else pluralStringResource(R.plurals.profile_favorites_count, favoritesCount, favoritesCount), onFavoritesClick)
             ProfileItem(Icons.Default.LocationOn, R.string.profile_shop, stringResource(shop.addressRes)) { showShopPicker = true }
-            ProfileItem(Icons.Default.Phone, R.string.profile_phone_title, stringResource(R.string.profile_phone), notify::notifyPlaceholder)
+            ProfileItem(Icons.Default.Phone, R.string.profile_phone_title, phone, notify::notifyPlaceholder)
             HorizontalDivider()
             ProfileItem(Icons.Default.Info, R.string.profile_about, stringResource(R.string.profile_version)) { showAbout = true }
             ListItem(
@@ -197,7 +215,7 @@ private fun ProfileItem(icon: ImageVector, titleRes: Int, supporting: String, on
 @Composable
 private fun ProfileScreenPreview() {
     CoffeeRunTheme(dynamicColor = false) {
-        ProvidePreviewNotifier { ProfileScreen(ProfileUiState(Shop.MOSKOVSKAYA, ordersCount = 2, favoritesCount = 3), {}, {}, {}, {}) }
+        ProvidePreviewNotifier { ProfileScreen(ProfileUiState(Shop.MOSKOVSKAYA, ordersCount = 2, favoritesCount = 3, account = AccountState.Loaded(User("Денис", "+79990000000"))), {}, {}, {}, {}) }
     }
 }
 

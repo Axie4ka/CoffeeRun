@@ -15,6 +15,7 @@ import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.ui.auth.LoginViewModel
 import ru.coffeerun.ui.auth.PhoneVisualTransformation
 import ru.coffeerun.ui.auth.RegisterViewModel
+import ru.coffeerun.ui.auth.displayPhone
 import ru.coffeerun.ui.auth.formatPhone
 
 /** Вход и регистрация: проверка полей, ответы сервера и что переживает смерть процесса. */
@@ -163,6 +164,8 @@ class AuthViewModelTest {
     fun phone_formatAndCursorMapping() {
         assertEquals("999 000-00-00", formatPhone(demoPhone))
         assertEquals("999 0", formatPhone("9990"))
+        assertEquals("+7 999 000-00-00", displayPhone("+79990000000"))
+        assertEquals("номер не по контракту — как есть", "12345", displayPhone("12345"))
         val mapping = PhoneVisualTransformation.filter(AnnotatedString(demoPhone)).offsetMapping
         // Позиция в цифрах ↔ позиция в «999 000-00-00»
         for ((digits, shown) in listOf(0 to 0, 3 to 3, 4 to 5, 6 to 7, 7 to 9, 8 to 10, 9 to 12, 10 to 13)) {
