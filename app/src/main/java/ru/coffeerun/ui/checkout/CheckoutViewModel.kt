@@ -1,5 +1,6 @@
 package ru.coffeerun.ui.checkout
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -12,9 +13,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import ru.coffeerun.R
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.OrderRepository
+import ru.coffeerun.data.PlaceOrderResult
 import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.CLOSING_HOUR
@@ -27,7 +32,8 @@ import java.time.ZoneId
 /**
  * Состояние экрана оформления. [pickupAtMillis] = null — «как можно скорее»;
  * [earliestPickup] = null — заказ ко времени сегодня уже невозможен;
- * [placedOrderNumber] — номер только что оформленного заказа (событие как состояние, см. [CheckoutViewModel.onPlacedOrderShown]).
+ * [placedOrderNumber] — номер только что оформленного заказа (событие как состояние, см. [CheckoutViewModel.onPlacedOrderShown]);
+ * [isPlacing] — заказ отправлен, ждём сервер; [message] — разовое сообщение для снэкбара, почему заказ не принят.
  */
 data class CheckoutUiState(
     val lines: List<CartLine>,
@@ -35,8 +41,13 @@ data class CheckoutUiState(
     val shop: Shop,
     val pickupAtMillis: Long?,
     val earliestPickup: LocalTime?,
-    val placedOrderNumber: Int?
+    val placedOrderNumber: Int?,
+    val isPlacing: Boolean = false,
+    @StringRes val message: Int? = null
 )
+
+/** Ход отправки заказа — одним потоком, чтобы три поля менялись вместе. */
+private data class Submit(val isPlacing: Boolean = false, val placedOrderNumber: Int? = null, @StringRes val message: Int? = null)
 
 /** «Прошла минута»: пока экран открыт, по нему пересчитывается самое раннее время самовывоза. */
 private fun everyMinute(): Flow<Unit> = flow {
@@ -54,25 +65,27 @@ class CheckoutViewModel(
     ticks: Flow<Unit> = everyMinute()
 ) : ViewModel() {
     private val _pickupAtMillis = MutableStateFlow<Long?>(null)
-    private val _placedOrderNumber = MutableStateFlow<Int?>(null)
+    private val submit = MutableStateFlow(Submit())
 
     val uiState: StateFlow<CheckoutUiState> =
-        combine(cart.lines, shops.selected, _pickupAtMillis, _placedOrderNumber, ticks) { lines, shop, pickupAt, placed, _ ->
-            stateOf(lines, shop, pickupAt, placed)
+        combine(cart.lines, shops.selected, _pickupAtMillis, submit, ticks) { lines, shop, pickupAt, submit, _ ->
+            stateOf(lines, shop, pickupAt, submit)
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
             // Начальное значение из текущих данных — чтобы экран не мигнул пустым заказом
-            stateOf(cart.lines.value, shops.selected.value, _pickupAtMillis.value, _placedOrderNumber.value)
+            stateOf(cart.lines.value, shops.selected.value, _pickupAtMillis.value, submit.value)
         )
 
-    private fun stateOf(lines: List<CartLine>, shop: Shop, pickupAt: Long?, placed: Int?) = CheckoutUiState(
+    private fun stateOf(lines: List<CartLine>, shop: Shop, pickupAt: Long?, submit: Submit) = CheckoutUiState(
         lines = lines,
         total = lines.sumOf { it.total },
         shop = shop,
         pickupAtMillis = pickupAt,
         earliestPickup = earliestPickupTime(),
-        placedOrderNumber = placed
+        placedOrderNumber = submit.placedOrderNumber,
+        isPlacing = submit.isPlacing,
+        message = submit.message
     )
 
     /**
@@ -114,20 +127,33 @@ class CheckoutViewModel(
         _pickupAtMillis.value = null
     }
 
-    /** Оформляет заказ из корзины и очищает её. Пустая корзина — ничего не происходит. */
+    /**
+     * Оформляет заказ из корзины и очищает её. Пустая корзина или заказ уже отправлен — ничего не происходит.
+     * Сервер не принял заказ — корзина остаётся как была, а в [CheckoutUiState.message] — почему.
+     */
     fun placeOrder() {
         val lines = cart.lines.value
-        if (lines.isEmpty()) return
+        if (lines.isEmpty() || submit.value.isPlacing) return
         // Выбранное время могло устареть, пока открыт экран: тогда — «как можно скорее».
         if (_pickupAtMillis.value?.let(::isPickupValid) == false) _pickupAtMillis.value = null
-        _placedOrderNumber.value = orders.place(lines, shops.selected.value, _pickupAtMillis.value).number
-        cart.clear()
+        submit.value = Submit(isPlacing = true)
+        viewModelScope.launch {
+            submit.value = when (val result = orders.place(lines, shops.selected.value, _pickupAtMillis.value)) {
+                is PlaceOrderResult.Placed -> {
+                    cart.clear()
+                    Submit(placedOrderNumber = result.order.number)
+                }
+                PlaceOrderResult.Unavailable -> Submit(message = R.string.order_unavailable)
+                PlaceOrderResult.NetworkError -> Submit(message = R.string.order_network_error)
+            }
+        }
     }
 
     /** View перешла на «Заказ принят» — событие обработано, повторного перехода не будет. */
-    fun onPlacedOrderShown() {
-        _placedOrderNumber.value = null
-    }
+    fun onPlacedOrderShown() = submit.update { it.copy(placedOrderNumber = null) }
+
+    /** Снэкбар показан — второй раз его не будет. */
+    fun onMessageShown() = submit.update { it.copy(message = null) }
 
     companion object {
         val Factory = viewModelFactory {

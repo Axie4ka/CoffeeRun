@@ -28,9 +28,13 @@ data class Order(
     val shop: Shop,
     val placedAtMillis: Long,
     /** Время, к которому клиент просил приготовить заказ; null — как можно скорее. */
-    val pickupAtMillis: Long? = null
+    val pickupAtMillis: Long? = null,
+    /**
+     * Итог в рублях. По умолчанию — сумма строк; заказ с сервера передаёт его явно: строки с позициями,
+     * которых больше нет в меню, не показываются, но заплачено за них было.
+     */
+    val total: Int = lines.sumOf { it.total }
 ) {
-    val total: Int get() = lines.sumOf { it.total }
     val readyAtMillis: Long get() = pickupAtMillis ?: (placedAtMillis + READY_IN_MINUTES * 60_000L)
 
     /** Активный заказ — ещё не выдан клиенту. */

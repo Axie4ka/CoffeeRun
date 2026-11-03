@@ -25,6 +25,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.ui.components.EmptyState
+import ru.coffeerun.ui.components.RetryMessage
+import androidx.compose.material3.CircularProgressIndicator
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus
@@ -50,7 +52,9 @@ fun OrdersScreen(
     onBrowseMenu: () -> Unit,
     modifier: Modifier = Modifier,
     isLoggedIn: Boolean? = true,
-    onLogin: () -> Unit = {}
+    onLogin: () -> Unit = {},
+    load: OrdersLoad = OrdersLoad.DONE,
+    onRetry: () -> Unit = {}
 ) {
     // Заказы — данные аккаунта: гостю приглашение войти; пока токен не прочитан — пусто, без мигания
     when (isLoggedIn) {
@@ -68,7 +72,12 @@ fun OrdersScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.orders_title))
-        if (orders.isEmpty()) {
+        // Список уже есть — показываем его, даже если обновить не удалось
+        if (orders.isEmpty() && load == OrdersLoad.LOADING) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        } else if (orders.isEmpty() && load == OrdersLoad.FAILED) {
+            RetryMessage(stringResource(R.string.load_error), onRetry, Modifier.weight(1f))
+        } else if (orders.isEmpty()) {
             EmptyState(
                 text = stringResource(R.string.orders_empty),
                 onBrowseMenu = onBrowseMenu,

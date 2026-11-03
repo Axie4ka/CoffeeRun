@@ -15,13 +15,28 @@ import ru.coffeerun.model.Shop
 private const val FIRST_ORDER_NUMBER = 1042
 private const val DAY_MILLIS = 24 * 60 * 60 * 1000L
 
+/** Чем закончилось оформление — результат-значение, как у форм входа и профиля. */
+sealed interface PlaceOrderResult {
+    data class Placed(val order: Order) : PlaceOrderResult
+
+    /** 409: чего-то из заказа сейчас нет в наличии. */
+    data object Unavailable : PlaceOrderResult
+
+    /** Нет сети или сервер ответил не так. */
+    data object NetworkError : PlaceOrderResult
+}
+
 /** Заказы пользователя, от новых к старым. */
 interface OrderRepository {
     val orders: StateFlow<List<Order>>
 
-    /** Оформляет заказ из [lines]; [lines] не должен быть пустым. */
-    fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long? = null): Order
+    /** Загрузить с сервера заново. Ошибка — [java.io.IOException], как у меню. */
+    suspend fun refresh()
 
+    /** Оформляет заказ из [lines]; [lines] не должен быть пустым. Принятый заказ сразу попадает в [orders]. */
+    suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long? = null): PlaceOrderResult
+
+    /** Ищет среди загруженных [orders]. */
     fun find(number: Int): Order?
 }
 
@@ -32,7 +47,9 @@ class InMemoryOrderRepository(private val now: () -> Long = System::currentTimeM
 
     private var nextOrderNumber = FIRST_ORDER_NUMBER
 
-    override fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?): Order {
+    override suspend fun refresh() = Unit
+
+    override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?): PlaceOrderResult {
         require(lines.isNotEmpty()) { "Пустой заказ" }
         val order = Order(
             number = nextOrderNumber++,
@@ -44,7 +61,7 @@ class InMemoryOrderRepository(private val now: () -> Long = System::currentTimeM
             pickupAtMillis = pickupAtMillis
         )
         _orders.update { listOf(order) + it }
-        return order
+        return PlaceOrderResult.Placed(order)
     }
 
     override fun find(number: Int): Order? = _orders.value.find { it.number == number }

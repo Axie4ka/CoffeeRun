@@ -35,6 +35,14 @@ interface CoffeeRunApi {
     /** 204 без тела; если позиции в избранном не было — тоже 204. */
     @DELETE("me/favorites/{productId}")
     suspend fun removeFavorite(@Path("productId") productId: String)
+
+    /** От новых к старым — сортирует сервер. */
+    @GET("orders")
+    suspend fun getOrders(): List<OrderDto>
+
+    /** 201 — заказ принят; 409 — чего-то из заказа нет в наличии. */
+    @POST("orders")
+    suspend fun placeOrder(@Body request: OrderRequest): OrderDto
 }
 
 /** Разбор ответов сервера. Новые поля в ответе не ломают старое приложение. */
