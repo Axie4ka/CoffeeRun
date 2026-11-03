@@ -12,9 +12,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.OrderRepository
+import ru.coffeerun.data.PlaceOrderResult
 import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.CLOSING_HOUR
@@ -114,14 +116,23 @@ class CheckoutViewModel(
         _pickupAtMillis.value = null
     }
 
-    /** Оформляет заказ из корзины и очищает её. Пустая корзина — ничего не происходит. */
+    /**
+     * Оформляет заказ из корзины и очищает её. Пустая корзина — ничего не происходит.
+     * Сервер не принял заказ — корзина остаётся как была.
+     */
     fun placeOrder() {
         val lines = cart.lines.value
         if (lines.isEmpty()) return
         // Выбранное время могло устареть, пока открыт экран: тогда — «как можно скорее».
         if (_pickupAtMillis.value?.let(::isPickupValid) == false) _pickupAtMillis.value = null
-        _placedOrderNumber.value = orders.place(lines, shops.selected.value, _pickupAtMillis.value).number
-        cart.clear()
+        viewModelScope.launch {
+            // shortcut: отказ сервера пока молча оставляет корзину; загрузка и сообщения — следующий микрошаг
+            val result = orders.place(lines, shops.selected.value, _pickupAtMillis.value)
+            if (result is PlaceOrderResult.Placed) {
+                _placedOrderNumber.value = result.order.number
+                cart.clear()
+            }
+        }
     }
 
     /** View перешла на «Заказ принят» — событие обработано, повторного перехода не будет. */

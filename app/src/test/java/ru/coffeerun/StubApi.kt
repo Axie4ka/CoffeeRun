@@ -4,6 +4,8 @@ import ru.coffeerun.data.network.AuthResponse
 import ru.coffeerun.data.network.CoffeeRunApi
 import ru.coffeerun.data.network.LoginRequest
 import ru.coffeerun.data.network.MenuDto
+import ru.coffeerun.data.network.OrderDto
+import ru.coffeerun.data.network.OrderRequest
 import ru.coffeerun.data.network.RegisterRequest
 import ru.coffeerun.data.network.UserDto
 
@@ -20,6 +22,8 @@ open class StubApi : CoffeeRunApi {
     override suspend fun getFavorites(): List<String> = unused()
     override suspend fun addFavorite(productId: String): Unit = unused()
     override suspend fun removeFavorite(productId: String): Unit = unused()
+    override suspend fun getOrders(): List<OrderDto> = unused()
+    override suspend fun placeOrder(request: OrderRequest): OrderDto = unused()
 
     private fun unused(): Nothing = error("Этот запрос не используется в тесте")
 }

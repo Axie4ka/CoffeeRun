@@ -8,6 +8,7 @@ import ru.coffeerun.data.AuthRepository
 import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.InMemoryProfileRepository
 import ru.coffeerun.data.NetworkFavoritesRepository
+import ru.coffeerun.data.NetworkOrderRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,16 +36,17 @@ import ru.coffeerun.data.ShopRepository
 /**
  * Репозитории в одном экземпляре на процесс — так у всех ViewModel одна корзина и одни заказы.
  * Сетевые репозитории передаются снаружи: приложение даёт настоящие, UI-тесты — [LocalMenuRepository],
- * [InMemoryAuthRepository], [InMemoryProfileRepository] и [InMemoryFavoritesRepository], без сервера и DataStore.
+ * [InMemoryAuthRepository], [InMemoryProfileRepository], [InMemoryFavoritesRepository]
+ * и [InMemoryOrderRepository] (по умолчанию), без сервера и DataStore.
  */
 class AppContainer(
     val menu: MenuRepository,
     val auth: AuthRepository,
     val profile: ProfileRepository,
-    val favorites: FavoritesRepository
+    val favorites: FavoritesRepository,
+    val orders: OrderRepository = InMemoryOrderRepository()
 ) {
     val cart: CartRepository = InMemoryCartRepository()
-    val orders: OrderRepository = InMemoryOrderRepository()
     val shops: ShopRepository = InMemoryShopRepository()
 }
 
@@ -66,11 +68,13 @@ class CoffeeRunApplication : Application() {
         val tokens = TokenStore(authDataStore) // один на процесс: им пользуются и запросы, и вход
         val api = createCoffeeRunApi(BuildConfig.BASE_URL, language, tokens)
         val auth = NetworkAuthRepository(api, tokens)
+        val menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language)
         container = AppContainer(
-            menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language),
+            menu = menu,
             auth = auth,
             profile = NetworkProfileRepository(api),
-            favorites = NetworkFavoritesRepository(api, auth.isLoggedIn, applicationScope)
+            favorites = NetworkFavoritesRepository(api, auth.isLoggedIn, applicationScope),
+            orders = NetworkOrderRepository(api, menu, auth.isLoggedIn, applicationScope)
         )
     }
 }
