@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -46,6 +45,7 @@ import ru.coffeerun.R
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.ShopPickerSheet
+import ru.coffeerun.ui.components.SignInPrompt
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.ProvidePreviewNotifier
@@ -66,44 +66,14 @@ fun ProfileScreen(
 ) {
     when (uiState.isLoggedIn) {
         null -> Box(modifier.fillMaxSize())
-        false -> GuestProfile(onLogin, modifier)
+        false -> SignInPrompt(
+            screenTitle = stringResource(R.string.profile_title),
+            title = stringResource(R.string.profile_guest_title),
+            text = stringResource(R.string.profile_guest_text),
+            onLogin = onLogin,
+            modifier = modifier
+        )
         true -> AccountProfile(uiState, onShopSelected, onFavoritesClick, onLogout, modifier)
-    }
-}
-
-/** Гость: карточка «Войдите в аккаунт» по центру экрана (M3 filled card). */
-@Composable
-private fun GuestProfile(onLogin: () -> Unit, modifier: Modifier = Modifier) {
-    Column(modifier = modifier.fillMaxSize()) {
-        ScreenTopBar(title = stringResource(R.string.profile_title))
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                // Высота верхней панели: карточка по центру экрана, а не области под панелью
-                .padding(start = MaterialTheme.spacing.large, end = MaterialTheme.spacing.large, bottom = 64.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colorScheme.surfaceContainerHighest
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.large),
-                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
-                ) {
-                    Text(stringResource(R.string.profile_guest_title), style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        text = stringResource(R.string.profile_guest_text),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Button(onClick = onLogin, modifier = Modifier.fillMaxWidth().padding(top = MaterialTheme.spacing.extraSmall)) {
-                        Text(stringResource(R.string.auth_login_button))
-                    }
-                }
-            }
-        }
     }
 }
 

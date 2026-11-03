@@ -2,6 +2,7 @@ package ru.coffeerun.ui.orders
 
 import ru.coffeerun.data.LocalMenu
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,7 @@ import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.components.ScreenTopBar
+import ru.coffeerun.ui.components.SignInPrompt
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.priceSmall
 import ru.coffeerun.ui.theme.spacing
@@ -46,11 +48,24 @@ fun OrdersScreen(
     orders: List<Order>,
     onRepeat: (Order) -> Unit,
     onBrowseMenu: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isLoggedIn: Boolean? = true,
+    onLogin: () -> Unit = {}
 ) {
+    // Заказы — данные аккаунта: гостю приглашение войти; пока токен не прочитан — пусто, без мигания
+    when (isLoggedIn) {
+        null -> return Box(modifier.fillMaxSize())
+        false -> return SignInPrompt(
+            screenTitle = stringResource(R.string.orders_title),
+            title = stringResource(R.string.orders_guest_title),
+            text = stringResource(R.string.orders_guest_text),
+            onLogin = onLogin,
+            modifier = modifier
+        )
+        true -> Unit
+    }
     val (active, history) = orders.partition { it.isActive }
 
-//    Column(modifier = modifier.fillMaxSize()) {
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.orders_title))
         if (orders.isEmpty()) {
