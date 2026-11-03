@@ -53,7 +53,6 @@ import ru.coffeerun.ui.components.SignInPrompt
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.ProvidePreviewNotifier
-import ru.coffeerun.ui.util.snackbar
 
 /**
  * Профиль: данные пользователя, статистика и список настроек («Изменить» и «Телефон» пока заглушки).
@@ -67,7 +66,8 @@ fun ProfileScreen(
     onLogin: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier,
-    onRetry: () -> Unit = {}
+    onRetry: () -> Unit = {},
+    onEdit: (User) -> Unit = {}
 ) {
     when (uiState.isLoggedIn) {
         null -> Box(modifier.fillMaxSize())
@@ -87,7 +87,7 @@ fun ProfileScreen(
                 ScreenTopBar(title = stringResource(R.string.profile_title))
                 RetryMessage(stringResource(R.string.load_error), onRetry)
             }
-            is AccountState.Loaded -> AccountProfile(account.user, uiState, onShopSelected, onFavoritesClick, onLogout, modifier)
+            is AccountState.Loaded -> AccountProfile(account.user, uiState, onShopSelected, onFavoritesClick, onLogout, { onEdit(account.user) }, modifier)
         }
     }
 }
@@ -99,12 +99,12 @@ private fun AccountProfile(
     onShopSelected: (Shop) -> Unit,
     onFavoritesClick: () -> Unit,
     onLogout: () -> Unit,
+    onEdit: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val (shop, ordersCount, favoritesCount) = uiState
     var showShopPicker by rememberSaveable { mutableStateOf(false) }
     var showAbout by rememberSaveable { mutableStateOf(false) }
-    val notify = MaterialTheme.snackbar
     val name = user.name
     val phone = displayPhone(user.phone)
 
@@ -137,7 +137,7 @@ private fun AccountProfile(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(onClick = notify::notifyPlaceholder) {
+            IconButton(onClick = onEdit) {
                 Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.profile_edit))
             }
         }
@@ -152,7 +152,7 @@ private fun AccountProfile(
             ProfileItem(Icons.Default.Favorite, R.string.profile_favorites, if (favoritesCount == 0) stringResource(R.string.profile_favorites_none)
                 else pluralStringResource(R.plurals.profile_favorites_count, favoritesCount, favoritesCount), onFavoritesClick)
             ProfileItem(Icons.Default.LocationOn, R.string.profile_shop, stringResource(shop.addressRes)) { showShopPicker = true }
-            ProfileItem(Icons.Default.Phone, R.string.profile_phone_title, phone, notify::notifyPlaceholder)
+            ProfileItem(Icons.Default.Phone, R.string.profile_phone_title, phone, onEdit)
             HorizontalDivider()
             ProfileItem(Icons.Default.Info, R.string.profile_about, stringResource(R.string.profile_version)) { showAbout = true }
             ListItem(

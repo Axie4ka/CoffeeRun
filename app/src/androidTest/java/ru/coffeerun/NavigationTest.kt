@@ -10,12 +10,14 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -233,6 +235,16 @@ class NavigationTest {
         rule.onNodeWithText(latte.name).assertIsDisplayed()
         rule.onNodeWithText(latte.name).performClick()
         rule.onNodeWithContentDescription(str(R.string.action_unfavorite)).assertIsDisplayed()
+    }
+
+    @Test
+    fun profile_editName_showsNewNameInProfile() {
+        tab(R.string.tab_profile).performClick()
+        rule.onNodeWithContentDescription(str(R.string.profile_edit)).performClick()
+        rule.onAllNodes(hasSetTextAction())[0].performTextReplacement("Аня")
+        rule.onNode(hasText(str(R.string.profile_save)) and hasClickAction()).performClick()
+        // Профиль снова запросил /me и показывает сохранённое
+        rule.onNodeWithText("Аня").assertIsDisplayed()
     }
 
     @Test

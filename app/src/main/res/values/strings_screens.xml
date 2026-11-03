@@ -137,4 +137,7 @@
     <string name="profile_logout">Sign out</string>
     <string name="orders_guest_title">Sign in to see your orders</string>
     <string name="orders_guest_text">Your orders and their status will appear here</string>
+    <string name="profile_edit_title">Edit profile</string>
+    <string name="profile_save">Save</string>
+    <string name="profile_saved">Profile saved</string>
 </resources>

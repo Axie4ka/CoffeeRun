@@ -131,9 +131,9 @@ fun RegisterScreen(
  * [message] показывается снэкбаром; у «нет связи» есть действие «Повторить».
  */
 @Composable
-private fun AuthScaffold(
+internal fun AuthScaffold(
     @StringRes title: Int,
-    @StringRes subtitle: Int,
+    @StringRes subtitle: Int?,
     @StringRes message: Int?,
     onMessageShown: () -> Unit,
     onRetry: () -> Unit,
@@ -169,7 +169,7 @@ private fun AuthScaffold(
                     .padding(bottom = 64.dp),
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.large, Alignment.CenterVertically)
             ) {
-                Text(
+                if (subtitle != null) Text(
                     text = stringResource(subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -182,7 +182,7 @@ private fun AuthScaffold(
 
 /** M3 Outlined text field: подпись, ошибка под полем красным, у ошибки — значок справа. */
 @Composable
-private fun AuthField(
+internal fun AuthField(
     value: String,
     onValueChange: (String) -> Unit,
     @StringRes label: Int,
@@ -217,7 +217,7 @@ private fun AuthField(
 
 /** Телефон: префикс +7 не стирается, вводятся только 10 цифр, отображаются группами. */
 @Composable
-private fun PhoneField(digits: String, onChange: (String) -> Unit, @StringRes error: Int?, enabled: Boolean) {
+internal fun PhoneField(digits: String, onChange: (String) -> Unit, @StringRes error: Int?, enabled: Boolean) {
     AuthField(
         value = digits,
         onValueChange = onChange,
@@ -264,7 +264,7 @@ private fun PasswordField(
 
 /** M3 Filled button во всю ширину; во время запроса — индикатор вместо текста и без повторного нажатия. */
 @Composable
-private fun SubmitButton(@StringRes label: Int, isLoading: Boolean, onClick: () -> Unit) {
+internal fun SubmitButton(@StringRes label: Int, isLoading: Boolean, onClick: () -> Unit) {
     Button(onClick = onClick, enabled = !isLoading, modifier = Modifier.fillMaxWidth()) {
         if (isLoading) {
             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
