@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
@@ -44,17 +45,44 @@ import ru.coffeerun.R
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.ShopPickerSheet
+import ru.coffeerun.ui.components.SignInPrompt
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.ProvidePreviewNotifier
 import ru.coffeerun.ui.util.snackbar
 
-/** Профиль: данные пользователя, статистика и список настроек («Изменить» и «Телефон» пока заглушки). */
+/**
+ * Профиль: данные пользователя, статистика и список настроек («Изменить» и «Телефон» пока заглушки).
+ * Вкладка «Профиль» — это аккаунт, поэтому гость видит только приглашение войти.
+ */
 @Composable
 fun ProfileScreen(
     uiState: ProfileUiState,
     onShopSelected: (Shop) -> Unit,
     onFavoritesClick: () -> Unit,
+    onLogin: () -> Unit,
+    onLogout: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    when (uiState.isLoggedIn) {
+        null -> Box(modifier.fillMaxSize())
+        false -> SignInPrompt(
+            screenTitle = stringResource(R.string.profile_title),
+            title = stringResource(R.string.profile_guest_title),
+            text = stringResource(R.string.profile_guest_text),
+            onLogin = onLogin,
+            modifier = modifier
+        )
+        true -> AccountProfile(uiState, onShopSelected, onFavoritesClick, onLogout, modifier)
+    }
+}
+
+@Composable
+private fun AccountProfile(
+    uiState: ProfileUiState,
+    onShopSelected: (Shop) -> Unit,
+    onFavoritesClick: () -> Unit,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val (shop, ordersCount, favoritesCount) = uiState
@@ -109,6 +137,11 @@ fun ProfileScreen(
             ProfileItem(Icons.Default.Phone, R.string.profile_phone_title, stringResource(R.string.profile_phone), notify::notifyPlaceholder)
             HorizontalDivider()
             ProfileItem(Icons.Default.Info, R.string.profile_about, stringResource(R.string.profile_version)) { showAbout = true }
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.profile_logout)) },
+                leadingContent = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) },
+                modifier = Modifier.clickable(onClick = onLogout)
+            )
         }
     }
     if (showShopPicker) ShopPickerSheet(shop, onShopSelected, onDismiss = { showShopPicker = false })
@@ -164,6 +197,14 @@ private fun ProfileItem(icon: ImageVector, titleRes: Int, supporting: String, on
 @Composable
 private fun ProfileScreenPreview() {
     CoffeeRunTheme(dynamicColor = false) {
-        ProvidePreviewNotifier { ProfileScreen(ProfileUiState(Shop.MOSKOVSKAYA, ordersCount = 2, favoritesCount = 3), {}, {}) }
+        ProvidePreviewNotifier { ProfileScreen(ProfileUiState(Shop.MOSKOVSKAYA, ordersCount = 2, favoritesCount = 3), {}, {}, {}, {}) }
+    }
+}
+
+@Preview(showBackground = true, locale = "ru")
+@Composable
+private fun GuestProfilePreview() {
+    CoffeeRunTheme(dynamicColor = false) {
+        ProfileScreen(ProfileUiState(Shop.MOSKOVSKAYA, 0, 0, isLoggedIn = false), {}, {}, {}, {})
     }
 }

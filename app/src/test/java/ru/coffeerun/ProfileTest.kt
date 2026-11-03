@@ -7,6 +7,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.InMemoryFavoritesRepository
 import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.data.InMemoryShopRepository
@@ -23,8 +24,18 @@ class ProfileTest {
 
     private val orders = InMemoryOrderRepository()
     private val favorites = InMemoryFavoritesRepository()
+    private val auth = InMemoryAuthRepository(loggedIn = true)
     // viewModelScope привязывается к Main при создании, поэтому VM строим после установки правила
-    private fun newVm() = ProfileViewModel(InMemoryShopRepository(), orders, favorites)
+    private fun newVm() = ProfileViewModel(InMemoryShopRepository(), orders, favorites, auth)
+
+    @Test
+    fun logout_turnsProfileIntoGuest() = runTest {
+        val vm = newVm()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertEquals(true, vm.uiState.value.isLoggedIn)
+        vm.logout()
+        assertEquals(false, vm.uiState.value.isLoggedIn)
+    }
 
     @Test
     fun profile_ordersCountFollowsRepository() = runTest {

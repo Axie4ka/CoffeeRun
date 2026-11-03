@@ -28,6 +28,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import ru.coffeerun.R
 import ru.coffeerun.ui.components.AppNavigationBar
 import ru.coffeerun.ui.components.RetryMessage
@@ -35,8 +36,15 @@ import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.navigation.CartRoute
 import ru.coffeerun.ui.navigation.CheckoutRoute
+import ru.coffeerun.ui.auth.LoginScreen
+import ru.coffeerun.ui.auth.LoginViewModel
+import ru.coffeerun.ui.auth.RegisterScreen
+import ru.coffeerun.ui.auth.RegisterViewModel
+import ru.coffeerun.ui.auth.SessionViewModel
 import ru.coffeerun.ui.navigation.FavoritesRoute
+import ru.coffeerun.ui.navigation.LoginRoute
 import ru.coffeerun.ui.navigation.MenuRoute
+import ru.coffeerun.ui.navigation.RegisterRoute
 import ru.coffeerun.ui.navigation.OrdersRoute
 import ru.coffeerun.ui.navigation.PlacedRoute
 import ru.coffeerun.ui.navigation.ProductRoute
@@ -75,6 +83,8 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
     }
     // Вне NavHost — ViewModel уровня Activity, только ради счётчика на нижней панели
     val cartUiState by viewModel<CartViewModel>(factory = CartViewModel.Factory).uiState.collectAsStateWithLifecycle()
+    // Вошёл ли пользователь: оформление, заказы и избранное — только после входа
+    val isLoggedIn by viewModel<SessionViewModel>(factory = SessionViewModel.Factory).isLoggedIn.collectAsStateWithLifecycle()
 
     Scaffold(
         // Статус-бар учитывают сами вкладки (TopAppBar / statusBarsPadding), иначе отступ сверху двойной;
@@ -117,7 +127,8 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                     uiState = cartState,
                     onChangeQuantity = vm::changeQuantity,
                     onRemove = vm::remove,
-                    onCheckout = { navController.navigate(CheckoutRoute) },
+                    // Гостя — сначала на вход, после входа оформление откроется само
+                    onCheckout = { navController.navigate(if (isLoggedIn == true) CheckoutRoute else LoginRoute(toCheckout = true)) },
                     onBrowseMenu = { navController.openTab(Tab.MENU) },
                     modifier = tabModifier
                 )
@@ -133,7 +144,9 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                         navController.openTab(Tab.CART)
                     },
                     onBrowseMenu = { navController.openTab(Tab.MENU) },
-                    modifier = tabModifier
+                    modifier = tabModifier,
+                    isLoggedIn = isLoggedIn,
+                    onLogin = { navController.navigate(LoginRoute()) }
                 )
             }
 
@@ -144,7 +157,47 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                     uiState = profileState,
                     onShopSelected = vm::selectShop,
                     onFavoritesClick = { navController.navigate(FavoritesRoute) },
+                    onLogin = { navController.navigate(LoginRoute()) },
+                    onLogout = vm::logout,
                     modifier = tabModifier
+                )
+            }
+
+            composable<LoginRoute> { entry ->
+                val toCheckout = entry.toRoute<LoginRoute>().toCheckout
+                val vm: LoginViewModel = viewModel(factory = LoginViewModel.Factory)
+                val state by vm.uiState.collectAsStateWithLifecycle()
+                // Вошли — туда, куда шли: на оформление или назад
+                LaunchedEffect(state.isDone) { if (state.isDone) navController.afterLogin(toCheckout) }
+                LoginScreen(
+                    uiState = state,
+                    onPhoneChange = vm::onPhoneChange,
+                    onPasswordChange = vm::onPasswordChange,
+                    onSubmit = vm::submit,
+                    onMessageShown = vm::onMessageShown,
+                    onRegister = dropUnlessResumed { navController.navigate(RegisterRoute(toCheckout)) },
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    snackbarHostState = snackbarHostState
+                )
+            }
+
+            composable<RegisterRoute> { entry ->
+                val toCheckout = entry.toRoute<RegisterRoute>().toCheckout
+                val vm: RegisterViewModel = viewModel(factory = RegisterViewModel.Factory)
+                val state by vm.uiState.collectAsStateWithLifecycle()
+                // Зарегистрировались — как после входа; регистрация и вход под ней закрываются оба
+                LaunchedEffect(state.isDone) { if (state.isDone) navController.afterLogin(toCheckout) }
+                RegisterScreen(
+                    uiState = state,
+                    onNameChange = vm::onNameChange,
+                    onPhoneChange = vm::onPhoneChange,
+                    onPasswordChange = vm::onPasswordChange,
+                    onSubmit = vm::submit,
+                    onMessageShown = vm::onMessageShown,
+                    // Регистрация открывается только со входа: «Войти» — вернуться к нему, а не открыть второй
+                    onLogin = dropUnlessResumed { navController.popBackStack() },
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    snackbarHostState = snackbarHostState
                 )
             }
 
@@ -202,7 +255,8 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                             },
                             onBack = { navController.popBackStack() },
                             isFavorite = state.isFavorite,
-                            onFavorite = vm::toggleFavorite,
+                            // Избранное — данные аккаунта: гостя на вход, после него он вернётся на позицию
+                            onFavorite = { if (isLoggedIn == true) vm.toggleFavorite() else navController.navigate(LoginRoute()) },
                             onShare = {
                                 val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, shareText)
                                 context.startActivity(Intent.createChooser(send, null))
@@ -255,6 +309,13 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
 }
 
 /** Нижняя панель: переключение вкладок с сохранением их состояния. */
+
+/** После входа или регистрации: закрыть вход (и регистрацию над ним) и, если гость шёл оформлять, открыть оформление. */
+private fun NavController.afterLogin(toCheckout: Boolean) {
+    if (toCheckout) navigate(CheckoutRoute) { popUpTo<LoginRoute> { inclusive = true } }
+    else popBackStack<LoginRoute>(inclusive = true)
+}
+
 private fun NavController.openTab(tab: Tab) = navigate(tab.route) {
     popUpTo(graph.findStartDestination().id) { saveState = true }
     launchSingleTop = true

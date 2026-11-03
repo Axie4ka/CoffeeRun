@@ -110,4 +110,33 @@
         <item quantity="one">Total · %d item</item>
         <item quantity="other">Total · %d items</item>
     </plurals>
+
+    <!-- Вход и регистрация -->
+    <string name="auth_login_title">Sign in</string>
+    <string name="auth_login_subtitle">To place orders and see your history</string>
+    <string name="auth_register_title">Sign up</string>
+    <string name="auth_register_subtitle">Takes half a minute</string>
+    <string name="auth_name">Name</string>
+    <string name="auth_phone">Phone</string>
+    <string name="auth_phone_prefix" translatable="false">+7</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_login_button">Sign in</string>
+    <string name="auth_register_button">Sign up</string>
+    <string name="auth_no_account">No account?</string>
+    <string name="auth_have_account">Already have an account?</string>
+    <string name="auth_name_empty">Enter your name</string>
+    <string name="auth_phone_invalid">Mobile number: 10 digits starting with 9</string>
+    <string name="auth_password_empty">Enter your password</string>
+    <string name="auth_password_short">At least 6 characters</string>
+    <string name="auth_wrong_credentials">Wrong phone or password</string>
+    <string name="auth_phone_taken">This number is already registered. Sign in</string>
+    <string name="auth_unavailable">Couldn\'t reach the server</string>
+    <string name="auth_invalid">The server didn\'t accept the data. Check the fields</string>
+    <string name="auth_show_password">Show password</string>
+    <string name="auth_hide_password">Hide password</string>
+    <string name="profile_guest_title">Sign in to your account</string>
+    <string name="profile_guest_text">To place orders, see your history and favorites</string>
+    <string name="profile_logout">Sign out</string>
+    <string name="orders_guest_title">Sign in to see your orders</string>
+    <string name="orders_guest_text">Your orders and their status will appear here</string>
 </resources>

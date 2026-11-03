@@ -10,3 +10,6 @@ data object MenuRoute
 @Serializable data object FavoritesRoute
 @Serializable data object CheckoutRoute
 @Serializable data class PlacedRoute(val orderNumber: Int)
+/** [toCheckout] — после входа открыть оформление: гость нажал «Оформить» в корзине. */
+@Serializable data class LoginRoute(val toCheckout: Boolean = false)
+@Serializable data class RegisterRoute(val toCheckout: Boolean = false)

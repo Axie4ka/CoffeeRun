@@ -1,7 +1,14 @@
 package ru.coffeerun
 
 import android.app.Application
+import android.content.Context
 import androidx.annotation.VisibleForTesting
+import androidx.datastore.preferences.preferencesDataStore
+import ru.coffeerun.data.AuthRepository
+import ru.coffeerun.data.InMemoryAuthRepository
+import ru.coffeerun.data.NetworkAuthRepository
+import ru.coffeerun.data.local.AUTH_DATASTORE
+import ru.coffeerun.data.local.TokenStore
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewmodel.CreationExtras
 import ru.coffeerun.data.CartRepository
@@ -20,24 +27,33 @@ import ru.coffeerun.data.ShopRepository
 
 /**
  * Репозитории в одном экземпляре на процесс — так у всех ViewModel одна корзина и одни заказы.
- * [menu] передаётся снаружи: приложение даёт сетевое меню, UI-тесты — [LocalMenuRepository] без сервера.
+ * [menu] и [auth] передаются снаружи: приложение даёт сетевые, UI-тесты — [LocalMenuRepository]
+ * и [InMemoryAuthRepository], чтобы не нужны были ни сервер, ни файл DataStore.
  */
-class AppContainer(val menu: MenuRepository) {
+class AppContainer(val menu: MenuRepository, val auth: AuthRepository) {
     val cart: CartRepository = InMemoryCartRepository()
     val orders: OrderRepository = InMemoryOrderRepository()
     val shops: ShopRepository = InMemoryShopRepository()
     val favorites: FavoritesRepository = InMemoryFavoritesRepository()
 }
 
-class CoffeeRunApplication : Application() {
-    // var — только чтобы UI-тесты начинали с пустой корзиной: процесс у них общий
-    @VisibleForTesting
-    var container = AppContainer(menu = networkMenu())
+/** Один DataStore на файл на весь процесс — это гарантирует делегат. */
+private val Context.authDataStore by preferencesDataStore(AUTH_DATASTORE)
 
-    // Язык спрашивается лениво, на каждый запрос: при создании Application ресурсов ещё нет
-    private fun networkMenu(): MenuRepository {
-        val language = { serverLanguage() }
-        return NetworkMenuRepository(createCoffeeRunApi(BuildConfig.BASE_URL, language), BuildConfig.BASE_URL, language)
+class CoffeeRunApplication : Application() {
+    // var — только чтобы UI-тесты начинали с пустой корзиной: процесс у них общий.
+    // Создаётся в onCreate: DataStore нужен готовый Context, при создании объекта Application его ещё нет
+    @VisibleForTesting
+    lateinit var container: AppContainer
+
+    override fun onCreate() {
+        super.onCreate()
+        val language = { serverLanguage() } // спрашивается на каждый запрос: язык могут сменить на ходу
+        val api = createCoffeeRunApi(BuildConfig.BASE_URL, language)
+        container = AppContainer(
+            menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language),
+            auth = NetworkAuthRepository(api, TokenStore(authDataStore))
+        )
     }
 }
 
