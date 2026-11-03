@@ -10,3 +10,5 @@ data object MenuRoute
 @Serializable data object FavoritesRoute
 @Serializable data object CheckoutRoute
 @Serializable data class PlacedRoute(val orderNumber: Int)
+@Serializable data object LoginRoute
+@Serializable data object RegisterRoute

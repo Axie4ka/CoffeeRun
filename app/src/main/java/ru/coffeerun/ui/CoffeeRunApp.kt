@@ -35,8 +35,14 @@ import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.navigation.CartRoute
 import ru.coffeerun.ui.navigation.CheckoutRoute
+import ru.coffeerun.ui.auth.LoginScreen
+import ru.coffeerun.ui.auth.LoginViewModel
+import ru.coffeerun.ui.auth.RegisterScreen
+import ru.coffeerun.ui.auth.RegisterViewModel
 import ru.coffeerun.ui.navigation.FavoritesRoute
+import ru.coffeerun.ui.navigation.LoginRoute
 import ru.coffeerun.ui.navigation.MenuRoute
+import ru.coffeerun.ui.navigation.RegisterRoute
 import ru.coffeerun.ui.navigation.OrdersRoute
 import ru.coffeerun.ui.navigation.PlacedRoute
 import ru.coffeerun.ui.navigation.ProductRoute
@@ -144,7 +150,45 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                     uiState = profileState,
                     onShopSelected = vm::selectShop,
                     onFavoritesClick = { navController.navigate(FavoritesRoute) },
+                    onLogin = { navController.navigate(LoginRoute) },
+                    onLogout = vm::logout,
                     modifier = tabModifier
+                )
+            }
+
+            composable<LoginRoute> {
+                val vm: LoginViewModel = viewModel(factory = LoginViewModel.Factory)
+                val state by vm.uiState.collectAsStateWithLifecycle()
+                // Вошли — назад, откуда пришли
+                LaunchedEffect(state.isDone) { if (state.isDone) navController.popBackStack() }
+                LoginScreen(
+                    uiState = state,
+                    onPhoneChange = vm::onPhoneChange,
+                    onPasswordChange = vm::onPasswordChange,
+                    onSubmit = vm::submit,
+                    onMessageShown = vm::onMessageShown,
+                    onRegister = dropUnlessResumed { navController.navigate(RegisterRoute) },
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    snackbarHostState = snackbarHostState
+                )
+            }
+
+            composable<RegisterRoute> {
+                val vm: RegisterViewModel = viewModel(factory = RegisterViewModel.Factory)
+                val state by vm.uiState.collectAsStateWithLifecycle()
+                // Зарегистрировались — закрываем и регистрацию, и вход под ней
+                LaunchedEffect(state.isDone) { if (state.isDone) navController.popBackStack<LoginRoute>(inclusive = true) }
+                RegisterScreen(
+                    uiState = state,
+                    onNameChange = vm::onNameChange,
+                    onPhoneChange = vm::onPhoneChange,
+                    onPasswordChange = vm::onPasswordChange,
+                    onSubmit = vm::submit,
+                    onMessageShown = vm::onMessageShown,
+                    // Регистрация открывается только со входа: «Войти» — вернуться к нему, а не открыть второй
+                    onLogin = dropUnlessResumed { navController.popBackStack() },
+                    onBack = dropUnlessResumed { navController.popBackStack() },
+                    snackbarHostState = snackbarHostState
                 )
             }
 

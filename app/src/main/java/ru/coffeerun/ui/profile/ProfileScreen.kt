@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,12 +51,68 @@ import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.ProvidePreviewNotifier
 import ru.coffeerun.ui.util.snackbar
 
-/** Профиль: данные пользователя, статистика и список настроек («Изменить» и «Телефон» пока заглушки). */
+/**
+ * Профиль: данные пользователя, статистика и список настроек («Изменить» и «Телефон» пока заглушки).
+ * Вкладка «Профиль» — это аккаунт, поэтому гость видит только приглашение войти.
+ */
 @Composable
 fun ProfileScreen(
     uiState: ProfileUiState,
     onShopSelected: (Shop) -> Unit,
     onFavoritesClick: () -> Unit,
+    onLogin: () -> Unit,
+    onLogout: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    when (uiState.isLoggedIn) {
+        null -> Box(modifier.fillMaxSize())
+        false -> GuestProfile(onLogin, modifier)
+        true -> AccountProfile(uiState, onShopSelected, onFavoritesClick, onLogout, modifier)
+    }
+}
+
+/** Гость: карточка «Войдите в аккаунт» по центру экрана (M3 filled card). */
+@Composable
+private fun GuestProfile(onLogin: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxSize()) {
+        ScreenTopBar(title = stringResource(R.string.profile_title))
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                // Высота верхней панели: карточка по центру экрана, а не области под панелью
+                .padding(start = MaterialTheme.spacing.large, end = MaterialTheme.spacing.large, bottom = 64.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(MaterialTheme.spacing.large),
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
+                ) {
+                    Text(stringResource(R.string.profile_guest_title), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        text = stringResource(R.string.profile_guest_text),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Button(onClick = onLogin, modifier = Modifier.fillMaxWidth().padding(top = MaterialTheme.spacing.extraSmall)) {
+                        Text(stringResource(R.string.auth_login_button))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountProfile(
+    uiState: ProfileUiState,
+    onShopSelected: (Shop) -> Unit,
+    onFavoritesClick: () -> Unit,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val (shop, ordersCount, favoritesCount) = uiState
@@ -109,6 +167,11 @@ fun ProfileScreen(
             ProfileItem(Icons.Default.Phone, R.string.profile_phone_title, stringResource(R.string.profile_phone), notify::notifyPlaceholder)
             HorizontalDivider()
             ProfileItem(Icons.Default.Info, R.string.profile_about, stringResource(R.string.profile_version)) { showAbout = true }
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.profile_logout)) },
+                leadingContent = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null) },
+                modifier = Modifier.clickable(onClick = onLogout)
+            )
         }
     }
     if (showShopPicker) ShopPickerSheet(shop, onShopSelected, onDismiss = { showShopPicker = false })
@@ -164,6 +227,14 @@ private fun ProfileItem(icon: ImageVector, titleRes: Int, supporting: String, on
 @Composable
 private fun ProfileScreenPreview() {
     CoffeeRunTheme(dynamicColor = false) {
-        ProvidePreviewNotifier { ProfileScreen(ProfileUiState(Shop.MOSKOVSKAYA, ordersCount = 2, favoritesCount = 3), {}, {}) }
+        ProvidePreviewNotifier { ProfileScreen(ProfileUiState(Shop.MOSKOVSKAYA, ordersCount = 2, favoritesCount = 3), {}, {}, {}, {}) }
+    }
+}
+
+@Preview(showBackground = true, locale = "ru")
+@Composable
+private fun GuestProfilePreview() {
+    CoffeeRunTheme(dynamicColor = false) {
+        ProfileScreen(ProfileUiState(Shop.MOSKOVSKAYA, 0, 0, isLoggedIn = false), {}, {}, {}, {})
     }
 }

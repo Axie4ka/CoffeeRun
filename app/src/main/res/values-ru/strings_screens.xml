@@ -105,4 +105,30 @@
         <item quantity="many">Итого · %d товаров</item>
         <item quantity="other">Итого · %d товара</item>
     </plurals>
+
+    <!-- Вход и регистрация -->
+    <string name="auth_login_title">Вход</string>
+    <string name="auth_login_subtitle">Чтобы оформлять заказы и видеть историю</string>
+    <string name="auth_register_title">Регистрация</string>
+    <string name="auth_register_subtitle">Займёт полминуты</string>
+    <string name="auth_name">Имя</string>
+    <string name="auth_phone">Телефон</string>
+    <string name="auth_password">Пароль</string>
+    <string name="auth_login_button">Войти</string>
+    <string name="auth_register_button">Зарегистрироваться</string>
+    <string name="auth_no_account">Нет аккаунта?</string>
+    <string name="auth_have_account">Уже есть аккаунт?</string>
+    <string name="auth_name_empty">Введите имя</string>
+    <string name="auth_phone_invalid">Номер мобильного — 10 цифр, начинается с 9</string>
+    <string name="auth_password_empty">Введите пароль</string>
+    <string name="auth_password_short">Не меньше 6 символов</string>
+    <string name="auth_wrong_credentials">Неверный телефон или пароль</string>
+    <string name="auth_phone_taken">Этот номер уже зарегистрирован. Войдите</string>
+    <string name="auth_unavailable">Не удалось связаться с сервером</string>
+    <string name="auth_invalid">Сервер не принял данные. Проверьте поля</string>
+    <string name="auth_show_password">Показать пароль</string>
+    <string name="auth_hide_password">Скрыть пароль</string>
+    <string name="profile_guest_title">Войдите в аккаунт</string>
+    <string name="profile_guest_text">Чтобы оформлять заказы, видеть историю и избранное</string>
+    <string name="profile_logout">Выйти</string>
 </resources>
