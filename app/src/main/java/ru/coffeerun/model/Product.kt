@@ -63,12 +63,15 @@ data class Product(
     )
 
     /**
-     * Цена одной порции с выбранными опциями, в рублях. [DrinkSize.price] — цена капучино
-     * в этом размере, поэтому для остальных позиций берётся только доплата к размеру S.
+     * Цена одной порции с выбранными опциями, в рублях. Цена размера в [prices] — это цена капучино,
+     * поэтому для остальных позиций берётся только доплата к размеру S.
+     * Опции без цены в [prices] (её нет в кофейне) ничего не добавляют — экран их и не предлагает.
      */
-    fun unitPrice(size: DrinkSize, milk: MilkType, selectedExtras: Set<Extra>): Int {
-        val sizeSurcharge = if (Customization.SIZE in customizations) size.price - DrinkSize.SMALL.price else 0
-        val milkSurcharge = if (Customization.MILK in customizations) milk.price else 0
-        return price + sizeSurcharge + milkSurcharge + selectedExtras.sumOf { it.price }
+    fun unitPrice(size: DrinkSize, milk: MilkType, selectedExtras: Set<Extra>, prices: OptionPrices): Int {
+        val sizeSurcharge = if (Customization.SIZE in customizations) {
+            (prices.sizePrice(size) ?: 0) - (prices.sizePrice(DrinkSize.SMALL) ?: prices.sizePrice(size) ?: 0)
+        } else 0
+        val milkSurcharge = if (Customization.MILK in customizations) prices.milk(milk)?.price ?: 0 else 0
+        return price + sizeSurcharge + milkSurcharge + selectedExtras.sumOf { prices.extras[it] ?: 0 }
     }
 }

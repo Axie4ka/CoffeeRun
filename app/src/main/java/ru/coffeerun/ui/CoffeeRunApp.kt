@@ -177,6 +177,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                             product = state.product,
                             form = state.form,
                             unitPrice = state.unitPrice,
+                            prices = state.prices,
                             cartCount = state.cartCount,
                             onSizeSelected = vm::selectSize,
                             onMilkSelected = vm::selectMilk,

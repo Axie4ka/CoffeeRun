@@ -3,9 +3,14 @@ package ru.coffeerun.data
 import ru.coffeerun.BuildConfig
 import ru.coffeerun.model.Allergen
 import ru.coffeerun.model.Customization
+import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
+import ru.coffeerun.model.MilkOption
+import ru.coffeerun.model.MilkType
+import ru.coffeerun.model.OptionPrices
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.ProductCategory
+import ru.coffeerun.model.SizeOption
 
 /**
  * Меню без сети: для превью, тестов и демо-истории заказов. [Product.id] — стабильный ключ навигации.
@@ -163,6 +168,23 @@ object LocalMenu {
         details = "Хрустящее печенье с поджаренными миндальными лепестками.",
         imageUrl = image("almond_cookie"), price = 110, calories = 220,
         allergens = setOf(Allergen.GLUTEN, Allergen.EGGS, Allergen.NUTS)
+    )
+
+    /** Цены опций — как в ответе GET /menu. */
+    val prices = OptionPrices(
+        sizes = listOf(SizeOption(DrinkSize.SMALL, 220), SizeOption(DrinkSize.MEDIUM, 260), SizeOption(DrinkSize.LARGE, 300)),
+        milks = listOf(
+            MilkOption(MilkType.REGULAR, 0, isAvailable = true),
+            MilkOption(MilkType.LACTOSE_FREE, 0, isAvailable = true),
+            MilkOption(MilkType.OAT, 40, isAvailable = true),
+            MilkOption(MilkType.ALMOND, 50, isAvailable = true),
+            MilkOption(MilkType.COCONUT, 50, isAvailable = false)
+        ),
+        extras = mapOf(
+            Extra.VANILLA to 40, Extra.CARAMEL to 40, Extra.HAZELNUT to 40, Extra.CREAM to 50,
+            Extra.EXTRA_SHOT to 60, Extra.CINNAMON to 20, Extra.HONEY to 30, Extra.MARSHMALLOW to 40,
+            Extra.LEMON to 20, Extra.MINT to 20, Extra.GINGER to 30
+        )
     )
 
     val products: List<Product> = listOf(

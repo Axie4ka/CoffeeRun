@@ -62,9 +62,20 @@ class CartTest {
     @Test
     fun unitPrice_sumsSizeMilkAndExtras() {
         // 240 база + 80 доплата за L + 40 овсяное + 40 ваниль
-        assertEquals(400, LocalMenu.LATTE.unitPrice(DrinkSize.LARGE, MilkType.OAT, setOf(Extra.VANILLA)))
+        assertEquals(400, LocalMenu.LATTE.unitPrice(DrinkSize.LARGE, MilkType.OAT, setOf(Extra.VANILLA), LocalMenu.prices))
         // У эспрессо нет выбора размера и молока — они не влияют на цену
-        assertEquals(150, LocalMenu.ESPRESSO.unitPrice(DrinkSize.LARGE, MilkType.OAT, emptySet()))
+        assertEquals(150, LocalMenu.ESPRESSO.unitPrice(DrinkSize.LARGE, MilkType.OAT, emptySet(), LocalMenu.prices))
+    }
+
+    @Test
+    fun unitPrice_usesPricesFromServer() {
+        // Кофейня подняла цену овсяного молока и L — приложение считает по новым ценам без обновления
+        val prices = LocalMenu.prices.copy(
+            sizes = LocalMenu.prices.sizes.map { if (it.size == DrinkSize.LARGE) it.copy(price = 320) else it },
+            milks = LocalMenu.prices.milks.map { if (it.milk == MilkType.OAT) it.copy(price = 70) else it }
+        )
+        // 240 база + 100 доплата за L + 70 овсяное + 40 ваниль
+        assertEquals(450, LocalMenu.LATTE.unitPrice(DrinkSize.LARGE, MilkType.OAT, setOf(Extra.VANILLA), prices))
     }
 
     @Test
@@ -138,7 +149,7 @@ class CartTest {
     // Так строку собирает «+» в меню (MenuViewModel.quickAdd)
     private fun quickAdd(p: Product) = CartLine(
         product = p,
-        unitPrice = p.unitPrice(DEFAULT_DRINK_SIZE, MilkType.REGULAR, emptySet()),
+        unitPrice = p.unitPrice(DEFAULT_DRINK_SIZE, MilkType.REGULAR, emptySet(), LocalMenu.prices),
         options = p.defaultOptions()
     )
 }

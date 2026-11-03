@@ -25,6 +25,7 @@ private class FakeMenuRepository(var fail: Boolean = false) : MenuRepository {
     }
 
     override suspend fun getProduct(id: String): Product? = LocalMenu.byId(id)
+    override suspend fun getOptionPrices() = LocalMenu.prices
 }
 
 class MenuViewModelTest {
@@ -34,7 +35,7 @@ class MenuViewModelTest {
     @Test
     fun menu_loadsSuccess() {
         val vm = MenuViewModel(FakeMenuRepository(), InMemoryCartRepository(), InMemoryShopRepository())
-        assertEquals(MenuUiState.Success(LocalMenu.products), vm.uiState.value)
+        assertEquals(MenuUiState.Success(LocalMenu.products, LocalMenu.prices), vm.uiState.value)
     }
 
     @Test
@@ -50,7 +51,7 @@ class MenuViewModelTest {
         assertEquals(MenuUiState.Error, vm.uiState.value)
         fake.fail = false
         vm.loadMenu()
-        assertEquals(MenuUiState.Success(LocalMenu.products), vm.uiState.value)
+        assertEquals(MenuUiState.Success(LocalMenu.products, LocalMenu.prices), vm.uiState.value)
     }
 
     @Test
@@ -71,12 +72,13 @@ class MenuViewModelTest {
                 if (call++ == 0) first.await() else LocalMenu.products
 
             override suspend fun getProduct(id: String): Product? = LocalMenu.byId(id)
+            override suspend fun getOptionPrices() = LocalMenu.prices
         }
         val vm = MenuViewModel(repo, InMemoryCartRepository(), InMemoryShopRepository())
         vm.loadMenu()
-        assertEquals(MenuUiState.Success(LocalMenu.products), vm.uiState.value)
+        assertEquals(MenuUiState.Success(LocalMenu.products, LocalMenu.prices), vm.uiState.value)
         // Поздняя ошибка первой загрузки не должна затереть Success
         first.completeExceptionally(IOException("поздно"))
-        assertEquals(MenuUiState.Success(LocalMenu.products), vm.uiState.value)
+        assertEquals(MenuUiState.Success(LocalMenu.products, LocalMenu.prices), vm.uiState.value)
     }
 }

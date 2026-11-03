@@ -26,6 +26,7 @@ import ru.coffeerun.model.DEFAULT_DRINK_SIZE
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
+import ru.coffeerun.model.OptionPrices
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.itemCount
 import ru.coffeerun.ui.navigation.ProductRoute
@@ -56,16 +57,27 @@ sealed interface ProductUiState {
         val product: Product,
         val form: ProductForm,
         val unitPrice: Int,
+        val prices: OptionPrices,
         val isFavorite: Boolean,
         val cartCount: Int
     ) : ProductUiState
     data object NotFound : ProductUiState
 }
 
+/**
+ * Форма, в которой выбрано только то, что сейчас есть в кофейне: размер по умолчанию или
+ * сохранённый выбор мог пропасть из меню, молоко — закончиться, добавка — исчезнуть.
+ */
+private fun ProductForm.fitTo(prices: OptionPrices) = copy(
+    size = prices.fitSize(size),
+    milk = prices.fitMilk(milk),
+    extras = extras.filterTo(mutableSetOf()) { it in prices.extras }
+)
+
 /** Результат загрузки товара; вместе с формой собирается в [ProductUiState]. */
 private sealed interface Loaded {
     data object Loading : Loaded
-    data class Found(val product: Product) : Loaded
+    data class Found(val product: Product, val prices: OptionPrices) : Loaded
     data object Missing : Loaded
 }
 
@@ -84,17 +96,22 @@ class ProductViewModel(
         when (loaded) {
             Loaded.Loading -> ProductUiState.Loading
             Loaded.Missing -> ProductUiState.NotFound
-            is Loaded.Found -> ProductUiState.Success(
-                loaded.product, form, loaded.product.unitPrice(form.size, form.milk, form.extras),
-                isFavorite = productId in favoriteIds,
-                cartCount = lines.itemCount
-            )
+            is Loaded.Found -> {
+                val fitted = form.fitTo(loaded.prices)
+                ProductUiState.Success(
+                    loaded.product, fitted, loaded.product.unitPrice(fitted.size, fitted.milk, fitted.extras, loaded.prices),
+                    prices = loaded.prices,
+                    isFavorite = productId in favoriteIds,
+                    cartCount = lines.itemCount
+                )
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductUiState.Loading)
 
     init {
         viewModelScope.launch {
-            loaded.value = menu.getProduct(productId)?.let(Loaded::Found) ?: Loaded.Missing
+            val product = menu.getProduct(productId)
+            loaded.value = if (product == null) Loaded.Missing else Loaded.Found(product, menu.getOptionPrices())
         }
     }
 
@@ -113,13 +130,13 @@ class ProductViewModel(
     fun toggleFavorite() = favorites.toggle(productId)
 
     fun addToCart() {
-        val product = (loaded.value as? Loaded.Found)?.product ?: return
-        val form = form.value
+        val (product, prices) = loaded.value as? Loaded.Found ?: return
+        val form = form.value.fitTo(prices)
         val features = product.customizations
         cart.add(
             CartLine(
                 product = product,
-                unitPrice = product.unitPrice(form.size, form.milk, form.extras),
+                unitPrice = product.unitPrice(form.size, form.milk, form.extras, prices),
                 quantity = form.quantity,
                 // Те же опции по умолчанию, что у «+» в меню, — иначе одинаковые строки не сольются
                 options = product.defaultOptions()?.copy(

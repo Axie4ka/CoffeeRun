@@ -76,8 +76,11 @@ import ru.coffeerun.R
 import ru.coffeerun.model.Customization
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
+import ru.coffeerun.model.MilkOption
 import ru.coffeerun.model.MilkType
+import ru.coffeerun.model.OptionPrices
 import ru.coffeerun.model.Product
+import ru.coffeerun.model.SizeOption
 import ru.coffeerun.model.MAX_NOTE_LENGTH
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.MIN_QUANTITY
@@ -100,6 +103,7 @@ fun ProductScreen(
     product: Product,
     form: ProductForm,
     unitPrice: Int,
+    prices: OptionPrices,
     cartCount: Int,
     onSizeSelected: (DrinkSize) -> Unit,
     onMilkSelected: (MilkType) -> Unit,
@@ -163,6 +167,7 @@ fun ProductScreen(
             if (Customization.SIZE in features) {
                 SectionDivider()
                 SizeSection(
+                    sizes = prices.sizes,
                     selectedSize = form.size,
                     onSizeSelected = onSizeSelected,
                     modifier = Modifier.padding(MaterialTheme.spacing.large)
@@ -172,6 +177,7 @@ fun ProductScreen(
             if (Customization.MILK in features) {
                 SectionDivider()
                 MilkSection(
+                    milks = prices.milks,
                     selectedMilk = form.milk,
                     onMilkSelected = onMilkSelected,
                     modifier = Modifier.padding(MaterialTheme.spacing.large)
@@ -186,10 +192,12 @@ fun ProductScreen(
                 )
             }
 
-            if (product.extras.isNotEmpty()) {
+            // Добавку без цены заказать нельзя — её сейчас нет в кофейне
+            val extras = product.extras.mapNotNull { extra -> prices.extras[extra]?.let { extra to it } }.toMap()
+            if (extras.isNotEmpty()) {
                 SectionDivider()
                 ExtrasSection(
-                    available = product.extras,
+                    available = extras,
                     selectedExtras = form.extras,
                     onExtraToggle = onExtraToggle,
                     modifier = Modifier.padding(MaterialTheme.spacing.large)
@@ -341,10 +349,11 @@ private fun ProductHeader(
     }
 }
 
-/** Выбор размера: ровно один вариант из [DrinkSize]. */
+/** Выбор размера: ровно один вариант из [sizes]. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SizeSection(
+    sizes: List<SizeOption>,
     selectedSize: DrinkSize,
     onSizeSelected: (DrinkSize) -> Unit,
     modifier: Modifier = Modifier
@@ -358,7 +367,7 @@ private fun SizeSection(
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
 
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-            DrinkSize.entries.forEachIndexed { index, size ->
+            sizes.forEachIndexed { index, (size) ->
                 SegmentedButton(
                     selected = size == selectedSize,
                     onClick = { onSizeSelected(size) },
@@ -366,7 +375,7 @@ private fun SizeSection(
                     // углы первой и последней кнопки.
                     shape = SegmentedButtonDefaults.itemShape(
                         index = index,
-                        count = DrinkSize.entries.size
+                        count = sizes.size
                     )
                 ) {
                     Text(
@@ -379,10 +388,11 @@ private fun SizeSection(
     }
 }
 
-/** Выбор молока: один вариант из [MilkType]; недоступные показаны, но отключены. */
+/** Выбор молока: один вариант из [milks]; недоступные показаны, но отключены. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MilkSection(
+    milks: List<MilkOption>,
     selectedMilk: MilkType,
     onMilkSelected: (MilkType) -> Unit,
     modifier: Modifier = Modifier
@@ -396,17 +406,17 @@ private fun MilkSection(
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
-            MilkType.entries.forEach { milk ->
+            milks.forEach { (milk, price, isAvailable) ->
                 val selected = milk == selectedMilk
                 val name = stringResource(milk.labelRes)
                 // К названию добавляем пояснение: «нет в наличии» важнее цены,
                 // а у бесплатных вариантов пояснения нет.
                 val label = when {
-                    !milk.isAvailable -> stringResource(
+                    !isAvailable -> stringResource(
                         R.string.option_with_detail, name, stringResource(R.string.out_of_stock)
                     )
-                    milk.price > 0 -> stringResource(
-                        R.string.option_with_detail, name, stringResource(R.string.price_extra, milk.price)
+                    price > 0 -> stringResource(
+                        R.string.option_with_detail, name, stringResource(R.string.price_extra, price)
                     )
                     else -> name
                 }
@@ -414,7 +424,7 @@ private fun MilkSection(
                 FilterChip(
                     selected = selected,
                     onClick = { onMilkSelected(milk) },
-                    enabled = milk.isAvailable,
+                    enabled = isAvailable,
                     label = { Text(label) },
                     // null, а не пустая лямбда: иначе чип оставит под иконку
                     // пустое место.
@@ -476,11 +486,11 @@ private fun TemperatureSection(
     )
 }
 
-/** Выбор добавок: любое количество вариантов из [available] — они зависят от позиции. */
+/** Выбор добавок: любое количество вариантов из [available] (добавка → доплата) — они зависят от позиции. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ExtrasSection(
-    available: Set<Extra>,
+    available: Map<Extra, Int>,
     selectedExtras: Set<Extra>,
     onExtraToggle: (Extra) -> Unit,
     modifier: Modifier = Modifier
@@ -494,7 +504,7 @@ private fun ExtrasSection(
         Spacer(Modifier.height(MaterialTheme.spacing.medium))
 
         FlowRow(horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)) {
-            available.forEach { extra ->
+            available.forEach { (extra, price) ->
                 val selected = extra in selectedExtras
 
                 FilterChip(
@@ -505,7 +515,7 @@ private fun ExtrasSection(
                             stringResource(
                                 R.string.option_with_detail,
                                 stringResource(extra.labelRes),
-                                stringResource(R.string.price_extra, extra.price)
+                                stringResource(R.string.price_extra, price)
                             )
                         )
                     },
@@ -610,6 +620,7 @@ private fun ProductScreenPreview() {
             product = LocalMenu.CAPPUCCINO,
             form = ProductForm(),
             unitPrice = 240,
+            prices = LocalMenu.prices,
             cartCount = 2,
             onSizeSelected = {},
             onMilkSelected = {},

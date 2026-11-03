@@ -95,7 +95,7 @@ class NavigationTest {
     fun product_addToCartReturnsToMenu() {
         val cappuccino = LocalMenu.CAPPUCCINO
         openProduct(cappuccino)
-        val price = cappuccino.unitPrice(DEFAULT_DRINK_SIZE, MilkType.REGULAR, emptySet())
+        val price = cappuccino.unitPrice(DEFAULT_DRINK_SIZE, MilkType.REGULAR, emptySet(), LocalMenu.prices)
         rule.onNodeWithText(str(R.string.add_to_cart, price)).performClick()
         assertMenuShown()
         tab(R.string.tab_menu).assertIsSelected()

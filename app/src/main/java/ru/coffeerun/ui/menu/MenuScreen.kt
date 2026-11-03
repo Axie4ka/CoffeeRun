@@ -231,7 +231,7 @@ private fun MenuHeader(shop: Shop, onShopClick: () -> Unit) {
 private fun MenuScreenPreview() {
     CoffeeRunTheme {
         ProvidePreviewNotifier { MenuScreen(
-                uiState = MenuUiState.Success(LocalMenu.products),
+                uiState = MenuUiState.Success(LocalMenu.products, LocalMenu.prices),
                 shop = Shop.MOSKOVSKAYA,
                 onShopSelected = {},
                 onRetry = {},

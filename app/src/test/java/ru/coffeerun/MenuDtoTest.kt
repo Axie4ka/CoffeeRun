@@ -13,8 +13,11 @@ import org.junit.Test
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.data.network.CoffeeRunJson
 import ru.coffeerun.data.network.MenuDto
+import ru.coffeerun.data.network.ExtraOptionDto
 import ru.coffeerun.data.network.ProductDto
+import ru.coffeerun.data.network.SizeOptionDto
 import ru.coffeerun.data.network.toModel
+import ru.coffeerun.data.network.toOptionPrices
 import ru.coffeerun.model.Allergen
 
 /**
@@ -60,6 +63,17 @@ class MenuDtoTest {
     @Test
     fun toModel_mockMenuEqualsLocalMenu() {
         assertEquals(LocalMenu.products, menu.products.map { it.toModel(BuildConfig.BASE_URL) })
+    }
+
+    @Test
+    fun toOptionPrices_mockPricesEqualLocalMenu() {
+        assertEquals(LocalMenu.prices, menu.toOptionPrices())
+    }
+
+    @Test
+    fun toOptionPrices_unknownCodesDropped() {
+        val dto = menu.copy(sizes = menu.sizes + SizeOptionDto("XL", 340), extras = menu.extras + ExtraOptionDto("SALT", 10))
+        assertEquals(LocalMenu.prices, dto.toOptionPrices())
     }
 
     private val tea = ProductDto(
