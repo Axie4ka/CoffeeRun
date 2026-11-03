@@ -1,6 +1,7 @@
 package ru.coffeerun
 
 import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.LocalMenuRepository
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -36,7 +37,7 @@ class NavigationTest {
     val freshData = object : ExternalResource() {
         override fun before() {
             val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
-            (app as CoffeeRunApplication).container = AppContainer()
+            (app as CoffeeRunApplication).container = AppContainer(menu = LocalMenuRepository())
         }
     }
 

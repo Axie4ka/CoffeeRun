@@ -26,6 +26,7 @@ import org.junit.Test
 import org.junit.rules.ExternalResource
 import org.junit.runner.RunWith
 import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.LocalMenuRepository
 
 /** «Поделиться» на экране позиции открывает системный выбор приложения с текстом о позиции. */
 @RunWith(AndroidJUnit4::class)
@@ -34,7 +35,7 @@ class ShareTest {
     val freshData = object : ExternalResource() {
         override fun before() {
             val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
-            (app as CoffeeRunApplication).container = AppContainer()
+            (app as CoffeeRunApplication).container = AppContainer(menu = LocalMenuRepository())
         }
     }
 

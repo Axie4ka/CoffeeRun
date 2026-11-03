@@ -1,7 +1,6 @@
 package ru.coffeerun
 
 import java.io.File
-import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -26,17 +25,28 @@ import ru.coffeerun.model.Allergen
  */
 class MenuDtoTest {
 
-    /** Ответ 200 маршрута `menu` из mock/coffeerun.json; unit-тесты запускаются из папки app. */
-    private fun mockMenuBody(): String {
+    /**
+     * Тело GET /menu на нужном языке: хранилище `menu_ru` / `menu_en` из mock/coffeerun.json,
+     * его отдаёт ответ 200 по Accept-Language. Unit-тесты запускаются из папки app.
+     */
+    private fun mockMenu(bucket: String): MenuDto {
         val env = CoffeeRunJson.parseToJsonElement(File("../mock/coffeerun.json").readText()).jsonObject
-        val route = env.getValue("routes").jsonArray.map { it.jsonObject }
-            .single { it.getValue("endpoint").jsonPrimitive.content == "menu" }
-        val ok = route.getValue("responses").jsonArray.map { it.jsonObject }
-            .single { it.getValue("statusCode").jsonPrimitive.int == 200 }
-        return ok.getValue("body").jsonPrimitive.content
+        val data = env.getValue("data").jsonArray.map { it.jsonObject }
+            .single { it.getValue("name").jsonPrimitive.content == bucket }
+        return CoffeeRunJson.decodeFromString(data.getValue("value").jsonPrimitive.content)
     }
 
-    private val menu: MenuDto = CoffeeRunJson.decodeFromString(mockMenuBody())
+    private val menu: MenuDto = mockMenu("menu_ru")
+    private val menuEn: MenuDto = mockMenu("menu_en")
+
+    @Test
+    fun english_sameMenuOtherTexts() {
+        // Язык меняет только тексты: id, цены, коды и фото те же
+        val strip = { m: MenuDto -> m.copy(products = m.products.map { it.copy(name = "", description = "", details = "") }) }
+        assertEquals(strip(menu), strip(menuEn))
+        assertEquals("Cappuccino", menuEn.products.first().name)
+        assertTrue(menuEn.products.none { p -> listOf(p.name, p.description, p.details).any { it.any { c -> c in 'а'..'я' } } })
+    }
 
     @Test
     fun products_allThirteenWithUniqueIds() {
