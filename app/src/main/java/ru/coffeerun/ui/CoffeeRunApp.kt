@@ -145,6 +145,8 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                 val vm: OrdersViewModel = viewModel(factory = OrdersViewModel.Factory)
                 val orders by vm.orders.collectAsStateWithLifecycle()
                 val load by vm.load.collectAsStateWithLifecycle()
+                // Каждый показ вкладки: переход с другой вкладки, возврат со входа или с «Заказ принят»
+                LaunchedEffect(Unit) { vm.onShown() }
                 OrdersScreen(
                     orders = orders,
                     load = load,

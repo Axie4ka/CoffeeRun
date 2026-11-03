@@ -100,6 +100,7 @@ class OrderErrorsTest {
     fun ordersLoadFails_thenRetry_loads() = runTest {
         orders.refreshFails = true
         val vm = OrdersViewModel(orders, cart, flowOf(true))
+        vm.onShown()
         assertEquals(OrdersLoad.FAILED, vm.load.value)
         orders.refreshFails = false
         vm.retry()
@@ -108,11 +109,15 @@ class OrderErrorsTest {
     }
 
     @Test
-    fun guest_doesNotLoadOrders_untilLogin() = runTest {
+    fun eachShow_reloads_guestNever() = runTest {
         val loggedIn = MutableStateFlow(false)
-        OrdersViewModel(orders, cart, loggedIn)
-        assertEquals(0, orders.refreshCalls)
+        val vm = OrdersViewModel(orders, cart, loggedIn)
+        vm.onShown()
+        assertEquals("гостю грузить нечего", 0, orders.refreshCalls)
         loggedIn.value = true
-        assertEquals(1, orders.refreshCalls)
+        assertEquals("после входа грузит репозиторий, а не экран", 0, orders.refreshCalls)
+        vm.onShown()
+        vm.onShown()
+        assertEquals("каждый показ вкладки — свежие статусы", 2, orders.refreshCalls)
     }
 }

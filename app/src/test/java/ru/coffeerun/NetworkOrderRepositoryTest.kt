@@ -1,7 +1,10 @@
 package ru.coffeerun
 
 import java.io.IOException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.test.TestScope
@@ -34,6 +37,8 @@ class NetworkOrderRepositoryTest {
         var fail = false
         var failCode = 0
         var nextNumber = 1042
+        var getCalls = 0
+        var gate: CompletableDeferred<Unit>? = null
 
         private fun maybeFail() {
             if (!fail) return
@@ -42,6 +47,8 @@ class NetworkOrderRepositoryTest {
         }
 
         override suspend fun getOrders(): List<OrderDto> {
+            getCalls++
+            gate?.await()
             maybeFail()
             return server.toList()
         }
@@ -96,6 +103,30 @@ class NetworkOrderRepositoryTest {
         api.failCode = 0
         assertEquals(PlaceOrderResult.NetworkError, repo.place(croissant, Shop.MOSKOVSKAYA))
         assertEquals("непринятые заказы в список не попадают", listOf(1037), repo.orders.value.map { it.number })
+    }
+
+    @Test
+    fun refreshDuringLoginLoad_sharesOneRequest() = runTest {
+        loggedIn.value = false
+        val api = FakeApi().apply { gate = CompletableDeferred() }
+        val repo = repo(api)
+        loggedIn.value = true // вход: репозиторий начал грузить и ждёт сервер
+        val fromTab = async(start = CoroutineStart.UNDISPATCHED) { repo.refresh() } // и тут же открыли вкладку
+        api.gate!!.complete(Unit)
+        fromTab.await()
+        assertEquals("второй запрос не ушёл", 1, api.getCalls)
+        assertEquals(listOf(1037), repo.orders.value.map { it.number })
+    }
+
+    @Test
+    fun refreshDuringFailingLoad_failsToo() = runTest {
+        loggedIn.value = false
+        val api = FakeApi().apply { gate = CompletableDeferred(); fail = true }
+        val repo = repo(api)
+        loggedIn.value = true
+        val fromTab = async(start = CoroutineStart.UNDISPATCHED) { runCatching { repo.refresh() } }
+        api.gate!!.complete(Unit)
+        assertTrue("вкладка покажет «Повторить», а не пустой список", fromTab.await().exceptionOrNull() is IOException)
     }
 
     @Test
