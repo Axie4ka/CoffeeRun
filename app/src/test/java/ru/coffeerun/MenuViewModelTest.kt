@@ -15,7 +15,8 @@ import ru.coffeerun.model.Product
 import ru.coffeerun.ui.menu.MenuUiState
 import ru.coffeerun.ui.menu.MenuViewModel
 
-private class FakeMenuRepository(var fail: Boolean = false) : MenuRepository {
+/** Меню из [LocalMenu]; при [fail] = true каждый запрос падает, как без сети. Общий для тестов ViewModel. */
+class FakeMenuRepository(var fail: Boolean = false) : MenuRepository {
     var calls = 0
 
     override suspend fun getMenu(): List<Product> {
@@ -24,7 +25,11 @@ private class FakeMenuRepository(var fail: Boolean = false) : MenuRepository {
         return LocalMenu.products
     }
 
-    override suspend fun getProduct(id: String): Product? = LocalMenu.byId(id)
+    override suspend fun getProduct(id: String): Product? {
+        if (fail) throw IOException("нет сети")
+        return LocalMenu.byId(id)
+    }
+
     override suspend fun getOptionPrices() = LocalMenu.prices
 }
 

@@ -7,6 +7,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.toRoute
 import androidx.lifecycle.viewModelScope
+import java.io.IOException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -62,6 +64,9 @@ sealed interface ProductUiState {
         val cartCount: Int
     ) : ProductUiState
     data object NotFound : ProductUiState
+
+    /** Не удалось загрузить: нет сети или сервер ответил ошибкой. Выход — [ProductViewModel.retry]. */
+    data object Error : ProductUiState
 }
 
 /**
@@ -79,6 +84,7 @@ private sealed interface Loaded {
     data object Loading : Loaded
     data class Found(val product: Product, val prices: OptionPrices) : Loaded
     data object Missing : Loaded
+    data object Failed : Loaded
 }
 
 /** Экран позиции: товар по id из маршрута, форма напитка, добавление в корзину. */
@@ -96,6 +102,7 @@ class ProductViewModel(
         when (loaded) {
             Loaded.Loading -> ProductUiState.Loading
             Loaded.Missing -> ProductUiState.NotFound
+            Loaded.Failed -> ProductUiState.Error
             is Loaded.Found -> {
                 val fitted = form.fitTo(loaded.prices)
                 ProductUiState.Success(
@@ -108,10 +115,23 @@ class ProductViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductUiState.Loading)
 
+    private var loadJob: Job? = null
+
     init {
-        viewModelScope.launch {
-            val product = menu.getProduct(productId)
-            loaded.value = if (product == null) Loaded.Missing else Loaded.Found(product, menu.getOptionPrices())
+        retry()
+    }
+
+    /** Первая загрузка и «Повторить» после ошибки. Ловим только [IOException]: остальное — баг. */
+    fun retry() {
+        loadJob?.cancel() // повторное «Повторить» не должно гоняться с прошлой загрузкой
+        loaded.value = Loaded.Loading
+        loadJob = viewModelScope.launch {
+            loaded.value = try {
+                val product = menu.getProduct(productId)
+                if (product == null) Loaded.Missing else Loaded.Found(product, menu.getOptionPrices())
+            } catch (e: IOException) {
+                Loaded.Failed
+            }
         }
     }
 

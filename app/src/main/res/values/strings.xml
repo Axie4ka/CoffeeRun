@@ -51,6 +51,7 @@
     <string name="action_back">Back</string>
     <string name="action_retry">Retry</string>
     <string name="menu_error">Couldn\'t load the menu</string>
+    <string name="load_error">Couldn\'t load. Check your connection</string>
     <string name="menu_empty">The menu is empty for now</string>
     <string name="action_favorite">Add to favorites</string>
     <string name="action_unfavorite">Remove from favorites</string>
