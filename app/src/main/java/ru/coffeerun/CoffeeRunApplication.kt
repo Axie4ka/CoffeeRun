@@ -7,6 +7,10 @@ import androidx.datastore.preferences.preferencesDataStore
 import ru.coffeerun.data.AuthRepository
 import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.InMemoryProfileRepository
+import ru.coffeerun.data.NetworkFavoritesRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import ru.coffeerun.data.NetworkAuthRepository
 import ru.coffeerun.data.NetworkProfileRepository
 import ru.coffeerun.data.ProfileRepository
@@ -30,20 +34,27 @@ import ru.coffeerun.data.ShopRepository
 
 /**
  * Репозитории в одном экземпляре на процесс — так у всех ViewModel одна корзина и одни заказы.
- * [menu], [auth] и [profile] передаются снаружи: приложение даёт сетевые, UI-тесты — [LocalMenuRepository],
- * [InMemoryAuthRepository] и [InMemoryProfileRepository], чтобы не нужны были ни сервер, ни файл DataStore.
+ * Сетевые репозитории передаются снаружи: приложение даёт настоящие, UI-тесты — [LocalMenuRepository],
+ * [InMemoryAuthRepository], [InMemoryProfileRepository] и [InMemoryFavoritesRepository], без сервера и DataStore.
  */
-class AppContainer(val menu: MenuRepository, val auth: AuthRepository, val profile: ProfileRepository) {
+class AppContainer(
+    val menu: MenuRepository,
+    val auth: AuthRepository,
+    val profile: ProfileRepository,
+    val favorites: FavoritesRepository
+) {
     val cart: CartRepository = InMemoryCartRepository()
     val orders: OrderRepository = InMemoryOrderRepository()
     val shops: ShopRepository = InMemoryShopRepository()
-    val favorites: FavoritesRepository = InMemoryFavoritesRepository()
 }
 
 /** Один DataStore на файл на весь процесс — это гарантирует делегат. */
 private val Context.authDataStore by preferencesDataStore(AUTH_DATASTORE)
 
 class CoffeeRunApplication : Application() {
+    /** Живёт, пока жив процесс: в нём репозитории следят за входом и выходом, пока экраны меняются. */
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     // var — только чтобы UI-тесты начинали с пустой корзиной: процесс у них общий.
     // Создаётся в onCreate: DataStore нужен готовый Context, при создании объекта Application его ещё нет
     @VisibleForTesting
@@ -54,10 +65,12 @@ class CoffeeRunApplication : Application() {
         val language = { serverLanguage() } // спрашивается на каждый запрос: язык могут сменить на ходу
         val tokens = TokenStore(authDataStore) // один на процесс: им пользуются и запросы, и вход
         val api = createCoffeeRunApi(BuildConfig.BASE_URL, language, tokens)
+        val auth = NetworkAuthRepository(api, tokens)
         container = AppContainer(
             menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language),
-            auth = NetworkAuthRepository(api, tokens),
-            profile = NetworkProfileRepository(api)
+            auth = auth,
+            profile = NetworkProfileRepository(api),
+            favorites = NetworkFavoritesRepository(api, auth.isLoggedIn, applicationScope)
         )
     }
 }

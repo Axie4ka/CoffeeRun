@@ -26,8 +26,11 @@ sealed interface FavoritesUiState {
     data object Error : FavoritesUiState
 }
 
-/** Избранное: товары каталога, чьи id в избранном, в порядке каталога; неизвестные id пропускаются. */
-class FavoritesViewModel(private val menu: MenuRepository, favorites: FavoritesRepository) : ViewModel() {
+/**
+ * Избранное: товары каталога, чьи id в избранном, в порядке каталога; неизвестные id пропускаются.
+ * При открытии экрана избранное заново берётся с сервера — вдруг его меняли на другом устройстве.
+ */
+class FavoritesViewModel(private val menu: MenuRepository, private val favorites: FavoritesRepository) : ViewModel() {
     /** null — грузится, failure — ошибка загрузки. */
     private val catalog = MutableStateFlow<Result<List<Product>>?>(null)
     private var loadJob: Job? = null
@@ -50,7 +53,9 @@ class FavoritesViewModel(private val menu: MenuRepository, favorites: FavoritesR
         catalog.value = null
         loadJob = viewModelScope.launch {
             catalog.value = try {
-                Result.success(menu.getMenu())
+                val products = menu.getMenu()
+                favorites.refresh()
+                Result.success(products)
             } catch (e: IOException) {
                 Result.failure(e)
             }

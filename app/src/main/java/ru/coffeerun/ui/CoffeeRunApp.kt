@@ -256,6 +256,16 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
             composable<ProductRoute> {
                 val vm: ProductViewModel = viewModel(factory = ProductViewModel.Factory)
                 val uiState by vm.uiState.collectAsStateWithLifecycle()
+                // Сервер не принял сердечко — оно уже откатилось, объясняем почему
+                val message by vm.message.collectAsStateWithLifecycle()
+                val context = LocalContext.current
+                LaunchedEffect(message) {
+                    message?.let {
+                        // Сначала показать, потом сбросить: сброс меняет ключ эффекта и отменил бы снэкбар
+                        snackbarHostState.showSnackbar(context.getString(it))
+                        vm.onMessageShown()
+                    }
+                }
                 when (val state = uiState) {
                     ProductUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -267,7 +277,6 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
                         RetryMessage(stringResource(R.string.load_error), vm::retry)
                     }
                     is ProductUiState.Success -> {
-                        val context = LocalContext.current
                         val product = state.product
                         val name = product.name
                         val price = stringResource(

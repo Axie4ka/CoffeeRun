@@ -17,6 +17,9 @@ open class StubApi : CoffeeRunApi {
     override suspend fun register(request: RegisterRequest): AuthResponse = unused()
     override suspend fun getMe(): UserDto = unused()
     override suspend fun updateMe(user: UserDto): UserDto = unused()
+    override suspend fun getFavorites(): List<String> = unused()
+    override suspend fun addFavorite(productId: String): Unit = unused()
+    override suspend fun removeFavorite(productId: String): Unit = unused()
 
     private fun unused(): Nothing = error("Этот запрос не используется в тесте")
 }
