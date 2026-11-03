@@ -15,6 +15,7 @@ import org.junit.runner.RunWith
 import ru.coffeerun.data.FavoritesRepository
 import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.InMemoryProfileRepository
+import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.data.LocalMenu
 import ru.coffeerun.data.LocalMenuRepository
 
@@ -36,7 +37,8 @@ class FavoritesErrorTest {
                 menu = LocalMenuRepository(),
                 auth = InMemoryAuthRepository(loggedIn = true),
                 profile = InMemoryProfileRepository(),
-                favorites = RejectingFavorites()
+                favorites = RejectingFavorites(),
+                orders = InMemoryOrderRepository()
             )
         }
     }

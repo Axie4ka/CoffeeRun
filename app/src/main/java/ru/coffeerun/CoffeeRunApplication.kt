@@ -38,14 +38,15 @@ import ru.coffeerun.data.ShopRepository
  * Репозитории в одном экземпляре на процесс — так у всех ViewModel одна корзина и одни заказы.
  * Сетевые репозитории передаются снаружи: приложение даёт настоящие, UI-тесты — [LocalMenuRepository],
  * [InMemoryAuthRepository], [InMemoryProfileRepository], [InMemoryFavoritesRepository]
- * и [InMemoryOrderRepository] (по умолчанию), без сервера и DataStore.
+ * и [InMemoryOrderRepository], без сервера и DataStore. У orders нет значения по умолчанию:
+ * забыть передать настоящий репозиторий — ошибка компиляции, а не тихие демо-заказы.
  */
 class AppContainer(
     val menu: MenuRepository,
     val auth: AuthRepository,
     val profile: ProfileRepository,
     val favorites: FavoritesRepository,
-    val orders: OrderRepository = InMemoryOrderRepository()
+    val orders: OrderRepository
 ) {
     val cart: CartRepository = InMemoryCartRepository()
     val shops: ShopRepository = InMemoryShopRepository()
