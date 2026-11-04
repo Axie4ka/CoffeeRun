@@ -40,6 +40,8 @@ import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.menu.MenuScreen
 import ru.coffeerun.ui.menu.MenuViewModel
+import ru.coffeerun.ui.orders.OrderDetailsScreen
+import ru.coffeerun.ui.orders.OrderDetailsViewModel
 import ru.coffeerun.ui.orders.OrdersScreen
 import ru.coffeerun.ui.orders.OrdersViewModel
 import ru.coffeerun.ui.product.ProductScreen
@@ -127,7 +129,39 @@ fun CoffeeRunNavHost(
                 cancelling = cancelling,
                 onCancel = vm::cancel,
                 refreshing = refreshing,
-                onRefresh = vm::refresh
+                onRefresh = vm::refresh,
+                onOrderClick = { navController.navigate(OrderDetailsRoute(it.number)) }
+            )
+        }
+
+        composable<OrderDetailsRoute> {
+            val vm: OrderDetailsViewModel = viewModel(factory = OrderDetailsViewModel.Factory)
+            val order by vm.order.collectAsStateWithLifecycle()
+            val load by vm.load.collectAsStateWithLifecycle()
+            val cancelling by vm.cancelling.collectAsStateWithLifecycle()
+            val notFound by vm.notFound.collectAsStateWithLifecycle()
+            val message by vm.message.collectAsStateWithLifecycle()
+            val context = LocalContext.current
+            // Такого заказа на сервере нет — смотреть нечего
+            LaunchedEffect(notFound) { if (notFound) navController.popBackStack<OrderDetailsRoute>(inclusive = true) }
+            LaunchedEffect(message) {
+                message?.let {
+                    snackbarHostState.showSnackbar(context.getString(it))
+                    vm.onMessageShown()
+                }
+            }
+            OrderDetailsScreen(
+                order = order,
+                load = load,
+                cancelling = cancelling,
+                onBack = { navController.popBackStack() },
+                onRetry = vm::retry,
+                onCancel = vm::cancel,
+                onRepeat = {
+                    vm.repeat()
+                    navController.jumpToTab(Tab.CART)
+                },
+                snackbarHostState = snackbarHostState
             )
         }
 

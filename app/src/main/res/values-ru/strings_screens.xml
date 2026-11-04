@@ -70,6 +70,7 @@
     <string name="order_meta_active">Сегодня, к %1$s · %2$s</string>
     <string name="order_meta_history">%1$s · %2$s</string>
     <string name="order_cancel">Отменить</string>
+    <string name="order_time_active">Сегодня, к %1$s</string>
     <string name="order_cancel_title">Отменить заказ №%1$d?</string>
     <string name="order_cancel_text">Кофейня не станет его готовить.</string>
     <string name="order_cancel_confirm">Отменить заказ</string>

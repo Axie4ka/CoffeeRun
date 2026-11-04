@@ -19,6 +19,13 @@ import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.OrderRepository
 import ru.coffeerun.model.Order
 
+/** Текст снэкбара об итоге отмены — один и тот же в списке и на экране заказа. */
+internal fun CancelOrderResult.messageRes(): Int = when (this) {
+    is CancelOrderResult.Cancelled -> R.string.order_cancelled
+    CancelOrderResult.TooLate -> R.string.order_cancel_too_late
+    CancelOrderResult.NetworkError -> R.string.order_cancel_error
+}
+
 /** Как прошла последняя загрузка заказов с сервера. */
 enum class OrdersLoad { LOADING, DONE, FAILED }
 
@@ -68,11 +75,7 @@ class OrdersViewModel(
         if (_cancelling.value != null) return
         _cancelling.value = order.number
         viewModelScope.launch {
-            _message.value = when (repository.cancel(order.number)) {
-                is CancelOrderResult.Cancelled -> R.string.order_cancelled
-                CancelOrderResult.TooLate -> R.string.order_cancel_too_late
-                CancelOrderResult.NetworkError -> R.string.order_cancel_error
-            }
+            _message.value = repository.cancel(order.number).messageRes()
             _cancelling.value = null
         }
     }
