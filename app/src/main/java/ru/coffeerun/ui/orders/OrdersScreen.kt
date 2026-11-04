@@ -113,22 +113,23 @@ fun OrdersScreen(
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
                 ) {
                     if (active.isNotEmpty()) {
-                        item(key = "active") { GroupTitle(stringResource(R.string.orders_active)) }
+                        item(key = "active") { GroupTitle(stringResource(R.string.orders_active), Modifier.animateItem()) }
                         items(active, key = { it.number }) { order ->
                             // Отменить можно только заказ ко времени, который ещё не готовят
                             if (order.canCancel) {
-                                OrderCard(order, { onOrderClick(order) }, stringResource(R.string.order_cancel), actionEnabled = cancelling != order.number) {
+                                OrderCard(order, { onOrderClick(order) }, Modifier.animateItem(), stringResource(R.string.order_cancel), actionEnabled = cancelling != order.number) {
                                     confirmNumber = order.number
                                 }
                             } else {
-                                OrderCard(order, { onOrderClick(order) })
+                                OrderCard(order, { onOrderClick(order) }, Modifier.animateItem())
                             }
                         }
                     }
                     if (history.isNotEmpty()) {
-                        item(key = "history") { GroupTitle(stringResource(R.string.orders_history)) }
+                        item(key = "history") { GroupTitle(stringResource(R.string.orders_history), Modifier.animateItem()) }
                         items(history, key = { it.number }) { order ->
-                            OrderCard(order, { onOrderClick(order) }, stringResource(R.string.order_repeat)) { onRepeat(order) }
+                            // Отменённый заказ плавно переезжает из «Активных» в историю, а не исчезает рывком
+                            OrderCard(order, { onOrderClick(order) }, Modifier.animateItem(), stringResource(R.string.order_repeat)) { onRepeat(order) }
                         }
                     }
                 }
@@ -155,9 +156,10 @@ internal fun Order.timeText(): String =
     if (isActive) stringResource(R.string.order_time_active, formatTime(readyAtMillis)) else formatDateTime(placedAtMillis)
 
 @Composable
-private fun GroupTitle(text: String) {
+private fun GroupTitle(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
+        modifier = modifier,
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -167,6 +169,7 @@ private fun GroupTitle(text: String) {
 private fun OrderCard(
     order: Order,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     actionLabel: String? = null,
     actionEnabled: Boolean = true,
     onAction: (() -> Unit)? = null
@@ -179,7 +182,7 @@ private fun OrderCard(
     }
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
