@@ -1,5 +1,11 @@
 package ru.coffeerun.ui.navigation
 
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavBackStackEntry
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import android.content.Intent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,7 +73,15 @@ fun CoffeeRunNavHost(
 ) {
     // Для снэкбаров, которые должны пережить закрытие экрана (например, «Профиль сохранён»)
     val appScope = rememberCoroutineScope()
-    NavHost(navController, startDestination = MenuRoute) {
+    NavHost(
+        navController,
+        startDestination = MenuRoute,
+        // Вкладки сменяются через fade; экраны поверх вкладок выезжают справа и уезжают обратно по «назад»
+        enterTransition = { if (targetState.isTab()) fadeIn(tween(TAB_FADE_MS)) else slideIntoContainer(SlideDirection.Start, tween(SLIDE_MS)) },
+        exitTransition = { fadeOut(tween(if (targetState.isTab()) TAB_FADE_MS else SLIDE_MS)) },
+        popEnterTransition = { fadeIn(tween(if (initialState.isTab()) TAB_FADE_MS else SLIDE_MS)) },
+        popExitTransition = { if (initialState.isTab()) fadeOut(tween(TAB_FADE_MS)) else slideOutOfContainer(SlideDirection.End, tween(SLIDE_MS)) }
+    ) {
         composable<MenuRoute> {
             val vm: MenuViewModel = viewModel(factory = MenuViewModel.Factory)
             val menuState by vm.uiState.collectAsStateWithLifecycle()
@@ -365,6 +379,11 @@ fun CoffeeRunNavHost(
         }
     }
 }
+
+private const val TAB_FADE_MS = 200
+private const val SLIDE_MS = 300
+
+private fun NavBackStackEntry.isTab() = Tab.entries.any { destination.hasRoute(it.route::class) }
 
 /** Ключ результата «профиль сохранён» в SavedStateHandle профиля. */
 private const val PROFILE_SAVED = "profileSaved"
