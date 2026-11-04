@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
 import ru.coffeerun.data.network.CoffeeRunApi
@@ -32,6 +34,8 @@ class NetworkOrderRepository(
 ) : OrderRepository {
     private val _orders = MutableStateFlow<List<Order>>(emptyList())
     override val orders: StateFlow<List<Order>> = _orders.asStateFlow()
+    private val loading = Mutex()
+    private var lastLoadFailed = false
 
     init {
         scope.launch {
@@ -47,8 +51,18 @@ class NetworkOrderRepository(
     }
 
     override suspend fun refresh() {
-        val products = menu.getMenu().associateBy { it.id }
-        _orders.value = network { api.getOrders() }.mapNotNull { it.toModel(products) }
+        if (loading.isLocked) {
+            // Загрузка уже идёт (вход и открытие вкладки «Заказы» совпали) — ждём её, второй запрос не шлём
+            loading.withLock { }
+            if (lastLoadFailed) throw IOException("Заказы не загрузились")
+            return
+        }
+        loading.withLock {
+            lastLoadFailed = true
+            val products = menu.getMenu().associateBy { it.id }
+            _orders.value = network { api.getOrders() }.mapNotNull { it.toModel(products) }
+            lastLoadFailed = false
+        }
     }
 
     override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?): PlaceOrderResult {

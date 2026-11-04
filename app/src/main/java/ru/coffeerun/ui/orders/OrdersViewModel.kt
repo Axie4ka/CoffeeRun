@@ -10,8 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
@@ -22,13 +21,13 @@ import ru.coffeerun.model.Order
 enum class OrdersLoad { LOADING, DONE, FAILED }
 
 /**
- * Заказы. При открытии экрана и после входа список берётся с сервера заново — статусы меняются.
- * Ошибку загрузки экран показывает, только если показать нечего.
+ * Заказы. Каждый раз, когда вкладку показывают, список берётся с сервера заново — статусы меняются.
+ * После входа заказы загружает сам репозиторий. Ошибку загрузки экран показывает, только если показать нечего.
  */
 class OrdersViewModel(
     private val repository: OrderRepository,
     private val cart: CartRepository,
-    isLoggedIn: Flow<Boolean>
+    private val isLoggedIn: Flow<Boolean>
 ) : ViewModel() {
     val orders: StateFlow<List<Order>> = repository.orders
 
@@ -36,9 +35,9 @@ class OrdersViewModel(
     val load: StateFlow<OrdersLoad> = _load.asStateFlow()
     private var loadJob: Job? = null
 
-    init {
-        // Гостю грузить нечего: экран всё равно просит войти
-        viewModelScope.launch { isLoggedIn.distinctUntilChanged().filter { it }.collect { retry() } }
+    /** Вкладку показали. Гостю грузить нечего: экран всё равно просит войти. */
+    fun onShown() {
+        viewModelScope.launch { if (isLoggedIn.first()) retry() }
     }
 
     /** Загрузка при открытии и «Повторить» после ошибки. Ловим только [IOException]: остальное — баг. */

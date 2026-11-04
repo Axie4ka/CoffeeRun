@@ -20,8 +20,9 @@ import org.junit.runner.RunWith
 import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.InMemoryFavoritesRepository
 import ru.coffeerun.data.InMemoryProfileRepository
-import ru.coffeerun.data.LocalMenu
-import ru.coffeerun.data.LocalMenuRepository
+import ru.coffeerun.data.InMemoryOrderRepository
+import ru.coffeerun.data.DemoMenu
+import ru.coffeerun.data.DemoMenuRepository
 
 /** Гость: оформление, заказы и избранное требуют входа; после входа из корзины сразу открывается оформление. */
 @RunWith(AndroidJUnit4::class)
@@ -30,7 +31,7 @@ class GuestTest {
     val guest = object : ExternalResource() {
         override fun before() {
             val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
-            (app as CoffeeRunApplication).container = AppContainer(menu = LocalMenuRepository(), auth = InMemoryAuthRepository(loggedIn = false), profile = InMemoryProfileRepository(), favorites = InMemoryFavoritesRepository())
+            (app as CoffeeRunApplication).container = AppContainer(menu = DemoMenuRepository(), auth = InMemoryAuthRepository(loggedIn = false), profile = InMemoryProfileRepository(), favorites = InMemoryFavoritesRepository(), orders = InMemoryOrderRepository())
         }
     }
 
@@ -52,7 +53,7 @@ class GuestTest {
 
     @Test
     fun checkout_asGuest_signIn_thenCheckoutOpens() {
-        rule.onNodeWithContentDescription(str(R.string.add_product, LocalMenu.CAPPUCCINO.name)).performClick()
+        rule.onNodeWithContentDescription(str(R.string.add_product, DemoMenu.CAPPUCCINO.name)).performClick()
         clickable(R.string.tab_cart).performClick()
         clickable(R.string.cart_checkout).performClick()
         assertLoginShown()
@@ -65,7 +66,7 @@ class GuestTest {
 
     @Test
     fun favorite_asGuest_opensSignIn() {
-        rule.onNodeWithText(LocalMenu.LATTE.name).performClick()
+        rule.onNodeWithText(DemoMenu.LATTE.name).performClick()
         rule.onNodeWithContentDescription(str(R.string.action_favorite)).performClick()
         assertLoginShown()
         // Сердечко само не ставится: после входа пользователь нажмёт ещё раз
