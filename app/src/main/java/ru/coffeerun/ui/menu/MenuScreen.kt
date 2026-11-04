@@ -1,5 +1,9 @@
 package ru.coffeerun.ui.menu
 
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -86,10 +90,13 @@ fun MenuScreen(
 
     Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         val search = query
-        if (search == null) {
-            MenuHeader(shop = shop, onShopClick = { showShopPicker = true }, onSearch = { query = "" })
-        } else {
-            MenuSearchField(search, onChange = { query = it }, onClose = { query = null })
+        // Шапка и поле поиска сменяют друг друга через fade, а не подменяются рывком
+        AnimatedContent(targetState = search == null, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "menuHeader") { header ->
+            if (header) {
+                MenuHeader(shop = shop, onShopClick = { showShopPicker = true }, onSearch = { query = "" })
+            } else {
+                MenuSearchField(query.orEmpty(), onChange = { query = it }, onClose = { query = null })
+            }
         }
         when (uiState) {
             MenuUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
