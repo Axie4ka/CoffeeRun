@@ -21,6 +21,7 @@ import ru.coffeerun.model.Order
 import ru.coffeerun.model.Shop
 
 private const val HTTP_CONFLICT = 409
+private const val HTTP_NOT_FOUND = 404
 
 /**
  * Заказы на сервере (/orders). Как и избранное, следит за [isLoggedIn]: после входа загружает
@@ -91,6 +92,19 @@ class NetworkOrderRepository(
         val order = dto.toModel(products) ?: return CancelOrderResult.NetworkError
         _orders.update { list -> list.map { if (it.number == number) order else it } }
         return CancelOrderResult.Cancelled(order)
+    }
+
+    override suspend fun load(number: Int): Order? {
+        val dto = try {
+            network { api.getOrder(number) }
+        } catch (e: IOException) {
+            if ((e.cause as? HttpException)?.code() == HTTP_NOT_FOUND) return null
+            throw e
+        }
+        val products = menu.getMenu().associateBy { it.id }
+        val order = dto.toModel(products) ?: throw IOException("Заказ не по контракту")
+        _orders.update { list -> list.map { if (it.number == number) order else it } }
+        return order
     }
 
     override fun find(number: Int): Order? = _orders.value.find { it.number == number }

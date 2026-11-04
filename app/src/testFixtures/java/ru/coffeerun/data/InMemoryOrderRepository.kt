@@ -46,6 +46,8 @@ class InMemoryOrderRepository(private val now: () -> Long = System::currentTimeM
         return CancelOrderResult.Cancelled(cancelled)
     }
 
+    override suspend fun load(number: Int): Order? = find(number)
+
     override fun find(number: Int): Order? = _orders.value.find { it.number == number }
 }
 

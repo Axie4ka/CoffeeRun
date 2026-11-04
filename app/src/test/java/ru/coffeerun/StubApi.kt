@@ -23,6 +23,7 @@ open class StubApi : CoffeeRunApi {
     override suspend fun addFavorite(productId: String): Unit = unused()
     override suspend fun removeFavorite(productId: String): Unit = unused()
     override suspend fun getOrders(): List<OrderDto> = unused()
+    override suspend fun getOrder(number: Int): OrderDto = unused()
     override suspend fun placeOrder(request: OrderRequest): OrderDto = unused()
     override suspend fun cancelOrder(number: Int): OrderDto = unused()
 

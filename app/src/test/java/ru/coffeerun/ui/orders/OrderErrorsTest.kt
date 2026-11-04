@@ -62,7 +62,9 @@ class OrderErrorsTest {
             return cancelResult
         }
 
-        override fun find(number: Int): Order? = null
+        override suspend fun load(number: Int): Order? = find(number)
+
+        override fun find(number: Int): Order? = orders.value.find { it.number == number }
     }
 
     private val cart = InMemoryCartRepository().apply { add(CartLine(DemoMenu.CROISSANT, unitPrice = 180)) }
