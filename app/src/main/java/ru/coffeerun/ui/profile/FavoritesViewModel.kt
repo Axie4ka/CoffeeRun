@@ -1,5 +1,7 @@
 package ru.coffeerun.ui.profile
 
+import ru.coffeerun.ui.util.ReloadOnLocaleChange
+import java.util.Locale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -46,6 +48,11 @@ class FavoritesViewModel(private val menu: MenuRepository, private val favorites
     init {
         retry()
     }
+
+    private val languageWatch = ReloadOnLocaleChange(::retry)
+
+    /** Экран сообщает язык; сменился — данные с сервера загружаются заново, уже на новом языке. */
+    fun onLocale(locale: Locale) = languageWatch.onLocale(locale)
 
     /** Первая загрузка и «Повторить» после ошибки. Ловим только [IOException]: остальное — баг. */
     fun retry() {
