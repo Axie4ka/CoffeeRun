@@ -1023,6 +1023,74 @@
       "responseMode": null,
       "streamingMode": null,
       "streamingInterval": 0
+    },
+    {
+      "uuid": "6c8745ca-4f48-498b-b63d-9a7255e07b7c",
+      "type": "http",
+      "documentation": "Отмена заказа: можно только ACCEPTED (ко времени, ещё не готовят)",
+      "method": "post",
+      "endpoint": "orders/:number/cancel",
+      "responses": [
+        {
+          "uuid": "5462e79f-bd38-42cd-af8a-eaac7abc9bef",
+          "body": "{\n  \"message\": \"Unauthorized\"\n}",
+          "latency": 0,
+          "statusCode": 401,
+          "label": "Нет токена или он неверный",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [
+            {
+              "target": "header",
+              "modifier": "Authorization",
+              "value": "Bearer demo-token",
+              "invert": true,
+              "operator": "equals"
+            }
+          ],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": false,
+          "crudKey": "id",
+          "callbacks": []
+        },
+        {
+          "uuid": "a3e29f64-7810-4173-9291-c0c64ac95bab",
+          "body": "{{setVar 'found' (find (dataRaw 'orders') (object number=(parseInt (urlParam 'number'))))}}{{#if @found}}{{#if (eq @found.status 'ACCEPTED')}}{{#each (dataRaw 'orders')}}{{#if (eq number (parseInt (urlParam 'number')))}}{{setData 'set' 'orders' (concat @index '.status') 'CANCELLED'}}{{/if}}{{/each}}{{{stringify (find (dataRaw 'orders') (object number=(parseInt (urlParam 'number'))))}}}{{else}}{{status 409}}{\"message\": \"Order can't be cancelled: {{@found.status}}\"}{{/if}}{{else}}{{status 404}}{\"message\": \"Order not found\"}{{/if}}",
+          "latency": 0,
+          "statusCode": 200,
+          "label": "Отменён, 409 если уже готовят, 404 если нет",
+          "headers": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "bodyType": "INLINE",
+          "filePath": "",
+          "databucketID": "",
+          "sendFileAsBody": false,
+          "rules": [],
+          "rulesOperator": "OR",
+          "disableTemplating": false,
+          "fallbackTo404": false,
+          "default": true,
+          "crudKey": "id",
+          "callbacks": []
+        }
+      ],
+      "responseMode": null,
+      "streamingMode": null,
+      "streamingInterval": 0
     }
   ],
   "rootChildren": [
@@ -1073,6 +1141,10 @@
     {
       "type": "route",
       "uuid": "032a4812-b0fc-41a2-abfc-bdf6771b0f44"
+    },
+    {
+      "type": "route",
+      "uuid": "6c8745ca-4f48-498b-b63d-9a7255e07b7c"
     }
   ],
   "proxyMode": false,

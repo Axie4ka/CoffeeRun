@@ -261,6 +261,40 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /orders/{number}/cancel:
+    post:
+      operationId: cancelOrder
+      summary: Отменить заказ
+      description: Отменить можно только заказ ко времени, который ещё не начали готовить (ACCEPTED).
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1042
+      responses:
+        '200':
+          description: Заказ отменён, в ответе — со статусом CANCELLED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Такого заказа нет
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Заказ уже готовят или выдали — отменить нельзя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -550,7 +584,7 @@ components:
           example: 1042
         status:
           type: string
-          enum: [ACCEPTED, PREPARING, READY, PICKED_UP]
+          enum: [ACCEPTED, PREPARING, READY, PICKED_UP, CANCELLED]
         shop:
           $ref: '#/components/schemas/Shop'
         placedAt:
