@@ -14,7 +14,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,6 +52,7 @@ import ru.coffeerun.ui.util.summaryText
  * Заказы: активные сверху, выданные и отменённые — в истории.
  * [onRepeat] кладёт позиции прошлого заказа обратно в корзину; [onCancel] вызывается после подтверждения в диалоге.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdersScreen(
     orders: List<Order>,
@@ -61,7 +64,9 @@ fun OrdersScreen(
     load: OrdersLoad = OrdersLoad.DONE,
     onRetry: () -> Unit = {},
     cancelling: Int? = null,
-    onCancel: (Order) -> Unit = {}
+    onCancel: (Order) -> Unit = {},
+    refreshing: Boolean = false,
+    onRefresh: () -> Unit = {}
 ) {
     // Заказы — данные аккаунта: гостю приглашение войти; пока токен не прочитан — пусто, без мигания
     when (isLoggedIn) {
@@ -109,30 +114,34 @@ fun OrdersScreen(
                 modifier = Modifier.weight(1f)
             )
         } else {
-            LazyColumn(
-                contentPadding = PaddingValues(
-                    horizontal = MaterialTheme.spacing.large,
-                    vertical = MaterialTheme.spacing.small
-                ),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
-            ) {
-                if (active.isNotEmpty()) {
-                    item(key = "active") { GroupTitle(stringResource(R.string.orders_active)) }
-                    items(active, key = { it.number }) { order ->
-                        // Отменить можно только заказ ко времени, который ещё не готовят
-                        if (order.canCancel) {
-                            OrderCard(order, stringResource(R.string.order_cancel), actionEnabled = cancelling != order.number) {
-                                confirmNumber = order.number
+            // Свайп вниз обновляет статусы, не уходя с вкладки
+            PullToRefreshBox(isRefreshing = refreshing, onRefresh = onRefresh, modifier = Modifier.weight(1f)) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        horizontal = MaterialTheme.spacing.large,
+                        vertical = MaterialTheme.spacing.small
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
+                ) {
+                    if (active.isNotEmpty()) {
+                        item(key = "active") { GroupTitle(stringResource(R.string.orders_active)) }
+                        items(active, key = { it.number }) { order ->
+                            // Отменить можно только заказ ко времени, который ещё не готовят
+                            if (order.canCancel) {
+                                OrderCard(order, stringResource(R.string.order_cancel), actionEnabled = cancelling != order.number) {
+                                    confirmNumber = order.number
+                                }
+                            } else {
+                                OrderCard(order)
                             }
-                        } else {
-                            OrderCard(order)
                         }
                     }
-                }
-                if (history.isNotEmpty()) {
-                    item(key = "history") { GroupTitle(stringResource(R.string.orders_history)) }
-                    items(history, key = { it.number }) { order ->
-                        OrderCard(order, stringResource(R.string.order_repeat)) { onRepeat(order) }
+                    if (history.isNotEmpty()) {
+                        item(key = "history") { GroupTitle(stringResource(R.string.orders_history)) }
+                        items(history, key = { it.number }) { order ->
+                            OrderCard(order, stringResource(R.string.order_repeat)) { onRepeat(order) }
+                        }
                     }
                 }
             }

@@ -100,6 +100,7 @@ fun CoffeeRunNavHost(
             val orders by vm.orders.collectAsStateWithLifecycle()
             val load by vm.load.collectAsStateWithLifecycle()
             val cancelling by vm.cancelling.collectAsStateWithLifecycle()
+            val refreshing by vm.refreshing.collectAsStateWithLifecycle()
             val message by vm.message.collectAsStateWithLifecycle()
             val context = LocalContext.current
             // Каждый показ вкладки: переход с другой вкладки, возврат со входа или с «Заказ принят»
@@ -124,7 +125,9 @@ fun CoffeeRunNavHost(
                 isLoggedIn = isLoggedIn,
                 onLogin = { navController.navigate(LoginRoute()) },
                 cancelling = cancelling,
-                onCancel = vm::cancel
+                onCancel = vm::cancel,
+                refreshing = refreshing,
+                onRefresh = vm::refresh
             )
         }
 

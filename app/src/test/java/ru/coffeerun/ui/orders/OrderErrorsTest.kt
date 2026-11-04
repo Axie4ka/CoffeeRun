@@ -160,4 +160,21 @@ class OrderErrorsTest {
         gate.complete(Unit)
         assertNull(vm.cancelling.value)
     }
+
+    @Test
+    fun pullToRefresh_failure_keepsList_andExplains() = runTest {
+        val vm = OrdersViewModel(orders, cart, flowOf(true))
+        vm.onShown()
+        assertEquals(listOf(1037), vm.orders.value.map { it.number })
+        orders.refreshFails = true
+        vm.refresh()
+        assertFalse("индикатор погас", vm.refreshing.value)
+        assertEquals(R.string.orders_refresh_error, vm.message.value)
+        assertEquals("неудачное обновление не стирает список", listOf(1037), vm.orders.value.map { it.number })
+        vm.onMessageShown()
+        orders.refreshFails = false
+        vm.refresh()
+        assertNull("удачное обновление без снэкбара", vm.message.value)
+        assertEquals(OrdersLoad.DONE, vm.load.value)
+    }
 }

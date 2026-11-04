@@ -61,7 +61,7 @@ class OrdersViewModel(
     val cancelling: StateFlow<Int?> = _cancelling.asStateFlow()
 
     private val _message = MutableStateFlow<Int?>(null)
-    /** Итог отмены для снэкбара — строковый ресурс. */
+    /** Итог отмены или обновления для снэкбара — строковый ресурс. */
     val message: StateFlow<Int?> = _message.asStateFlow()
 
     fun cancel(order: Order) {
@@ -79,6 +79,27 @@ class OrdersViewModel(
 
     fun onMessageShown() {
         _message.value = null
+    }
+
+    private val _refreshing = MutableStateFlow(false)
+    /** Идёт обновление, которое пользователь запросил свайпом: крутится индикатор над списком. */
+    val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
+    /** Свайп вниз. Список уже на экране, поэтому ошибка — снэкбар, а список остаётся. */
+    fun refresh() {
+        loadJob?.cancel()
+        _refreshing.value = true
+        loadJob = viewModelScope.launch {
+            try {
+                repository.refresh()
+                _load.value = OrdersLoad.DONE
+            } catch (e: IOException) {
+                _load.value = OrdersLoad.FAILED
+                _message.value = R.string.orders_refresh_error
+            } finally {
+                _refreshing.value = false
+            }
+        }
     }
 
     /** Кладёт позиции прошлого заказа обратно в корзину. */

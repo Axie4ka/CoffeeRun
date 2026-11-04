@@ -44,6 +44,7 @@
     <string name="order_unavailable">Чего-то из заказа сейчас нет в наличии. Измените заказ</string>
     <string name="order_network_error">Не удалось оформить заказ. Проверьте соединение</string>
     <string name="order_cancelled">Заказ отменён</string>
+    <string name="orders_refresh_error">Не удалось обновить заказы. Проверьте соединение</string>
     <string name="order_cancel_too_late">Заказ уже готовят — отменить нельзя</string>
     <string name="order_cancel_error">Не удалось отменить заказ. Проверьте соединение</string>
     <string name="menu_empty">Меню пока пустое</string>
