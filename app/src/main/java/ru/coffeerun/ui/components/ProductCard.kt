@@ -63,7 +63,7 @@ fun ProductCard(
             modifier = Modifier.padding(MaterialTheme.spacing.medium),
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.large)
         ) {
-            ProductImage(product = product, size = 88.dp)
+            ProductImage(product = product, size = 88.dp, modifier = Modifier.sharedProductImage(product.id))
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.extraSmall)

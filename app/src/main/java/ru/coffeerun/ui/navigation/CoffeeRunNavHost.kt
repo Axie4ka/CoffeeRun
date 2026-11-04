@@ -1,5 +1,12 @@
 package ru.coffeerun.ui.navigation
 
+import ru.coffeerun.ui.components.sharedProductImage
+import ru.coffeerun.ui.components.LocalSharedTransitionScope
+import ru.coffeerun.ui.components.LocalNavAnimatedScope
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.AnimatedContentScope
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavBackStackEntry
 import androidx.compose.animation.fadeOut
@@ -64,6 +71,7 @@ import ru.coffeerun.ui.profile.ProfileViewModel
  * Граф экранов: каждому маршруту — его ViewModel и экран. Навигация живёт здесь, экраны о ней не знают.
  * [tabModifier] — отступы внешнего Scaffold, они нужны только вкладкам.
  */
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun CoffeeRunNavHost(
     navController: NavHostController,
@@ -73,6 +81,9 @@ fun CoffeeRunNavHost(
 ) {
     // Для снэкбаров, которые должны пережить закрытие экрана (например, «Профиль сохранён»)
     val appScope = rememberCoroutineScope()
+    // Сцена для общих элементов: фото позиции перелетает между меню, избранным и экраном напитка
+    SharedTransitionLayout {
+    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     NavHost(
         navController,
         startDestination = MenuRoute,
@@ -83,18 +94,20 @@ fun CoffeeRunNavHost(
         popExitTransition = { if (initialState.isTab()) fadeOut(tween(TAB_FADE_MS)) else slideOutOfContainer(SlideDirection.End, tween(SLIDE_MS)) }
     ) {
         composable<MenuRoute> {
-            val vm: MenuViewModel = viewModel(factory = MenuViewModel.Factory)
-            val menuState by vm.uiState.collectAsStateWithLifecycle()
-            val shop by vm.shop.collectAsStateWithLifecycle()
-            MenuScreen(
-                uiState = menuState,
-                shop = shop,
-                onShopSelected = vm::selectShop,
-                onRetry = vm::loadMenu,
-                onProductClick = { navController.navigate(ProductRoute(it.id)) },
-                onAddProduct = vm::quickAdd,
-                modifier = tabModifier
-            )
+            ProvideNavScope {
+                val vm: MenuViewModel = viewModel(factory = MenuViewModel.Factory)
+                val menuState by vm.uiState.collectAsStateWithLifecycle()
+                val shop by vm.shop.collectAsStateWithLifecycle()
+                MenuScreen(
+                    uiState = menuState,
+                    shop = shop,
+                    onShopSelected = vm::selectShop,
+                    onRetry = vm::loadMenu,
+                    onProductClick = { navController.navigate(ProductRoute(it.id)) },
+                    onAddProduct = vm::quickAdd,
+                    modifier = tabModifier
+                )
+            }
         }
 
         composable<CartRoute> {
@@ -264,77 +277,81 @@ fun CoffeeRunNavHost(
         }
 
         composable<FavoritesRoute> {
-            val vm: FavoritesViewModel = viewModel(factory = FavoritesViewModel.Factory)
-            val favoritesState by vm.uiState.collectAsStateWithLifecycle()
-            FavoritesScreen(
-                uiState = favoritesState,
-                onProductClick = { navController.navigate(ProductRoute(it)) },
-                onBrowseMenu = { navController.jumpToTab(Tab.MENU) },
-                onBack = { navController.popBackStack() },
-                onRetry = vm::retry
-            )
+            ProvideNavScope {
+                val vm: FavoritesViewModel = viewModel(factory = FavoritesViewModel.Factory)
+                val favoritesState by vm.uiState.collectAsStateWithLifecycle()
+                FavoritesScreen(
+                    uiState = favoritesState,
+                    onProductClick = { navController.navigate(ProductRoute(it)) },
+                    onBrowseMenu = { navController.jumpToTab(Tab.MENU) },
+                    onBack = { navController.popBackStack() },
+                    onRetry = vm::retry
+                )
+            }
         }
 
         composable<ProductRoute> {
-            val vm: ProductViewModel = viewModel(factory = ProductViewModel.Factory)
-            val uiState by vm.uiState.collectAsStateWithLifecycle()
-            // Сервер не принял сердечко — оно уже откатилось, объясняем почему
-            val message by vm.message.collectAsStateWithLifecycle()
-            val context = LocalContext.current
-            LaunchedEffect(message) {
-                message?.let {
-                    // Сначала показать, потом сбросить: сброс меняет ключ эффекта и отменил бы снэкбар
-                    snackbarHostState.showSnackbar(context.getString(it))
-                    vm.onMessageShown()
+            ProvideNavScope {
+                val vm: ProductViewModel = viewModel(factory = ProductViewModel.Factory)
+                val uiState by vm.uiState.collectAsStateWithLifecycle()
+                // Сервер не принял сердечко — оно уже откатилось, объясняем почему
+                val message by vm.message.collectAsStateWithLifecycle()
+                val context = LocalContext.current
+                LaunchedEffect(message) {
+                    message?.let {
+                        // Сначала показать, потом сбросить: сброс меняет ключ эффекта и отменил бы снэкбар
+                        snackbarHostState.showSnackbar(context.getString(it))
+                        vm.onMessageShown()
+                    }
                 }
-            }
-            when (val state = uiState) {
-                ProductUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-                ProductUiState.NotFound -> LaunchedEffect(Unit) { navController.popBackStack<ProductRoute>(inclusive = true) }
-                // Без шапки экрана позиции некуда нажать «назад», поэтому своя панель с одной стрелкой
-                ProductUiState.Error -> Column(Modifier.fillMaxSize()) {
-                    ScreenTopBar(title = "", onBack = { navController.popBackStack() })
-                    RetryMessage(stringResource(R.string.load_error), vm::retry)
-                }
-                is ProductUiState.Success -> {
-                    val product = state.product
-                    val name = product.name
-                    val price = stringResource(
-                        if (product.isPriceFrom) R.string.price_from else R.string.price_rub,
-                        product.price
-                    )
-                    val shareText = stringResource(R.string.share_product, name, price)
-                    ProductScreen(
-                        product = state.product,
-                        form = state.form,
-                        unitPrice = state.unitPrice,
-                        prices = state.prices,
-                        cartCount = state.cartCount,
-                        onSizeSelected = vm::selectSize,
-                        onMilkSelected = vm::selectMilk,
-                        onIcedChange = vm::setIced,
-                        onExtraToggle = vm::toggleExtra,
-                        onNoteChange = vm::setNote,
-                        onQuantityChange = vm::changeQuantity,
-                        // Добавили — назад, откуда пришли (меню или избранное). dropUnlessResumed не даст
-                        // второму нажатию во время перехода добавить ещё раз и снять со стека само меню
-                        onAddToCart = dropUnlessResumed {
-                            vm.addToCart()
-                            navController.popBackStack()
-                        },
-                        onBack = { navController.popBackStack() },
-                        isFavorite = state.isFavorite,
-                        // Избранное — данные аккаунта: гостя на вход, после него он вернётся на позицию
-                        onFavorite = { if (isLoggedIn == true) vm.toggleFavorite() else navController.navigate(LoginRoute()) },
-                        onShare = {
-                            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, shareText)
-                            context.startActivity(Intent.createChooser(send, null))
-                        },
-                        onCart = { navController.jumpToTab(Tab.CART) },
-                        snackbarHostState = snackbarHostState
-                    )
+                when (val state = uiState) {
+                    ProductUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                    ProductUiState.NotFound -> LaunchedEffect(Unit) { navController.popBackStack<ProductRoute>(inclusive = true) }
+                    // Без шапки экрана позиции некуда нажать «назад», поэтому своя панель с одной стрелкой
+                    ProductUiState.Error -> Column(Modifier.fillMaxSize()) {
+                        ScreenTopBar(title = "", onBack = { navController.popBackStack() })
+                        RetryMessage(stringResource(R.string.load_error), vm::retry)
+                    }
+                    is ProductUiState.Success -> {
+                        val product = state.product
+                        val name = product.name
+                        val price = stringResource(
+                            if (product.isPriceFrom) R.string.price_from else R.string.price_rub,
+                            product.price
+                        )
+                        val shareText = stringResource(R.string.share_product, name, price)
+                        ProductScreen(
+                            product = state.product,
+                            form = state.form,
+                            unitPrice = state.unitPrice,
+                            prices = state.prices,
+                            cartCount = state.cartCount,
+                            onSizeSelected = vm::selectSize,
+                            onMilkSelected = vm::selectMilk,
+                            onIcedChange = vm::setIced,
+                            onExtraToggle = vm::toggleExtra,
+                            onNoteChange = vm::setNote,
+                            onQuantityChange = vm::changeQuantity,
+                            // Добавили — назад, откуда пришли (меню или избранное). dropUnlessResumed не даст
+                            // второму нажатию во время перехода добавить ещё раз и снять со стека само меню
+                            onAddToCart = dropUnlessResumed {
+                                vm.addToCart()
+                                navController.popBackStack()
+                            },
+                            onBack = { navController.popBackStack() },
+                            isFavorite = state.isFavorite,
+                            // Избранное — данные аккаунта: гостя на вход, после него он вернётся на позицию
+                            onFavorite = { if (isLoggedIn == true) vm.toggleFavorite() else navController.navigate(LoginRoute()) },
+                            onShare = {
+                                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, shareText)
+                                context.startActivity(Intent.createChooser(send, null))
+                            },
+                            onCart = { navController.jumpToTab(Tab.CART) },
+                            snackbarHostState = snackbarHostState
+                        )
+                    }
                 }
             }
         }
@@ -378,10 +395,17 @@ fun CoffeeRunNavHost(
             }
         }
     }
+    }
+    }
 }
 
 private const val TAB_FADE_MS = 200
 private const val SLIDE_MS = 300
+
+/** Даёт экрану его анимацию входа и выхода — для общих элементов ([sharedProductImage]). */
+@Composable
+private fun AnimatedContentScope.ProvideNavScope(content: @Composable () -> Unit) =
+    CompositionLocalProvider(LocalNavAnimatedScope provides this, content = content)
 
 private fun NavBackStackEntry.isTab() = Tab.entries.any { destination.hasRoute(it.route::class) }
 

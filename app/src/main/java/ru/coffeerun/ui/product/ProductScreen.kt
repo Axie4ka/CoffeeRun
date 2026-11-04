@@ -1,5 +1,6 @@
 package ru.coffeerun.ui.product
 
+import ru.coffeerun.ui.components.sharedProductImage
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.slideInVertically
@@ -262,6 +263,7 @@ private fun ProductHeader(
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
+                .sharedProductImage(product.id)
                 .fillMaxWidth()
                 .height(240.dp)
                 .clip(MaterialTheme.shapes.large)
