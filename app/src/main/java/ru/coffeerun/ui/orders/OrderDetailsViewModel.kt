@@ -1,5 +1,7 @@
 package ru.coffeerun.ui.orders
 
+import ru.coffeerun.ui.util.ReloadOnLocaleChange
+import java.util.Locale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -53,6 +55,11 @@ class OrderDetailsViewModel(
     init {
         retry()
     }
+
+    private val languageWatch = ReloadOnLocaleChange(::retry)
+
+    /** Экран сообщает язык; сменился — данные с сервера загружаются заново, уже на новом языке. */
+    fun onLocale(locale: Locale) = languageWatch.onLocale(locale)
 
     fun retry() {
         _load.value = OrdersLoad.LOADING

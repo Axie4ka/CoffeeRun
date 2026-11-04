@@ -1,5 +1,6 @@
 package ru.coffeerun.data
 
+import ru.coffeerun.model.Product
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +25,9 @@ interface CartRepository {
     fun remove(id: Int)
 
     fun clear()
+
+    /** Подменяет товары в строках на [products] с тем же id — например, на названия на новом языке. */
+    fun replaceProducts(products: List<Product>)
 }
 
 /** Корзина в памяти. */
@@ -56,6 +60,11 @@ class InMemoryCartRepository : CartRepository {
 
     override fun clear() {
         _lines.value = emptyList()
+    }
+
+    override fun replaceProducts(products: List<Product>) {
+        val byId = products.associateBy { it.id }
+        _lines.update { cart -> cart.map { line -> byId[line.product.id]?.let { line.copy(product = it) } ?: line } }
     }
 }
 

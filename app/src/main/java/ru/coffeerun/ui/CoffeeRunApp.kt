@@ -1,5 +1,6 @@
 package ru.coffeerun.ui
 
+import ru.coffeerun.ui.util.OnLocale
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
@@ -36,7 +37,10 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
         entry?.destination?.hierarchy?.any { it.hasRoute(tab.route::class) } == true
     }
     // Вне NavHost — ViewModel уровня Activity, только ради счётчика на нижней панели
-    val cartUiState by viewModel<CartViewModel>(factory = CartViewModel.Factory).uiState.collectAsStateWithLifecycle()
+    val cartVm = viewModel<CartViewModel>(factory = CartViewModel.Factory)
+    val cartUiState by cartVm.uiState.collectAsStateWithLifecycle()
+    // Здесь, а не на экране корзины: язык могут сменить, пока открыта любая вкладка
+    OnLocale(cartVm::onLocale)
     // Вошёл ли пользователь: оформление, заказы и избранное — только после входа
     val isLoggedIn by viewModel<SessionViewModel>(factory = SessionViewModel.Factory).isLoggedIn.collectAsStateWithLifecycle()
 

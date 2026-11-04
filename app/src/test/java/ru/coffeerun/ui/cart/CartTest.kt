@@ -42,13 +42,26 @@ class CartTest {
     fun cartUiState_countsItemsAndTotal() = runTest {
         cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180, quantity = 2))
         cart.add(CartLine(DemoMenu.LATTE, unitPrice = 240, options = DemoMenu.LATTE.defaultOptions()))
-        val vm = CartViewModel(cart)
+        val vm = CartViewModel(cart, DemoMenuRepository())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         assertEquals(3, vm.uiState.value.count)
         assertEquals(2 * 180 + 240, vm.uiState.value.total)
         cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180))
         assertEquals(4, vm.uiState.value.count)
         assertEquals(3 * 180 + 240, vm.uiState.value.total)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun languageChange_translatesCart_andSameDrinkStillMerges() = runTest {
+        val english = DemoMenu.LATTE.copy(name = "Latte", description = "Soft coffee with lots of milk")
+        cart.add(CartLine(english, unitPrice = 240))
+        val vm = CartViewModel(cart, DemoMenuRepository())
+        vm.onLocale(java.util.Locale.ENGLISH)
+        vm.onLocale(java.util.Locale.forLanguageTag("ru"))
+        assertEquals("Латте", lines.single().product.name)
+        cart.add(CartLine(DemoMenu.LATTE, unitPrice = 240))
+        assertEquals("тот же латте после смены языка — та же строка", 2, lines.single().quantity)
     }
 
     @Test

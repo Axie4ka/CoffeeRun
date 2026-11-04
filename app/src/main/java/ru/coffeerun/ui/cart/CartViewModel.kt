@@ -1,5 +1,10 @@
 package ru.coffeerun.ui.cart
 
+import ru.coffeerun.data.MenuRepository
+import kotlinx.coroutines.launch
+import java.io.IOException
+import ru.coffeerun.ui.util.ReloadOnLocaleChange
+import java.util.Locale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -20,7 +25,7 @@ private fun toCartUiState(lines: List<CartLine>) =
     CartUiState(lines, count = lines.itemCount, total = lines.sumOf { it.total })
 
 /** Корзина: состояние и действия над позициями. Нижняя панель берёт отсюда же счётчик. */
-class CartViewModel(private val cart: CartRepository) : ViewModel() {
+class CartViewModel(private val cart: CartRepository, private val menu: MenuRepository) : ViewModel() {
     // Начальное значение из текущих позиций — чтобы бейдж не мигал нулём
     val uiState: StateFlow<CartUiState> = cart.lines
         .map(::toCartUiState)
@@ -29,7 +34,16 @@ class CartViewModel(private val cart: CartRepository) : ViewModel() {
     fun changeQuantity(id: Int, delta: Int) = cart.changeQuantity(id, delta)
     fun remove(id: Int) = cart.remove(id)
 
+    // В строках корзины — товары на языке, на котором их добавили; сменился язык — берём из меню заново
+    private val languageWatch = ReloadOnLocaleChange {
+        viewModelScope.launch {
+            try { cart.replaceProducts(menu.getMenu()) } catch (e: IOException) { } // нет сети — останутся старые названия
+        }
+    }
+
+    fun onLocale(locale: Locale) = languageWatch.onLocale(locale)
+
     companion object {
-        val Factory = viewModelFactory { initializer { CartViewModel(container.cart) } }
+        val Factory = viewModelFactory { initializer { CartViewModel(container.cart, container.menu) } }
     }
 }

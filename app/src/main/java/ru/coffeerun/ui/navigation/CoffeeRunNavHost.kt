@@ -1,5 +1,6 @@
 package ru.coffeerun.ui.navigation
 
+import ru.coffeerun.ui.util.OnLocale
 import ru.coffeerun.ui.components.sharedProductImage
 import ru.coffeerun.ui.components.LocalSharedTransitionScope
 import ru.coffeerun.ui.components.LocalNavAnimatedScope
@@ -96,6 +97,7 @@ fun CoffeeRunNavHost(
         composable<MenuRoute> {
             ProvideNavScope {
                 val vm: MenuViewModel = viewModel(factory = MenuViewModel.Factory)
+                OnLocale(vm::onLocale)
                 val menuState by vm.uiState.collectAsStateWithLifecycle()
                 val shop by vm.shop.collectAsStateWithLifecycle()
                 MenuScreen(
@@ -163,6 +165,7 @@ fun CoffeeRunNavHost(
 
         composable<OrderDetailsRoute> {
             val vm: OrderDetailsViewModel = viewModel(factory = OrderDetailsViewModel.Factory)
+            OnLocale(vm::onLocale)
             val order by vm.order.collectAsStateWithLifecycle()
             val load by vm.load.collectAsStateWithLifecycle()
             val cancelling by vm.cancelling.collectAsStateWithLifecycle()
@@ -279,6 +282,7 @@ fun CoffeeRunNavHost(
         composable<FavoritesRoute> {
             ProvideNavScope {
                 val vm: FavoritesViewModel = viewModel(factory = FavoritesViewModel.Factory)
+                OnLocale(vm::onLocale)
                 val favoritesState by vm.uiState.collectAsStateWithLifecycle()
                 FavoritesScreen(
                     uiState = favoritesState,
@@ -293,6 +297,7 @@ fun CoffeeRunNavHost(
         composable<ProductRoute> {
             ProvideNavScope {
                 val vm: ProductViewModel = viewModel(factory = ProductViewModel.Factory)
+                OnLocale(vm::onLocale)
                 val uiState by vm.uiState.collectAsStateWithLifecycle()
                 // Сервер не принял сердечко — оно уже откатилось, объясняем почему
                 val message by vm.message.collectAsStateWithLifecycle()
