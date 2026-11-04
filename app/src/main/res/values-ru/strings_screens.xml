@@ -6,6 +6,9 @@
 
     <string name="menu_choose_shop">Выбрать кофейню</string>
     <string name="menu_search">Поиск</string>
+    <string name="menu_search_hint">Поиск по меню</string>
+    <string name="menu_search_close">Закрыть поиск</string>
+    <string name="menu_search_empty">Ничего не нашлось</string>
     <string name="shop_moskovskaya">ул. Московская, 12</string>
     <string name="shop_stroiteley">пр. Строителей, 1</string>
     <string name="category_coffee">Кофе</string>

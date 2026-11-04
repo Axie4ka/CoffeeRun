@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -42,6 +43,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import ru.coffeerun.R
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.Product
@@ -53,11 +63,11 @@ import ru.coffeerun.ui.components.ShopPickerSheet
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.ProvidePreviewNotifier
-import ru.coffeerun.ui.util.snackbar
 
 /**
  * Меню: логотип с адресом кофейни, вкладки разделов и список позиций.
  * Нажатие на карточку — [onProductClick], кнопка «+» — [onAddProduct].
+ * 🔍 заменяет шапку полем поиска; пока запрос не пустой, вместо разделов — найденные позиции одним списком.
  */
 @Composable
 fun MenuScreen(
@@ -70,9 +80,17 @@ fun MenuScreen(
     modifier: Modifier = Modifier
 ) {
     var showShopPicker by rememberSaveable { mutableStateOf(false) }
+    // null — поиск закрыт; пустая строка — открыт, но ещё ничего не введено
+    var query by rememberSaveable { mutableStateOf<String?>(null) }
+    BackHandler(enabled = query != null) { query = null }
 
     Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
-        MenuHeader(shop = shop, onShopClick = { showShopPicker = true })
+        val search = query
+        if (search == null) {
+            MenuHeader(shop = shop, onShopClick = { showShopPicker = true }, onSearch = { query = "" })
+        } else {
+            MenuSearchField(search, onChange = { query = it }, onClose = { query = null })
+        }
         when (uiState) {
             MenuUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -80,12 +98,14 @@ fun MenuScreen(
             MenuUiState.Error -> RetryMessage(stringResource(R.string.menu_error), onRetry)
             is MenuUiState.Success -> if (uiState.products.isEmpty()) {
                 RetryMessage(stringResource(R.string.menu_empty), onRetry)
-            } else {
+            } else if (search.isNullOrBlank()) {
                 MenuFeed(
                     products = uiState.products,
                     onProductClick = onProductClick,
                     onAddProduct = onAddProduct
                 )
+            } else {
+                SearchResults(searchProducts(uiState.products, search), onProductClick, onAddProduct)
             }
         }
     }
@@ -164,10 +184,69 @@ private fun MenuFeed(
     }
 }
 
+/** Найденные позиции одним списком, без разделов. */
 @Composable
-private fun MenuHeader(shop: Shop, onShopClick: () -> Unit) {
-    val notify = MaterialTheme.snackbar
+private fun SearchResults(
+    products: List<Product>,
+    onProductClick: (Product) -> Unit,
+    onAddProduct: (Product) -> Unit
+) {
+    if (products.isEmpty()) {
+        Box(Modifier.fillMaxSize().padding(MaterialTheme.spacing.large), contentAlignment = Alignment.Center) {
+            Text(
+                text = stringResource(R.string.menu_search_empty),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        return
+    }
+    LazyColumn(
+        contentPadding = PaddingValues(
+            horizontal = MaterialTheme.spacing.large,
+            vertical = MaterialTheme.spacing.medium
+        ),
+        verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
+    ) {
+        items(products, key = { it.id }) { product ->
+            ProductCard(
+                product = product,
+                onClick = { onProductClick(product) },
+                onAdd = { onAddProduct(product) }
+            )
+        }
+    }
+}
 
+/** Поле поиска на месте шапки: фокус и клавиатура сразу, ✕ и «назад» закрывают поиск. */
+@Composable
+private fun MenuSearchField(query: String, onChange: (String) -> Unit, onClose: () -> Unit) {
+    val focus = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    LaunchedEffect(Unit) { focus.requestFocus() }
+    OutlinedTextField(
+        value = query,
+        onValueChange = onChange,
+        singleLine = true,
+        placeholder = { Text(stringResource(R.string.menu_search_hint)) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+        trailingIcon = {
+            IconButton(onClick = onClose) {
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.menu_search_close))
+            }
+        },
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { keyboard?.hide() }),
+        shape = MaterialTheme.shapes.extraLarge,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.small)
+            .focusRequester(focus)
+    )
+}
+
+@Composable
+private fun MenuHeader(shop: Shop, onShopClick: () -> Unit, onSearch: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -207,7 +286,7 @@ private fun MenuHeader(shop: Shop, onShopClick: () -> Unit) {
                 )
             }
         }
-        IconButton(onClick = notify::notifyPlaceholder) {
+        IconButton(onClick = onSearch) {
             Icon(Icons.Default.Search, contentDescription = stringResource(R.string.menu_search))
         }
     }

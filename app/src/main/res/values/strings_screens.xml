@@ -8,6 +8,9 @@
     <!-- Меню -->
     <string name="menu_choose_shop">Choose coffee shop</string>
     <string name="menu_search">Search</string>
+    <string name="menu_search_hint">Search the menu</string>
+    <string name="menu_search_close">Close search</string>
+    <string name="menu_search_empty">Nothing found</string>
     <string name="shop_moskovskaya">Moskovskaya St, 12</string>
     <string name="shop_stroiteley">Stroiteley Ave, 1</string>
     <string name="category_coffee">Coffee</string>
