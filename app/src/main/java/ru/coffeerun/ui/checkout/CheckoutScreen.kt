@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.LaunchedEffect
@@ -50,6 +52,7 @@ import ru.coffeerun.R
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
+import ru.coffeerun.ui.components.ShopPickerSheet
 import ru.coffeerun.ui.components.RadioRow
 import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.TotalRow
@@ -71,6 +74,7 @@ fun CheckoutScreen(
     onConfirm: () -> Unit,
     onPickupAsap: () -> Unit,
     onPickupTimeChosen: (hour: Int, minute: Int) -> Boolean,
+    onShopSelected: (Shop) -> Unit = {},
     modifier: Modifier = Modifier,
     onMessageShown: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
@@ -83,6 +87,7 @@ fun CheckoutScreen(
     val gutter = Modifier.padding(horizontal = MaterialTheme.spacing.large)
     val transparentItem = ListItemDefaults.colors(containerColor = Color.Transparent)
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
+    var showShopPicker by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val invalidMessage = stringResource(R.string.pickup_time_invalid)
     val context = LocalContext.current
@@ -93,6 +98,8 @@ fun CheckoutScreen(
             onMessageShown()
         }
     }
+
+    if (showShopPicker) ShopPickerSheet(uiState.shop, onShopSelected, onDismiss = { showShopPicker = false })
 
     if (showTimePicker && earliestPickup != null) {
         val initial = pickupAtMillis?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalTime() } ?: earliestPickup
@@ -143,14 +150,15 @@ fun CheckoutScreen(
             verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
         ) {
             SectionTitle(stringResource(R.string.section_shop), gutter)
-            // Информация, а не действие: выбрать другую кофейню пока нельзя
             ListItem(
                 headlineContent = { Text(stringResource(uiState.shop.addressRes)) },
                 supportingContent = { Text(stringResource(R.string.shop_status)) },
                 leadingContent = {
                     Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
                 },
-                colors = transparentItem
+                trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
+                colors = transparentItem,
+                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.menu_choose_shop)) { showShopPicker = true }
             )
             HorizontalDivider(gutter)
 

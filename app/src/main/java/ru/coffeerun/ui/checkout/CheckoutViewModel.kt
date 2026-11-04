@@ -88,6 +88,9 @@ class CheckoutViewModel(
         message = submit.message
     )
 
+    /** Кофейня общая с меню и профилем: выбор здесь меняет её и там. */
+    fun selectShop(shop: Shop) = shops.select(shop)
+
     /**
      * Выбирает время самовывоза сегодня. false (состояние не меняется), если оно
      * раньше чем через [READY_IN_MINUTES] минут или позже закрытия.

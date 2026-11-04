@@ -305,6 +305,7 @@ fun CoffeeRunNavHost(
                 onConfirm = vm::placeOrder,
                 onPickupAsap = vm::pickupAsap,
                 onPickupTimeChosen = vm::setPickupTime,
+                onShopSelected = vm::selectShop,
                 onMessageShown = vm::onMessageShown,
                 snackbarHostState = snackbarHostState
             )
