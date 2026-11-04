@@ -73,6 +73,11 @@
     <string name="order_total">Total %1$d ₽</string>
     <string name="order_meta_active">Today, by %1$s · %2$s</string>
     <string name="order_meta_history">%1$s · %2$s</string>
+    <string name="order_cancel">Cancel</string>
+    <string name="order_cancel_title">Cancel order #%1$d?</string>
+    <string name="order_cancel_text">The coffee shop won\'t start making it.</string>
+    <string name="order_cancel_confirm">Cancel order</string>
+    <string name="order_cancel_keep">Keep order</string>
     <string name="order_repeat">Repeat</string>
     <string name="status_accepted">Accepted</string>
     <string name="status_preparing">Preparing</string>

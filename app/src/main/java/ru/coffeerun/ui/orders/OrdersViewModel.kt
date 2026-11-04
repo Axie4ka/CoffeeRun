@@ -12,7 +12,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import ru.coffeerun.R
 import ru.coffeerun.container
+import ru.coffeerun.data.CancelOrderResult
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.OrderRepository
 import ru.coffeerun.model.Order
@@ -52,6 +54,31 @@ class OrdersViewModel(
                 OrdersLoad.FAILED
             }
         }
+    }
+
+    private val _cancelling = MutableStateFlow<Int?>(null)
+    /** Номер заказа, который сейчас отменяется: его кнопка занята, второе нажатие ничего не шлёт. */
+    val cancelling: StateFlow<Int?> = _cancelling.asStateFlow()
+
+    private val _message = MutableStateFlow<Int?>(null)
+    /** Итог отмены для снэкбара — строковый ресурс. */
+    val message: StateFlow<Int?> = _message.asStateFlow()
+
+    fun cancel(order: Order) {
+        if (_cancelling.value != null) return
+        _cancelling.value = order.number
+        viewModelScope.launch {
+            _message.value = when (repository.cancel(order.number)) {
+                is CancelOrderResult.Cancelled -> R.string.order_cancelled
+                CancelOrderResult.TooLate -> R.string.order_cancel_too_late
+                CancelOrderResult.NetworkError -> R.string.order_cancel_error
+            }
+            _cancelling.value = null
+        }
+    }
+
+    fun onMessageShown() {
+        _message.value = null
     }
 
     /** Кладёт позиции прошлого заказа обратно в корзину. */

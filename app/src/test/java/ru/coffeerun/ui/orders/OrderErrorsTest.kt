@@ -28,7 +28,7 @@ import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.checkout.CheckoutViewModel
 
-/** Экраны заказов, когда сервер отвечает не «да»: оформление и загрузка истории. */
+/** Экраны заказов, когда сервер отвечает не «да»: оформление, загрузка истории и отмена. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class OrderErrorsTest {
     @get:Rule
@@ -41,6 +41,8 @@ class OrderErrorsTest {
         var placeCalls = 0
         var refreshFails = false
         var refreshCalls = 0
+        var cancelResult: CancelOrderResult = CancelOrderResult.NetworkError
+        var cancelCalls = 0
 
         override suspend fun refresh() {
             refreshCalls++
@@ -54,7 +56,11 @@ class OrderErrorsTest {
             return result
         }
 
-        override suspend fun cancel(number: Int): CancelOrderResult = error("Отмена в этих тестах не используется")
+        override suspend fun cancel(number: Int): CancelOrderResult {
+            cancelCalls++
+            gate?.await()
+            return cancelResult
+        }
 
         override fun find(number: Int): Order? = null
     }
@@ -122,5 +128,36 @@ class OrderErrorsTest {
         vm.onShown()
         vm.onShown()
         assertEquals("каждый показ вкладки — свежие статусы", 2, orders.refreshCalls)
+    }
+
+    private val evening = Order(1042, OrderStatus.ACCEPTED, emptyList(), Shop.MOSKOVSKAYA, 0L, pickupAtMillis = 1L)
+
+    @Test
+    fun cancel_eachResult_hasItsMessage() = runTest {
+        val vm = OrdersViewModel(orders, cart, flowOf(true))
+        val cases = listOf(
+            CancelOrderResult.Cancelled(evening.copy(status = OrderStatus.CANCELLED)) to R.string.order_cancelled,
+            CancelOrderResult.TooLate to R.string.order_cancel_too_late,
+            CancelOrderResult.NetworkError to R.string.order_cancel_error
+        )
+        for ((result, message) in cases) {
+            orders.cancelResult = result
+            vm.cancel(evening)
+            assertEquals(message, vm.message.value)
+            vm.onMessageShown()
+            assertNull(vm.message.value)
+        }
+    }
+
+    @Test
+    fun whileCancelling_buttonBusy_secondTapIgnored() = runTest {
+        val vm = OrdersViewModel(orders, cart, flowOf(true))
+        val gate = CompletableDeferred<Unit>().also { orders.gate = it }
+        vm.cancel(evening)
+        assertEquals(1042, vm.cancelling.value)
+        vm.cancel(evening)
+        assertEquals("второе нажатие не шлёт второй запрос", 1, orders.cancelCalls)
+        gate.complete(Unit)
+        assertNull(vm.cancelling.value)
     }
 }

@@ -99,8 +99,18 @@ fun CoffeeRunNavHost(
             val vm: OrdersViewModel = viewModel(factory = OrdersViewModel.Factory)
             val orders by vm.orders.collectAsStateWithLifecycle()
             val load by vm.load.collectAsStateWithLifecycle()
+            val cancelling by vm.cancelling.collectAsStateWithLifecycle()
+            val message by vm.message.collectAsStateWithLifecycle()
+            val context = LocalContext.current
             // Каждый показ вкладки: переход с другой вкладки, возврат со входа или с «Заказ принят»
             LaunchedEffect(Unit) { vm.onShown() }
+            LaunchedEffect(message) {
+                message?.let {
+                    // Сначала показать, потом сбросить: сброс меняет ключ эффекта и отменил бы снэкбар
+                    snackbarHostState.showSnackbar(context.getString(it))
+                    vm.onMessageShown()
+                }
+            }
             OrdersScreen(
                 orders = orders,
                 load = load,
@@ -112,7 +122,9 @@ fun CoffeeRunNavHost(
                 onBrowseMenu = { navController.openTab(Tab.MENU) },
                 modifier = tabModifier,
                 isLoggedIn = isLoggedIn,
-                onLogin = { navController.navigate(LoginRoute()) }
+                onLogin = { navController.navigate(LoginRoute()) },
+                cancelling = cancelling,
+                onCancel = vm::cancel
             )
         }
 
