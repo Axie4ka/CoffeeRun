@@ -1,5 +1,11 @@
 package ru.coffeerun.ui.product
 
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.AnimatedContent
 import ru.coffeerun.data.DemoMenu
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -357,10 +363,21 @@ private fun OrderBar(
                 onClick = onAddToCart,
                 modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    text = stringResource(R.string.add_to_cart, totalPrice),
-                    maxLines = 1
-                )
+                // Цена прокручивается вверх, когда растёт, и вниз, когда падает: видно, что она пересчиталась
+                AnimatedContent(
+                    targetState = totalPrice,
+                    transitionSpec = {
+                        val up = targetState > initialState
+                        (slideInVertically { if (up) it else -it } + fadeIn()) togetherWith
+                            (slideOutVertically { if (up) -it else it } + fadeOut())
+                    },
+                    label = "price"
+                ) { price ->
+                    Text(
+                        text = stringResource(R.string.add_to_cart, price),
+                        maxLines = 1
+                    )
+                }
             }
         }
     }
