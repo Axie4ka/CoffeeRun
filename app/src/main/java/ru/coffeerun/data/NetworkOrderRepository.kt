@@ -78,6 +78,21 @@ class NetworkOrderRepository(
         return PlaceOrderResult.Placed(order)
     }
 
+    override suspend fun cancel(number: Int): CancelOrderResult {
+        val dto = try {
+            network { api.cancelOrder(number) }
+        } catch (e: IOException) {
+            if ((e.cause as? HttpException)?.code() != HTTP_CONFLICT) return CancelOrderResult.NetworkError
+            // Статус на сервере уже другой (например, заказ начали готовить) — показываем, какой
+            try { refresh() } catch (_: IOException) { }
+            return CancelOrderResult.TooLate
+        }
+        val products = find(number)?.lines.orEmpty().associate { it.product.id to it.product }
+        val order = dto.toModel(products) ?: return CancelOrderResult.NetworkError
+        _orders.update { list -> list.map { if (it.number == number) order else it } }
+        return CancelOrderResult.Cancelled(order)
+    }
+
     override fun find(number: Int): Order? = _orders.value.find { it.number == number }
 
     /** Ответ с ошибкой и ответ не по контракту — тоже «не получилось», как нет сети. */

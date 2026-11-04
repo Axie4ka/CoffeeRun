@@ -66,11 +66,17 @@
     <string name="order_total">Итого %1$d ₽</string>
     <string name="order_meta_active">Сегодня, к %1$s · %2$s</string>
     <string name="order_meta_history">%1$s · %2$s</string>
+    <string name="order_cancel">Отменить</string>
+    <string name="order_cancel_title">Отменить заказ №%1$d?</string>
+    <string name="order_cancel_text">Кофейня не станет его готовить.</string>
+    <string name="order_cancel_confirm">Отменить заказ</string>
+    <string name="order_cancel_keep">Не отменять</string>
     <string name="order_repeat">Повторить</string>
     <string name="status_accepted">Принят</string>
     <string name="status_preparing">Готовится</string>
     <string name="status_ready">Готов</string>
     <string name="status_picked_up">Выдан</string>
+    <string name="status_cancelled">Отменён</string>
 
     <string name="profile_title">Профиль</string>
     <string name="profile_edit">Редактировать профиль</string>

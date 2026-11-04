@@ -43,6 +43,9 @@
     <string name="load_error">Не удалось загрузить. Проверьте соединение</string>
     <string name="order_unavailable">Чего-то из заказа сейчас нет в наличии. Измените заказ</string>
     <string name="order_network_error">Не удалось оформить заказ. Проверьте соединение</string>
+    <string name="order_cancelled">Заказ отменён</string>
+    <string name="order_cancel_too_late">Заказ уже готовят — отменить нельзя</string>
+    <string name="order_cancel_error">Не удалось отменить заказ. Проверьте соединение</string>
     <string name="menu_empty">Меню пока пустое</string>
     <string name="action_favorite">В избранное</string>
     <string name="action_unfavorite">Убрать из избранного</string>
