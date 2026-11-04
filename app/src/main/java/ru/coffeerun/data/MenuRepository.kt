@@ -11,10 +11,3 @@ interface MenuRepository {
     /** Цены и наличие размеров, молока и добавок — приходят вместе с меню. */
     suspend fun getOptionPrices(): OptionPrices
 }
-
-/** Меню из [LocalMenu]; никогда не падает. */
-class LocalMenuRepository : MenuRepository {
-    override suspend fun getMenu(): List<Product> = LocalMenu.products
-    override suspend fun getProduct(id: String): Product? = LocalMenu.byId(id)
-    override suspend fun getOptionPrices(): OptionPrices = LocalMenu.prices
-}

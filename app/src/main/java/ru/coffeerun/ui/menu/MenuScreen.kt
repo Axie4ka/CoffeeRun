@@ -43,7 +43,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import ru.coffeerun.R
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.ProductCategory
 import ru.coffeerun.model.Shop
@@ -218,7 +218,7 @@ private fun MenuHeader(shop: Shop, onShopClick: () -> Unit) {
 private fun MenuScreenPreview() {
     CoffeeRunTheme {
         ProvidePreviewNotifier { MenuScreen(
-                uiState = MenuUiState.Success(LocalMenu.products, LocalMenu.prices),
+                uiState = MenuUiState.Success(DemoMenu.products, DemoMenu.prices),
                 shop = Shop.MOSKOVSKAYA,
                 onShopSelected = {},
                 onRetry = {},

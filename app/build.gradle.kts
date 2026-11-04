@@ -41,6 +41,10 @@ android {
         compose = true
         buildConfig = true
     }
+    // Фейки репозиториев (src/testFixtures): их видят и unit-, и UI-тесты, а в APK они не попадают
+    testFixtures {
+        enable = true
+    }
 }
 
 dependencies {
@@ -63,6 +67,10 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.datastore.preferences)
+    testFixturesImplementation(libs.kotlinx.coroutines.core)
+    // Compose-плагин компилирует и testFixtures, ему нужен рантайм, хотя фейки Compose не используют
+    testFixturesImplementation(platform(libs.androidx.compose.bom))
+    testFixturesImplementation("androidx.compose.runtime:runtime")
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.okhttp.mockwebserver)

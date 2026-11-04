@@ -6,8 +6,6 @@ import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.datastore.preferences.preferencesDataStore
 import ru.coffeerun.data.AuthRepository
-import ru.coffeerun.data.InMemoryAuthRepository
-import ru.coffeerun.data.InMemoryProfileRepository
 import ru.coffeerun.data.NetworkFavoritesRepository
 import ru.coffeerun.data.NetworkOrderRepository
 import kotlinx.coroutines.CoroutineScope
@@ -23,9 +21,6 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.FavoritesRepository
 import ru.coffeerun.data.InMemoryCartRepository
-import ru.coffeerun.data.InMemoryFavoritesRepository
-import ru.coffeerun.data.InMemoryOrderRepository
-import ru.coffeerun.data.LocalMenuRepository
 import ru.coffeerun.data.NetworkMenuRepository
 import ru.coffeerun.data.network.createCoffeeRunApi
 import ru.coffeerun.data.network.serverLanguage
@@ -36,16 +31,16 @@ import ru.coffeerun.data.ShopRepository
 
 /**
  * Репозитории в одном экземпляре на процесс — так у всех ViewModel одна корзина и одни заказы.
- * Сетевые репозитории передаются снаружи: приложение даёт настоящие, UI-тесты — [LocalMenuRepository],
- * [InMemoryAuthRepository], [InMemoryProfileRepository], [InMemoryFavoritesRepository]
- * и [InMemoryOrderRepository] (по умолчанию), без сервера и DataStore.
+ * Сетевые репозитории передаются снаружи: приложение даёт настоящие, UI-тесты — фейки без сервера
+ * и DataStore из src/testFixtures (DemoMenuRepository, InMemoryAuthRepository и др.). У orders нет значения по умолчанию:
+ * забыть передать настоящий репозиторий — ошибка компиляции, а не тихие демо-заказы.
  */
 class AppContainer(
     val menu: MenuRepository,
     val auth: AuthRepository,
     val profile: ProfileRepository,
     val favorites: FavoritesRepository,
-    val orders: OrderRepository = InMemoryOrderRepository()
+    val orders: OrderRepository
 ) {
     val cart: CartRepository = InMemoryCartRepository()
     val shops: ShopRepository = InMemoryShopRepository()

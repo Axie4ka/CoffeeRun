@@ -1,6 +1,6 @@
 package ru.coffeerun.ui.checkout
 
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -178,7 +178,7 @@ private fun OrderPlacedScreenPreview() {
             order = Order(
                 number = 1042,
                 status = OrderStatus.PREPARING,
-                lines = listOf(CartLine(LocalMenu.CROISSANT, unitPrice = 180, id = 1)),
+                lines = listOf(CartLine(DemoMenu.CROISSANT, unitPrice = 180, id = 1)),
                 shop = Shop.MOSKOVSKAYA,
                 placedAtMillis = System.currentTimeMillis()
             ),
