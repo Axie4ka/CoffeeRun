@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.HttpException
@@ -25,7 +26,7 @@ import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
 
-/** Заказы на сервере: история после входа, оформление, отмена, 409 и «нет сети», очистка при выходе. */
+/** Заказы на сервере: история после входа, один заказ, оформление, отмена, 409 и «нет сети», очистка при выходе. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class NetworkOrderRepositoryTest {
     /** Сервер с одним заказом 1037; [fail] — следующие запросы падают с [failCode] (0 — нет сети). */
@@ -57,6 +58,11 @@ class NetworkOrderRepositoryTest {
             val status = if (request.pickupAt != null) "ACCEPTED" else "PREPARING"
             return OrderDto(nextNumber++, status, request.shop, "2026-11-03T12:00:00+03:00", request.pickupAt, request.lines)
                 .also { server.add(0, it) }
+        }
+
+        override suspend fun getOrder(number: Int): OrderDto {
+            maybeFail()
+            return server.find { it.number == number } ?: throw HttpException(Response.error<Unit>(404, "".toResponseBody()))
         }
 
         /** Как мок: отменить можно только ACCEPTED, иначе 409. */
@@ -178,5 +184,28 @@ class NetworkOrderRepositoryTest {
         api.fail = true
         assertEquals(CancelOrderResult.NetworkError, repo.cancel(1042))
         assertEquals(OrderStatus.ACCEPTED, repo.find(1042)!!.status)
+    }
+
+    @Test
+    fun load_freshStatus_updatesList() = runTest {
+        val api = FakeApi()
+        val repo = repo(api)
+        repo.place(croissant, Shop.MOSKOVSKAYA, pickupAtMillis = evening)
+        api.server[0] = api.server[0].copy(status = "READY") // заказ приготовили, пока экран был открыт
+        val order = repo.load(1042)!!
+        assertEquals(OrderStatus.READY, order.status)
+        assertEquals(DemoMenu.CROISSANT, order.lines.single().product)
+        assertEquals("список «Заказы» видит тот же статус", OrderStatus.READY, repo.find(1042)!!.status)
+    }
+
+    @Test
+    fun load_unknown_isNull_offline_isIOException() = runTest {
+        val api = FakeApi()
+        val repo = repo(api)
+        assertNull(repo.load(9999))
+        api.fail = true
+        val error = runCatching { repo.load(1037) }.exceptionOrNull()
+        assertEquals(IOException::class, error!!::class)
+        assertEquals("ошибка не стирает заказ из списка", OrderStatus.PICKED_UP, repo.find(1037)!!.status)
     }
 }

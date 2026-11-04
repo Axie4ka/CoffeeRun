@@ -8,6 +8,9 @@
     <!-- Меню -->
     <string name="menu_choose_shop">Choose coffee shop</string>
     <string name="menu_search">Search</string>
+    <string name="menu_search_hint">Search the menu</string>
+    <string name="menu_search_close">Close search</string>
+    <string name="menu_search_empty">Nothing found</string>
     <string name="shop_moskovskaya">Moskovskaya St, 12</string>
     <string name="shop_stroiteley">Stroiteley Ave, 1</string>
     <string name="category_coffee">Coffee</string>
@@ -74,6 +77,7 @@
     <string name="order_meta_active">Today, by %1$s · %2$s</string>
     <string name="order_meta_history">%1$s · %2$s</string>
     <string name="order_cancel">Cancel</string>
+    <string name="order_time_active">Today, by %1$s</string>
     <string name="order_cancel_title">Cancel order #%1$d?</string>
     <string name="order_cancel_text">The coffee shop won\'t start making it.</string>
     <string name="order_cancel_confirm">Cancel order</string>
@@ -129,7 +133,7 @@
     <string name="auth_no_account">No account?</string>
     <string name="auth_have_account">Already have an account?</string>
     <string name="auth_name_empty">Enter your name</string>
-    <string name="auth_phone_invalid">Mobile number: 10 digits starting with 9</string>
+    <string name="auth_phone_invalid">Enter a Russian number: 10 digits after +7</string>
     <string name="auth_password_empty">Enter your password</string>
     <string name="auth_password_short">At least 6 characters</string>
     <string name="auth_wrong_credentials">Wrong phone or password</string>

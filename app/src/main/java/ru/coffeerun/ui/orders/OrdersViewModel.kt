@@ -19,6 +19,13 @@ import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.OrderRepository
 import ru.coffeerun.model.Order
 
+/** Текст снэкбара об итоге отмены — один и тот же в списке и на экране заказа. */
+internal fun CancelOrderResult.messageRes(): Int = when (this) {
+    is CancelOrderResult.Cancelled -> R.string.order_cancelled
+    CancelOrderResult.TooLate -> R.string.order_cancel_too_late
+    CancelOrderResult.NetworkError -> R.string.order_cancel_error
+}
+
 /** Как прошла последняя загрузка заказов с сервера. */
 enum class OrdersLoad { LOADING, DONE, FAILED }
 
@@ -61,24 +68,41 @@ class OrdersViewModel(
     val cancelling: StateFlow<Int?> = _cancelling.asStateFlow()
 
     private val _message = MutableStateFlow<Int?>(null)
-    /** Итог отмены для снэкбара — строковый ресурс. */
+    /** Итог отмены или обновления для снэкбара — строковый ресурс. */
     val message: StateFlow<Int?> = _message.asStateFlow()
 
     fun cancel(order: Order) {
         if (_cancelling.value != null) return
         _cancelling.value = order.number
         viewModelScope.launch {
-            _message.value = when (repository.cancel(order.number)) {
-                is CancelOrderResult.Cancelled -> R.string.order_cancelled
-                CancelOrderResult.TooLate -> R.string.order_cancel_too_late
-                CancelOrderResult.NetworkError -> R.string.order_cancel_error
-            }
+            _message.value = repository.cancel(order.number).messageRes()
             _cancelling.value = null
         }
     }
 
     fun onMessageShown() {
         _message.value = null
+    }
+
+    private val _refreshing = MutableStateFlow(false)
+    /** Идёт обновление, которое пользователь запросил свайпом: крутится индикатор над списком. */
+    val refreshing: StateFlow<Boolean> = _refreshing.asStateFlow()
+
+    /** Свайп вниз. Список уже на экране, поэтому ошибка — снэкбар, а список остаётся. */
+    fun refresh() {
+        loadJob?.cancel()
+        _refreshing.value = true
+        loadJob = viewModelScope.launch {
+            try {
+                repository.refresh()
+                _load.value = OrdersLoad.DONE
+            } catch (e: IOException) {
+                _load.value = OrdersLoad.FAILED
+                _message.value = R.string.orders_refresh_error
+            } finally {
+                _refreshing.value = false
+            }
+        }
     }
 
     /** Кладёт позиции прошлого заказа обратно в корзину. */

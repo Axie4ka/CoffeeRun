@@ -6,6 +6,9 @@
 
     <string name="menu_choose_shop">Выбрать кофейню</string>
     <string name="menu_search">Поиск</string>
+    <string name="menu_search_hint">Поиск по меню</string>
+    <string name="menu_search_close">Закрыть поиск</string>
+    <string name="menu_search_empty">Ничего не нашлось</string>
     <string name="shop_moskovskaya">ул. Московская, 12</string>
     <string name="shop_stroiteley">пр. Строителей, 1</string>
     <string name="category_coffee">Кофе</string>
@@ -67,6 +70,7 @@
     <string name="order_meta_active">Сегодня, к %1$s · %2$s</string>
     <string name="order_meta_history">%1$s · %2$s</string>
     <string name="order_cancel">Отменить</string>
+    <string name="order_time_active">Сегодня, к %1$s</string>
     <string name="order_cancel_title">Отменить заказ №%1$d?</string>
     <string name="order_cancel_text">Кофейня не станет его готовить.</string>
     <string name="order_cancel_confirm">Отменить заказ</string>
@@ -124,7 +128,7 @@
     <string name="auth_no_account">Нет аккаунта?</string>
     <string name="auth_have_account">Уже есть аккаунт?</string>
     <string name="auth_name_empty">Введите имя</string>
-    <string name="auth_phone_invalid">Номер мобильного — 10 цифр, начинается с 9</string>
+    <string name="auth_phone_invalid">Введите российский номер: 10 цифр после +7</string>
     <string name="auth_password_empty">Введите пароль</string>
     <string name="auth_password_short">Не меньше 6 символов</string>
     <string name="auth_wrong_credentials">Неверный телефон или пароль</string>

@@ -40,6 +40,12 @@ interface OrderRepository {
     /** Отменяет заказ [number]; отменённый заказ сразу меняется в [orders]. */
     suspend fun cancel(number: Int): CancelOrderResult
 
+    /**
+     * Свежий заказ с сервера; в [orders] он тоже обновляется. null — такого заказа нет.
+     * Ошибка загрузки — [java.io.IOException], как у меню.
+     */
+    suspend fun load(number: Int): Order?
+
     /** Ищет среди загруженных [orders]. */
     fun find(number: Int): Order?
 }

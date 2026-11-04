@@ -14,7 +14,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -50,6 +52,7 @@ import ru.coffeerun.ui.util.summaryText
  * Заказы: активные сверху, выданные и отменённые — в истории.
  * [onRepeat] кладёт позиции прошлого заказа обратно в корзину; [onCancel] вызывается после подтверждения в диалоге.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrdersScreen(
     orders: List<Order>,
@@ -61,7 +64,10 @@ fun OrdersScreen(
     load: OrdersLoad = OrdersLoad.DONE,
     onRetry: () -> Unit = {},
     cancelling: Int? = null,
-    onCancel: (Order) -> Unit = {}
+    onCancel: (Order) -> Unit = {},
+    refreshing: Boolean = false,
+    onRefresh: () -> Unit = {},
+    onOrderClick: (Order) -> Unit = {}
 ) {
     // Заказы — данные аккаунта: гостю приглашение войти; пока токен не прочитан — пусто, без мигания
     when (isLoggedIn) {
@@ -79,20 +85,7 @@ fun OrdersScreen(
     // Номер, а не заказ: переживает поворот экрана; заказ ушёл из активных — диалог закрывается сам
     var confirmNumber by rememberSaveable { mutableStateOf<Int?>(null) }
     active.find { it.number == confirmNumber }?.let { order ->
-        AlertDialog(
-            onDismissRequest = { confirmNumber = null },
-            title = { Text(stringResource(R.string.order_cancel_title, order.number)) },
-            text = { Text(stringResource(R.string.order_cancel_text)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmNumber = null
-                    onCancel(order)
-                }) { Text(stringResource(R.string.order_cancel_confirm)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmNumber = null }) { Text(stringResource(R.string.order_cancel_keep)) }
-            }
-        )
+        CancelOrderDialog(order.number, onConfirm = { confirmNumber = null; onCancel(order) }, onDismiss = { confirmNumber = null })
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -109,36 +102,57 @@ fun OrdersScreen(
                 modifier = Modifier.weight(1f)
             )
         } else {
-            LazyColumn(
-                contentPadding = PaddingValues(
-                    horizontal = MaterialTheme.spacing.large,
-                    vertical = MaterialTheme.spacing.small
-                ),
-                verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
-            ) {
-                if (active.isNotEmpty()) {
-                    item(key = "active") { GroupTitle(stringResource(R.string.orders_active)) }
-                    items(active, key = { it.number }) { order ->
-                        // Отменить можно только заказ ко времени, который ещё не готовят
-                        if (order.canCancel) {
-                            OrderCard(order, stringResource(R.string.order_cancel), actionEnabled = cancelling != order.number) {
-                                confirmNumber = order.number
+            // Свайп вниз обновляет статусы, не уходя с вкладки
+            PullToRefreshBox(isRefreshing = refreshing, onRefresh = onRefresh, modifier = Modifier.weight(1f)) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        horizontal = MaterialTheme.spacing.large,
+                        vertical = MaterialTheme.spacing.small
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
+                ) {
+                    if (active.isNotEmpty()) {
+                        item(key = "active") { GroupTitle(stringResource(R.string.orders_active)) }
+                        items(active, key = { it.number }) { order ->
+                            // Отменить можно только заказ ко времени, который ещё не готовят
+                            if (order.canCancel) {
+                                OrderCard(order, { onOrderClick(order) }, stringResource(R.string.order_cancel), actionEnabled = cancelling != order.number) {
+                                    confirmNumber = order.number
+                                }
+                            } else {
+                                OrderCard(order, { onOrderClick(order) })
                             }
-                        } else {
-                            OrderCard(order)
                         }
                     }
-                }
-                if (history.isNotEmpty()) {
-                    item(key = "history") { GroupTitle(stringResource(R.string.orders_history)) }
-                    items(history, key = { it.number }) { order ->
-                        OrderCard(order, stringResource(R.string.order_repeat)) { onRepeat(order) }
+                    if (history.isNotEmpty()) {
+                        item(key = "history") { GroupTitle(stringResource(R.string.orders_history)) }
+                        items(history, key = { it.number }) { order ->
+                            OrderCard(order, { onOrderClick(order) }, stringResource(R.string.order_repeat)) { onRepeat(order) }
+                        }
                     }
                 }
             }
         }
     }
 }
+
+/** Подтверждение отмены — одно и то же в списке и на экране заказа. */
+@Composable
+internal fun CancelOrderDialog(number: Int, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.order_cancel_title, number)) },
+        text = { Text(stringResource(R.string.order_cancel_text)) },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(stringResource(R.string.order_cancel_confirm)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.order_cancel_keep)) } }
+    )
+}
+
+/** «Сегодня, к 17:00» для активного заказа, дата и время оформления — для прошлого. */
+@Composable
+internal fun Order.timeText(): String =
+    if (isActive) stringResource(R.string.order_time_active, formatTime(readyAtMillis)) else formatDateTime(placedAtMillis)
 
 @Composable
 private fun GroupTitle(text: String) {
@@ -152,6 +166,7 @@ private fun GroupTitle(text: String) {
 @Composable
 private fun OrderCard(
     order: Order,
+    onClick: () -> Unit,
     actionLabel: String? = null,
     actionEnabled: Boolean = true,
     onAction: (() -> Unit)? = null
@@ -163,6 +178,7 @@ private fun OrderCard(
         stringResource(R.string.order_meta_history, formatDateTime(order.placedAtMillis), address)
     }
     Surface(
+        onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow
@@ -219,7 +235,7 @@ private fun OrderCard(
 
 /** Выданный и отменённый заказы отмечаются нейтральным цветом, остальные статусы — акцентным. */
 @Composable
-private fun StatusBadge(status: OrderStatus) {
+internal fun StatusBadge(status: OrderStatus) {
     val done = status == OrderStatus.PICKED_UP || status == OrderStatus.CANCELLED
     Surface(
         shape = MaterialTheme.shapes.small,

@@ -40,6 +40,10 @@ interface CoffeeRunApi {
     @GET("orders")
     suspend fun getOrders(): List<OrderDto>
 
+    /** 404 — такого заказа нет. */
+    @GET("orders/{number}")
+    suspend fun getOrder(@Path("number") number: Int): OrderDto
+
     /** 201 — заказ принят; 409 — чего-то из заказа нет в наличии. */
     @POST("orders")
     suspend fun placeOrder(@Body request: OrderRequest): OrderDto
