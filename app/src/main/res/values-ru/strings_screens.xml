@@ -71,6 +71,7 @@
     <string name="status_preparing">Готовится</string>
     <string name="status_ready">Готов</string>
     <string name="status_picked_up">Выдан</string>
+    <string name="status_cancelled">Отменён</string>
 
     <string name="profile_title">Профиль</string>
     <string name="profile_edit">Редактировать профиль</string>

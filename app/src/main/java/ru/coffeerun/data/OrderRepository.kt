@@ -16,6 +16,17 @@ sealed interface PlaceOrderResult {
     data object NetworkError : PlaceOrderResult
 }
 
+/** Чем закончилась отмена заказа. */
+sealed interface CancelOrderResult {
+    data class Cancelled(val order: Order) : CancelOrderResult
+
+    /** 409: заказ уже готовят или выдали. */
+    data object TooLate : CancelOrderResult
+
+    /** Нет сети или сервер ответил не так. */
+    data object NetworkError : CancelOrderResult
+}
+
 /** Заказы пользователя, от новых к старым. */
 interface OrderRepository {
     val orders: StateFlow<List<Order>>
@@ -25,6 +36,9 @@ interface OrderRepository {
 
     /** Оформляет заказ из [lines]; [lines] не должен быть пустым. Принятый заказ сразу попадает в [orders]. */
     suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long? = null): PlaceOrderResult
+
+    /** Отменяет заказ [number]; отменённый заказ сразу меняется в [orders]. */
+    suspend fun cancel(number: Int): CancelOrderResult
 
     /** Ищет среди загруженных [orders]. */
     fun find(number: Int): Order?

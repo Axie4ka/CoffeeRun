@@ -39,6 +39,13 @@ class InMemoryOrderRepository(private val now: () -> Long = System::currentTimeM
         return PlaceOrderResult.Placed(order)
     }
 
+    override suspend fun cancel(number: Int): CancelOrderResult {
+        val order = find(number)?.takeIf { it.canCancel } ?: return CancelOrderResult.TooLate
+        val cancelled = order.copy(status = OrderStatus.CANCELLED)
+        _orders.update { list -> list.map { if (it.number == number) cancelled else it } }
+        return CancelOrderResult.Cancelled(cancelled)
+    }
+
     override fun find(number: Int): Order? = _orders.value.find { it.number == number }
 }
 

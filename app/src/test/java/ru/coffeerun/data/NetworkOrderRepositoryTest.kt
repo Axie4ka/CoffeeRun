@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.HttpException
@@ -21,9 +22,10 @@ import ru.coffeerun.data.network.OrderDto
 import ru.coffeerun.data.network.OrderLineDto
 import ru.coffeerun.data.network.OrderRequest
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
 
-/** Заказы на сервере: история после входа, оформление, 409 и «нет сети», очистка при выходе. */
+/** Заказы на сервере: история после входа, оформление, отмена, 409 и «нет сети», очистка при выходе. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class NetworkOrderRepositoryTest {
     /** Сервер с одним заказом 1037; [fail] — следующие запросы падают с [failCode] (0 — нет сети). */
@@ -56,10 +58,19 @@ class NetworkOrderRepositoryTest {
             return OrderDto(nextNumber++, status, request.shop, "2026-11-03T12:00:00+03:00", request.pickupAt, request.lines)
                 .also { server.add(0, it) }
         }
+
+        /** Как мок: отменить можно только ACCEPTED, иначе 409. */
+        override suspend fun cancelOrder(number: Int): OrderDto {
+            maybeFail()
+            val i = server.indexOfFirst { it.number == number }
+            if (server[i].status != "ACCEPTED") throw HttpException(Response.error<Unit>(409, "".toResponseBody()))
+            return server[i].copy(status = "CANCELLED").also { server[i] = it }
+        }
     }
 
     private val loggedIn = MutableStateFlow(true)
     private val croissant = listOf(CartLine(DemoMenu.CROISSANT, unitPrice = 180, quantity = 2))
+    private val evening = 1_793_811_600_000L // 2026-11-04 20:00 МСК: заказ ко времени — ACCEPTED
 
     private fun TestScope.repo(api: FakeApi) =
         NetworkOrderRepository(api, DemoMenuRepository(), loggedIn, backgroundScope + UnconfinedTestDispatcher(testScheduler))
@@ -134,5 +145,38 @@ class NetworkOrderRepositoryTest {
         val error = runCatching { repo.refresh() }.exceptionOrNull()
         assertEquals(IOException::class, error!!::class)
         assertEquals("неудачная загрузка не стирает то, что было", listOf(1037), repo.orders.value.map { it.number })
+    }
+
+    @Test
+    fun cancel_accepted_marksCancelled_keepsLines() = runTest {
+        val repo = repo(FakeApi())
+        repo.place(croissant, Shop.MOSKOVSKAYA, pickupAtMillis = evening)
+        assertTrue(repo.find(1042)!!.canCancel)
+        val order = (repo.cancel(1042) as CancelOrderResult.Cancelled).order
+        assertEquals(OrderStatus.CANCELLED, order.status)
+        assertFalse("отменённый заказ уходит в историю", order.isActive)
+        assertEquals("позиции берутся из того же заказа", DemoMenu.CROISSANT, order.lines.single().product)
+        assertEquals(order, repo.find(1042))
+        assertEquals(listOf(1042, 1037), repo.orders.value.map { it.number })
+    }
+
+    @Test
+    fun cancel_conflict_isTooLate_andShowsServerStatus() = runTest {
+        val api = FakeApi()
+        val repo = repo(api)
+        repo.place(croissant, Shop.MOSKOVSKAYA, pickupAtMillis = evening)
+        api.server[0] = api.server[0].copy(status = "PREPARING") // пока клиент думал, заказ начали готовить
+        assertEquals(CancelOrderResult.TooLate, repo.cancel(1042))
+        assertEquals(OrderStatus.PREPARING, repo.find(1042)!!.status)
+    }
+
+    @Test
+    fun cancel_offline_isNetworkError_keepsStatus() = runTest {
+        val api = FakeApi()
+        val repo = repo(api)
+        repo.place(croissant, Shop.MOSKOVSKAYA, pickupAtMillis = evening)
+        api.fail = true
+        assertEquals(CancelOrderResult.NetworkError, repo.cancel(1042))
+        assertEquals(OrderStatus.ACCEPTED, repo.find(1042)!!.status)
     }
 }

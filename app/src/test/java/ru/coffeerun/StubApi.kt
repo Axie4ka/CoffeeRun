@@ -24,6 +24,7 @@ open class StubApi : CoffeeRunApi {
     override suspend fun removeFavorite(productId: String): Unit = unused()
     override suspend fun getOrders(): List<OrderDto> = unused()
     override suspend fun placeOrder(request: OrderRequest): OrderDto = unused()
+    override suspend fun cancelOrder(number: Int): OrderDto = unused()
 
     private fun unused(): Nothing = error("Этот запрос не используется в тесте")
 }

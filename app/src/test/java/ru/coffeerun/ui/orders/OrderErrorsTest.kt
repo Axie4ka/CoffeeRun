@@ -20,6 +20,7 @@ import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.OrderRepository
+import ru.coffeerun.data.CancelOrderResult
 import ru.coffeerun.data.PlaceOrderResult
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Order
@@ -52,6 +53,8 @@ class OrderErrorsTest {
             gate?.await()
             return result
         }
+
+        override suspend fun cancel(number: Int): CancelOrderResult = error("Отмена в этих тестах не используется")
 
         override fun find(number: Int): Order? = null
     }

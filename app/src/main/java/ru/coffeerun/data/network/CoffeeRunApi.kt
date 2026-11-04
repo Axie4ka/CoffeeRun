@@ -43,6 +43,10 @@ interface CoffeeRunApi {
     /** 201 — заказ принят; 409 — чего-то из заказа нет в наличии. */
     @POST("orders")
     suspend fun placeOrder(@Body request: OrderRequest): OrderDto
+
+    /** 200 — заказ отменён (статус CANCELLED); 409 — его уже готовят или выдали. */
+    @POST("orders/{number}/cancel")
+    suspend fun cancelOrder(@Path("number") number: Int): OrderDto
 }
 
 /** Разбор ответов сервера. Новые поля в ответе не ломают старое приложение. */
