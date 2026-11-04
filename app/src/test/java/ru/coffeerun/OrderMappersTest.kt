@@ -8,7 +8,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.network.CoffeeRunJson
 import ru.coffeerun.data.network.DrinkOptionsDto
 import ru.coffeerun.data.network.OrderDto
@@ -25,7 +25,7 @@ import ru.coffeerun.model.Shop
 
 /** Заказы: тело POST /orders из корзины и ответ сервера в [ru.coffeerun.model.Order]. */
 class OrderMappersTest {
-    private val products = LocalMenu.products.associateBy { it.id }
+    private val products = DemoMenu.products.associateBy { it.id }
 
     /** Демо-заказы из хранилища `orders` в mock/coffeerun.json. */
     private val demo: List<OrderDto> = run {
@@ -40,13 +40,13 @@ class OrderMappersTest {
         assertEquals(1037, o1037.number)
         assertEquals(OrderStatus.PICKED_UP, o1037.status)
         assertEquals(Shop.MOSKOVSKAYA, o1037.shop)
-        assertEquals(LocalMenu.LATTE, o1037.lines.single().product)
+        assertEquals(DemoMenu.LATTE, o1037.lines.single().product)
         assertEquals(480, o1037.total)
         // 2026-10-31T09:15:00+03:00
         assertEquals(java.time.OffsetDateTime.of(2026, 10, 31, 9, 15, 0, 0, ZoneOffset.ofHours(3)).toInstant().toEpochMilli(), o1037.placedAtMillis)
         assertNull(o1037.pickupAtMillis)
 
-        assertEquals(listOf(LocalMenu.RAF, LocalMenu.ESPRESSO), o1029.lines.map { it.product })
+        assertEquals(listOf(DemoMenu.RAF, DemoMenu.ESPRESSO), o1029.lines.map { it.product })
         assertEquals(DrinkSize.LARGE, o1029.lines[0].options?.size)
         assertNull("эспрессо из меню «+» — без опций", o1029.lines[1].options)
         assertEquals(450, o1029.total)
@@ -55,10 +55,10 @@ class OrderMappersTest {
     @Test
     fun cart_toRequest_codesAndTime() {
         val latte = CartLine(
-            LocalMenu.LATTE, unitPrice = 400, quantity = 2,
+            DemoMenu.LATTE, unitPrice = 400, quantity = 2,
             options = DrinkOptions(DrinkSize.LARGE, MilkType.OAT, isIced = true, extras = setOf(Extra.VANILLA), note = "без пенки")
         )
-        val croissant = CartLine(LocalMenu.CROISSANT, unitPrice = 180)
+        val croissant = CartLine(DemoMenu.CROISSANT, unitPrice = 180)
         // 18:30 по Москве
         val pickup = java.time.OffsetDateTime.of(2026, 11, 3, 18, 30, 0, 0, ZoneOffset.ofHours(3)).toInstant().toEpochMilli()
         val request = orderRequest(listOf(latte, croissant), Shop.STROITELEY, pickup, zone = ZoneOffset.ofHours(3))

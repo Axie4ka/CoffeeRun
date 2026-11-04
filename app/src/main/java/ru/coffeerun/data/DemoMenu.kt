@@ -13,10 +13,11 @@ import ru.coffeerun.model.ProductCategory
 import ru.coffeerun.model.SizeOption
 
 /**
- * Меню без сети: для превью, тестов и демо-истории заказов. [Product.id] — стабильный ключ навигации.
+ * Демо-меню без сети: для превью, тестов и демо-истории заказов; приложение берёт меню с сервера.
+ * [Product.id] — стабильный ключ навигации.
  * Тексты — как в ответе GET /menu на русском, фото — с того же сервера.
  */
-object LocalMenu {
+object DemoMenu {
     private fun image(id: String) = "${BuildConfig.BASE_URL}images/$id.jpg"
 
     val CAPPUCCINO = Product(

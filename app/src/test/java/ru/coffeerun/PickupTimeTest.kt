@@ -17,7 +17,7 @@ import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.data.InMemoryShopRepository
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.ui.checkout.CheckoutViewModel
@@ -51,7 +51,7 @@ class PickupTimeTest {
 
     @Test
     fun validTime_isStoredAndUsedInOrder() {
-        cart.add(CartLine(LocalMenu.CROISSANT, unitPrice = 180))
+        cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180))
         assertTrue(vm.setPickupTime(13, 0))
         vm.placeOrder()
         val order = orders.orders.value.first()
@@ -63,7 +63,7 @@ class PickupTimeTest {
 
     @Test
     fun asapOrder_isPreparing() {
-        cart.add(CartLine(LocalMenu.CROISSANT, unitPrice = 180))
+        cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180))
         vm.placeOrder()
         assertEquals(OrderStatus.PREPARING, orders.orders.value.first().status)
     }
@@ -83,7 +83,7 @@ class PickupTimeTest {
         keepActive(clocked)
         assertTrue(clocked.setPickupTime(12, 20))
         nowMillis = today(12, 10)
-        cart.add(CartLine(LocalMenu.CROISSANT, unitPrice = 180))
+        cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180))
         clocked.placeOrder()
         assertNull(orders.orders.value.first().pickupAtMillis)
         assertNull(clocked.uiState.value.pickupAtMillis)
@@ -130,11 +130,11 @@ class PickupTimeTest {
 
     @Test
     fun uiState_hasCartAndTotal() = runTest {
-        cart.add(CartLine(LocalMenu.CROISSANT, unitPrice = 180, quantity = 2))
+        cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180, quantity = 2))
         keepActive(vm)
         assertEquals(1, vm.uiState.value.lines.size)
         assertEquals(360, vm.uiState.value.total)
-        cart.add(CartLine(LocalMenu.LATTE, unitPrice = 260))
+        cart.add(CartLine(DemoMenu.LATTE, unitPrice = 260))
         assertEquals(620, vm.uiState.value.total)
     }
 }

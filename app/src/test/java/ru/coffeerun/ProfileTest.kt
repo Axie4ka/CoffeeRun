@@ -16,7 +16,7 @@ import ru.coffeerun.ui.profile.AccountState
 import ru.coffeerun.data.InMemoryFavoritesRepository
 import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.data.InMemoryShopRepository
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.profile.ProfileViewModel
@@ -89,7 +89,7 @@ class ProfileTest {
         val vm = newVm()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         assertEquals(2, vm.uiState.value.ordersCount)
-        orders.place(listOf(CartLine(LocalMenu.CROISSANT, unitPrice = 180)), Shop.MOSKOVSKAYA)
+        orders.place(listOf(CartLine(DemoMenu.CROISSANT, unitPrice = 180)), Shop.MOSKOVSKAYA)
         assertEquals(3, vm.uiState.value.ordersCount)
     }
 

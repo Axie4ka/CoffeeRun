@@ -15,8 +15,8 @@ import org.junit.Test
 import ru.coffeerun.data.FavoritesRepository
 import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.InMemoryFavoritesRepository
-import ru.coffeerun.data.LocalMenu
-import ru.coffeerun.data.LocalMenuRepository
+import ru.coffeerun.data.DemoMenu
+import ru.coffeerun.data.DemoMenuRepository
 import ru.coffeerun.ui.profile.FavoritesUiState
 import ru.coffeerun.ui.profile.FavoritesViewModel
 import ru.coffeerun.ui.product.ProductUiState
@@ -42,9 +42,9 @@ class FavoritesTest {
     fun unknownIds_areSkipped() = runTest {
         favorites.toggle("latte")
         favorites.toggle("gone")
-        val vm = FavoritesViewModel(LocalMenuRepository(), favorites)
+        val vm = FavoritesViewModel(DemoMenuRepository(), favorites)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
-        assertEquals(FavoritesUiState.Success(listOf(LocalMenu.LATTE)), vm.uiState.value)
+        assertEquals(FavoritesUiState.Success(listOf(DemoMenu.LATTE)), vm.uiState.value)
     }
 
     @Test
@@ -56,24 +56,24 @@ class FavoritesTest {
         assertEquals(FavoritesUiState.Error, vm.uiState.value)
         repo.fail = false
         vm.retry()
-        assertEquals(FavoritesUiState.Success(listOf(LocalMenu.LATTE)), vm.uiState.value)
+        assertEquals(FavoritesUiState.Success(listOf(DemoMenu.LATTE)), vm.uiState.value)
     }
 
     @Test
     fun product_networkError_isError_thenRetryLoads() = runTest {
         val repo = FakeMenuRepository(fail = true)
-        val vm = ProductViewModel(LocalMenu.LATTE.id, repo, InMemoryCartRepository(), favorites, SavedStateHandle())
+        val vm = ProductViewModel(DemoMenu.LATTE.id, repo, InMemoryCartRepository(), favorites, SavedStateHandle())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         assertEquals(ProductUiState.Error, vm.uiState.value)
         vm.addToCart() // без загруженной позиции ничего не происходит
         repo.fail = false
         vm.retry()
-        assertEquals(LocalMenu.LATTE, (vm.uiState.value as ProductUiState.Success).product)
+        assertEquals(DemoMenu.LATTE, (vm.uiState.value as ProductUiState.Success).product)
     }
 
     @Test
     fun product_isFavoriteReflectsRepo() = runTest {
-        val vm = ProductViewModel(LocalMenu.LATTE.id, LocalMenuRepository(), InMemoryCartRepository(), favorites, SavedStateHandle())
+        val vm = ProductViewModel(DemoMenu.LATTE.id, DemoMenuRepository(), InMemoryCartRepository(), favorites, SavedStateHandle())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         vm.toggleFavorite()
         assertTrue((vm.uiState.value as ProductUiState.Success).isFavorite)
@@ -91,17 +91,17 @@ class FavoritesTest {
     @Test
     fun favoritesNotLoaded_isError_thenRetryLoads() = runTest {
         val flaky = FlakyFavorites(fail = true)
-        val vm = FavoritesViewModel(LocalMenuRepository(), flaky)
+        val vm = FavoritesViewModel(DemoMenuRepository(), flaky)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         assertEquals("меню есть, а избранное с сервера не пришло — тоже ошибка", FavoritesUiState.Error, vm.uiState.value)
         flaky.fail = false
         vm.retry()
-        assertEquals(FavoritesUiState.Success(listOf(LocalMenu.LATTE)), vm.uiState.value)
+        assertEquals(FavoritesUiState.Success(listOf(DemoMenu.LATTE)), vm.uiState.value)
     }
 
     @Test
     fun product_heartRejected_showsMessage() = runTest {
-        val vm = ProductViewModel(LocalMenu.LATTE.id, LocalMenuRepository(), InMemoryCartRepository(), FlakyFavorites(fail = true), SavedStateHandle())
+        val vm = ProductViewModel(DemoMenu.LATTE.id, DemoMenuRepository(), InMemoryCartRepository(), FlakyFavorites(fail = true), SavedStateHandle())
         vm.toggleFavorite()
         assertEquals(R.string.favorites_toggle_error, vm.message.value)
         vm.onMessageShown()

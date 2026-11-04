@@ -48,7 +48,7 @@ private fun demoHistory(now: Long): List<Order> {
         Order(
             number = 1037,
             status = OrderStatus.PICKED_UP,
-            lines = listOf(CartLine(LocalMenu.LATTE, unitPrice = 240, quantity = 2, options = regular, id = 1)),
+            lines = listOf(CartLine(DemoMenu.LATTE, unitPrice = 240, quantity = 2, options = regular, id = 1)),
             shop = Shop.MOSKOVSKAYA,
             placedAtMillis = now - 2 * DAY_MILLIS
         ),
@@ -56,8 +56,8 @@ private fun demoHistory(now: Long): List<Order> {
             number = 1029,
             status = OrderStatus.PICKED_UP,
             lines = listOf(
-                CartLine(LocalMenu.RAF, unitPrice = 300, options = regular.copy(size = DrinkSize.LARGE), id = 1),
-                CartLine(LocalMenu.ESPRESSO, unitPrice = 150, id = 2)
+                CartLine(DemoMenu.RAF, unitPrice = 300, options = regular.copy(size = DrinkSize.LARGE), id = 1),
+                CartLine(DemoMenu.ESPRESSO, unitPrice = 150, id = 2)
             ),
             shop = Shop.STROITELEY,
             placedAtMillis = now - 6 * DAY_MILLIS

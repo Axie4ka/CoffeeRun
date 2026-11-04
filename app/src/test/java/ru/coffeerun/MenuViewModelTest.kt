@@ -9,28 +9,28 @@ import org.junit.Rule
 import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.InMemoryShopRepository
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.Product
 import ru.coffeerun.ui.menu.MenuUiState
 import ru.coffeerun.ui.menu.MenuViewModel
 
-/** Меню из [LocalMenu]; при [fail] = true каждый запрос падает, как без сети. Общий для тестов ViewModel. */
+/** Меню из [DemoMenu]; при [fail] = true каждый запрос падает, как без сети. Общий для тестов ViewModel. */
 class FakeMenuRepository(var fail: Boolean = false) : MenuRepository {
     var calls = 0
 
     override suspend fun getMenu(): List<Product> {
         calls++
         if (fail) throw IOException("нет сети")
-        return LocalMenu.products
+        return DemoMenu.products
     }
 
     override suspend fun getProduct(id: String): Product? {
         if (fail) throw IOException("нет сети")
-        return LocalMenu.byId(id)
+        return DemoMenu.byId(id)
     }
 
-    override suspend fun getOptionPrices() = LocalMenu.prices
+    override suspend fun getOptionPrices() = DemoMenu.prices
 }
 
 class MenuViewModelTest {
@@ -40,7 +40,7 @@ class MenuViewModelTest {
     @Test
     fun menu_loadsSuccess() {
         val vm = MenuViewModel(FakeMenuRepository(), InMemoryCartRepository(), InMemoryShopRepository())
-        assertEquals(MenuUiState.Success(LocalMenu.products, LocalMenu.prices), vm.uiState.value)
+        assertEquals(MenuUiState.Success(DemoMenu.products, DemoMenu.prices), vm.uiState.value)
     }
 
     @Test
@@ -56,7 +56,7 @@ class MenuViewModelTest {
         assertEquals(MenuUiState.Error, vm.uiState.value)
         fake.fail = false
         vm.loadMenu()
-        assertEquals(MenuUiState.Success(LocalMenu.products, LocalMenu.prices), vm.uiState.value)
+        assertEquals(MenuUiState.Success(DemoMenu.products, DemoMenu.prices), vm.uiState.value)
     }
 
     @Test
@@ -74,16 +74,16 @@ class MenuViewModelTest {
         var call = 0
         val repo = object : MenuRepository {
             override suspend fun getMenu(): List<Product> =
-                if (call++ == 0) first.await() else LocalMenu.products
+                if (call++ == 0) first.await() else DemoMenu.products
 
-            override suspend fun getProduct(id: String): Product? = LocalMenu.byId(id)
-            override suspend fun getOptionPrices() = LocalMenu.prices
+            override suspend fun getProduct(id: String): Product? = DemoMenu.byId(id)
+            override suspend fun getOptionPrices() = DemoMenu.prices
         }
         val vm = MenuViewModel(repo, InMemoryCartRepository(), InMemoryShopRepository())
         vm.loadMenu()
-        assertEquals(MenuUiState.Success(LocalMenu.products, LocalMenu.prices), vm.uiState.value)
+        assertEquals(MenuUiState.Success(DemoMenu.products, DemoMenu.prices), vm.uiState.value)
         // Поздняя ошибка первой загрузки не должна затереть Success
         first.completeExceptionally(IOException("поздно"))
-        assertEquals(MenuUiState.Success(LocalMenu.products, LocalMenu.prices), vm.uiState.value)
+        assertEquals(MenuUiState.Success(DemoMenu.products, DemoMenu.prices), vm.uiState.value)
     }
 }

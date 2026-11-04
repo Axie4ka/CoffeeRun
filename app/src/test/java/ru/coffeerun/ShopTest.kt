@@ -6,7 +6,7 @@ import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.data.InMemoryShopRepository
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.checkout.CheckoutViewModel
@@ -26,7 +26,7 @@ class ShopTest {
         val orders = InMemoryOrderRepository()
         val shops = InMemoryShopRepository()
         shops.select(Shop.STROITELEY)
-        cart.add(CartLine(LocalMenu.CROISSANT, unitPrice = 180))
+        cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180))
         CheckoutViewModel(cart, orders, shops).placeOrder()
         assertEquals(Shop.STROITELEY, orders.orders.value.first().shop)
     }

@@ -12,8 +12,8 @@ import org.junit.Rule
 import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.InMemoryShopRepository
-import ru.coffeerun.data.LocalMenu
-import ru.coffeerun.data.LocalMenuRepository
+import ru.coffeerun.data.DemoMenu
+import ru.coffeerun.data.DemoMenuRepository
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.model.CartLine
@@ -40,62 +40,62 @@ class CartTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun cartUiState_countsItemsAndTotal() = runTest {
-        cart.add(CartLine(LocalMenu.CROISSANT, unitPrice = 180, quantity = 2))
-        cart.add(CartLine(LocalMenu.LATTE, unitPrice = 240, options = LocalMenu.LATTE.defaultOptions()))
+        cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180, quantity = 2))
+        cart.add(CartLine(DemoMenu.LATTE, unitPrice = 240, options = DemoMenu.LATTE.defaultOptions()))
         val vm = CartViewModel(cart)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         assertEquals(3, vm.uiState.value.count)
         assertEquals(2 * 180 + 240, vm.uiState.value.total)
-        cart.add(CartLine(LocalMenu.CROISSANT, unitPrice = 180))
+        cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180))
         assertEquals(4, vm.uiState.value.count)
         assertEquals(3 * 180 + 240, vm.uiState.value.total)
     }
 
     @Test
     fun localMenu_idsAreUniqueAndResolvable() {
-        assertEquals(13, LocalMenu.products.size)
-        assertEquals(LocalMenu.products.size, LocalMenu.products.map { it.id }.toSet().size)
-        assertEquals(LocalMenu.LATTE, LocalMenu.byId("latte"))
-        assertNull(LocalMenu.byId("unknown"))
+        assertEquals(13, DemoMenu.products.size)
+        assertEquals(DemoMenu.products.size, DemoMenu.products.map { it.id }.toSet().size)
+        assertEquals(DemoMenu.LATTE, DemoMenu.byId("latte"))
+        assertNull(DemoMenu.byId("unknown"))
     }
 
     @Test
     fun unitPrice_sumsSizeMilkAndExtras() {
         // 240 база + 80 доплата за L + 40 овсяное + 40 ваниль
-        assertEquals(400, LocalMenu.LATTE.unitPrice(DrinkSize.LARGE, MilkType.OAT, setOf(Extra.VANILLA), LocalMenu.prices))
+        assertEquals(400, DemoMenu.LATTE.unitPrice(DrinkSize.LARGE, MilkType.OAT, setOf(Extra.VANILLA), DemoMenu.prices))
         // У эспрессо нет выбора размера и молока — они не влияют на цену
-        assertEquals(150, LocalMenu.ESPRESSO.unitPrice(DrinkSize.LARGE, MilkType.OAT, emptySet(), LocalMenu.prices))
+        assertEquals(150, DemoMenu.ESPRESSO.unitPrice(DrinkSize.LARGE, MilkType.OAT, emptySet(), DemoMenu.prices))
     }
 
     @Test
     fun unitPrice_usesPricesFromServer() {
         // Кофейня подняла цену овсяного молока и L — приложение считает по новым ценам без обновления
-        val prices = LocalMenu.prices.copy(
-            sizes = LocalMenu.prices.sizes.map { if (it.size == DrinkSize.LARGE) it.copy(price = 320) else it },
-            milks = LocalMenu.prices.milks.map { if (it.milk == MilkType.OAT) it.copy(price = 70) else it }
+        val prices = DemoMenu.prices.copy(
+            sizes = DemoMenu.prices.sizes.map { if (it.size == DrinkSize.LARGE) it.copy(price = 320) else it },
+            milks = DemoMenu.prices.milks.map { if (it.milk == MilkType.OAT) it.copy(price = 70) else it }
         )
         // 240 база + 100 доплата за L + 70 овсяное + 40 ваниль
-        assertEquals(450, LocalMenu.LATTE.unitPrice(DrinkSize.LARGE, MilkType.OAT, setOf(Extra.VANILLA), prices))
+        assertEquals(450, DemoMenu.LATTE.unitPrice(DrinkSize.LARGE, MilkType.OAT, setOf(Extra.VANILLA), prices))
     }
 
     @Test
     fun quickAdd_hasSizeAndMergesWithSameDrinkFromProductScreen() {
         // Эспрессо с экрана позиции без добавок и примечания — те же опции, что у «+»
-        val fromScreen = CartLine(LocalMenu.ESPRESSO, unitPrice = 150, options = LocalMenu.ESPRESSO.defaultOptions()?.copy(note = ""))
-        MenuViewModel(LocalMenuRepository(), cart, InMemoryShopRepository()).quickAdd(LocalMenu.ESPRESSO)
+        val fromScreen = CartLine(DemoMenu.ESPRESSO, unitPrice = 150, options = DemoMenu.ESPRESSO.defaultOptions()?.copy(note = ""))
+        MenuViewModel(DemoMenuRepository(), cart, InMemoryShopRepository()).quickAdd(DemoMenu.ESPRESSO)
         cart.add(fromScreen)
         assertEquals(1, lines.size)
         assertEquals(2, lines[0].quantity)
 
-        MenuViewModel(LocalMenuRepository(), cart, InMemoryShopRepository()).quickAdd(LocalMenu.CAPPUCCINO)
+        MenuViewModel(DemoMenuRepository(), cart, InMemoryShopRepository()).quickAdd(DemoMenu.CAPPUCCINO)
         assertEquals(DrinkSize.MEDIUM, lines.last().options?.size)
         assertEquals(3, lines.itemCount)
-        assertNull(LocalMenu.CROISSANT.defaultOptions())
+        assertNull(DemoMenu.CROISSANT.defaultOptions())
     }
 
     @Test
     fun differentNotes_stayDifferentLines() {
-        val base = quickAdd(LocalMenu.LATTE)
+        val base = quickAdd(DemoMenu.LATTE)
         cart.add(base.copy(options = base.options?.copy(note = "без пенки")))
         cart.add(base)
         assertEquals(2, lines.size)
@@ -103,8 +103,8 @@ class CartTest {
 
     @Test
     fun quantity_neverExceedsMax() {
-        cart.add(quickAdd(LocalMenu.LATTE).copy(quantity = MAX_QUANTITY))
-        cart.add(quickAdd(LocalMenu.LATTE).copy(quantity = MAX_QUANTITY))
+        cart.add(quickAdd(DemoMenu.LATTE).copy(quantity = MAX_QUANTITY))
+        cart.add(quickAdd(DemoMenu.LATTE).copy(quantity = MAX_QUANTITY))
         assertEquals(MAX_QUANTITY, lines[0].quantity)
         cart.changeQuantity(lines[0].id, +1)
         assertEquals(MAX_QUANTITY, lines[0].quantity)
@@ -122,7 +122,7 @@ class CartTest {
         checkout.placeOrder()
         assertNull("пустая корзина — заказа нет", checkout.uiState.value.placedOrderNumber)
 
-        cart.add(quickAdd(LocalMenu.CROISSANT).copy(quantity = 2))
+        cart.add(quickAdd(DemoMenu.CROISSANT).copy(quantity = 2))
         checkout.placeOrder()
         val order = orders.orders.value.first()
         assertEquals(order.number, checkout.uiState.value.placedOrderNumber)
@@ -149,7 +149,7 @@ class CartTest {
     // Так строку собирает «+» в меню (MenuViewModel.quickAdd)
     private fun quickAdd(p: Product) = CartLine(
         product = p,
-        unitPrice = p.unitPrice(DEFAULT_DRINK_SIZE, MilkType.REGULAR, emptySet(), LocalMenu.prices),
+        unitPrice = p.unitPrice(DEFAULT_DRINK_SIZE, MilkType.REGULAR, emptySet(), DemoMenu.prices),
         options = p.defaultOptions()
     )
 }

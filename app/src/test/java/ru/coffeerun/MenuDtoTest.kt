@@ -9,7 +9,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.network.CoffeeRunJson
 import ru.coffeerun.data.network.MenuDto
 import ru.coffeerun.data.network.ExtraOptionDto
@@ -21,7 +21,7 @@ import ru.coffeerun.model.Allergen
 
 /**
  * Тело ответа GET /menu из окружения Mockoon разбирается в [MenuDto] — мок и DTO не разошлись;
- * маппинг в модель даёт то же меню, что [LocalMenu].
+ * маппинг в модель даёт то же меню, что [DemoMenu].
  */
 class MenuDtoTest {
 
@@ -71,19 +71,19 @@ class MenuDtoTest {
     }
 
     @Test
-    fun toModel_mockMenuEqualsLocalMenu() {
-        assertEquals(LocalMenu.products, menu.products.map { it.toModel(BuildConfig.BASE_URL) })
+    fun toModel_mockMenuEqualsDemoMenu() {
+        assertEquals(DemoMenu.products, menu.products.map { it.toModel(BuildConfig.BASE_URL) })
     }
 
     @Test
-    fun toOptionPrices_mockPricesEqualLocalMenu() {
-        assertEquals(LocalMenu.prices, menu.toOptionPrices())
+    fun toOptionPrices_mockPricesEqualDemoMenu() {
+        assertEquals(DemoMenu.prices, menu.toOptionPrices())
     }
 
     @Test
     fun toOptionPrices_unknownCodesDropped() {
         val dto = menu.copy(sizes = menu.sizes + SizeOptionDto("XL", 340), extras = menu.extras + ExtraOptionDto("SALT", 10))
-        assertEquals(LocalMenu.prices, dto.toOptionPrices())
+        assertEquals(DemoMenu.prices, dto.toOptionPrices())
     }
 
     private val tea = ProductDto(

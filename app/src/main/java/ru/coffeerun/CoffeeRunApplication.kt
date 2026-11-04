@@ -32,7 +32,7 @@ import ru.coffeerun.data.ShopRepository
 /**
  * Репозитории в одном экземпляре на процесс — так у всех ViewModel одна корзина и одни заказы.
  * Сетевые репозитории передаются снаружи: приложение даёт настоящие, UI-тесты — фейки без сервера
- * и DataStore из src/testFixtures (LocalMenuRepository, InMemoryAuthRepository и др.). У orders нет значения по умолчанию:
+ * и DataStore из src/testFixtures (DemoMenuRepository, InMemoryAuthRepository и др.). У orders нет значения по умолчанию:
  * забыть передать настоящий репозиторий — ошибка компиляции, а не тихие демо-заказы.
  */
 class AppContainer(

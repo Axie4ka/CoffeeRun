@@ -25,12 +25,12 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExternalResource
 import org.junit.runner.RunWith
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.InMemoryFavoritesRepository
 import ru.coffeerun.data.InMemoryProfileRepository
 import ru.coffeerun.data.InMemoryOrderRepository
-import ru.coffeerun.data.LocalMenuRepository
+import ru.coffeerun.data.DemoMenuRepository
 
 /** «Поделиться» на экране позиции открывает системный выбор приложения с текстом о позиции. */
 @RunWith(AndroidJUnit4::class)
@@ -39,7 +39,7 @@ class ShareTest {
     val freshData = object : ExternalResource() {
         override fun before() {
             val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
-            (app as CoffeeRunApplication).container = AppContainer(menu = LocalMenuRepository(), auth = InMemoryAuthRepository(loggedIn = true), profile = InMemoryProfileRepository(), favorites = InMemoryFavoritesRepository(), orders = InMemoryOrderRepository())
+            (app as CoffeeRunApplication).container = AppContainer(menu = DemoMenuRepository(), auth = InMemoryAuthRepository(loggedIn = true), profile = InMemoryProfileRepository(), favorites = InMemoryFavoritesRepository(), orders = InMemoryOrderRepository())
         }
     }
 
@@ -56,7 +56,7 @@ class ShareTest {
     fun share_launchesChooserWithProductText() {
         // Чузер не должен открываться по-настоящему
         intending(anyIntent()).respondWith(Instrumentation.ActivityResult(Activity.RESULT_OK, null))
-        val name = LocalMenu.LATTE.name
+        val name = DemoMenu.LATTE.name
 
         rule.onNodeWithText(name).performClick()
         rule.onNodeWithContentDescription(rule.activity.getString(R.string.action_share)).performClick()

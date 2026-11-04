@@ -47,7 +47,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.launch
 import ru.coffeerun.R
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.components.RadioRow
@@ -214,8 +214,8 @@ private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
 private fun CheckoutScreenPreview() {
     CoffeeRunTheme {
         val lines = listOf(
-            CartLine(LocalMenu.CROISSANT, unitPrice = 180, id = 1),
-            CartLine(LocalMenu.LATTE, unitPrice = 240, quantity = 2, id = 2)
+            CartLine(DemoMenu.CROISSANT, unitPrice = 180, id = 1),
+            CartLine(DemoMenu.LATTE, unitPrice = 240, quantity = 2, id = 2)
         )
         CheckoutScreen(
             uiState = CheckoutUiState(

@@ -1,6 +1,6 @@
 package ru.coffeerun.ui.product
 
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -617,10 +617,10 @@ private fun OrderBar(
 private fun ProductScreenPreview() {
     CoffeeRunTheme {
         ProductScreen(
-            product = LocalMenu.CAPPUCCINO,
+            product = DemoMenu.CAPPUCCINO,
             form = ProductForm(),
             unitPrice = 240,
-            prices = LocalMenu.prices,
+            prices = DemoMenu.prices,
             cartCount = 2,
             onSizeSelected = {},
             onMilkSelected = {},

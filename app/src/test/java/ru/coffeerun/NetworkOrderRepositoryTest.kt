@@ -16,8 +16,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Response
-import ru.coffeerun.data.LocalMenu
-import ru.coffeerun.data.LocalMenuRepository
+import ru.coffeerun.data.DemoMenu
+import ru.coffeerun.data.DemoMenuRepository
 import ru.coffeerun.data.NetworkOrderRepository
 import ru.coffeerun.data.PlaceOrderResult
 import ru.coffeerun.data.network.OrderDto
@@ -62,10 +62,10 @@ class NetworkOrderRepositoryTest {
     }
 
     private val loggedIn = MutableStateFlow(true)
-    private val croissant = listOf(CartLine(LocalMenu.CROISSANT, unitPrice = 180, quantity = 2))
+    private val croissant = listOf(CartLine(DemoMenu.CROISSANT, unitPrice = 180, quantity = 2))
 
     private fun TestScope.repo(api: FakeApi) =
-        NetworkOrderRepository(api, LocalMenuRepository(), loggedIn, backgroundScope + UnconfinedTestDispatcher(testScheduler))
+        NetworkOrderRepository(api, DemoMenuRepository(), loggedIn, backgroundScope + UnconfinedTestDispatcher(testScheduler))
 
     @Test
     fun login_loadsHistory_logout_clears() = runTest {
@@ -74,7 +74,7 @@ class NetworkOrderRepositoryTest {
         assertTrue(repo.orders.value.isEmpty())
         loggedIn.value = true
         assertEquals(listOf(1037), repo.orders.value.map { it.number })
-        assertEquals(LocalMenu.LATTE, repo.find(1037)!!.lines.single().product)
+        assertEquals(DemoMenu.LATTE, repo.find(1037)!!.lines.single().product)
         loggedIn.value = false
         assertTrue("чужие заказы на устройстве не остаются", repo.orders.value.isEmpty())
     }

@@ -16,7 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.InMemoryShopRepository
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.OrderRepository
 import ru.coffeerun.data.PlaceOrderResult
 import ru.coffeerun.model.CartLine
@@ -56,7 +56,7 @@ class OrderErrorsTest {
         override fun find(number: Int): Order? = null
     }
 
-    private val cart = InMemoryCartRepository().apply { add(CartLine(LocalMenu.CROISSANT, unitPrice = 180)) }
+    private val cart = InMemoryCartRepository().apply { add(CartLine(DemoMenu.CROISSANT, unitPrice = 180)) }
     private val orders = FakeOrders()
     private val checkout by lazy { CheckoutViewModel(cart, orders, InMemoryShopRepository(), ticks = flowOf(Unit)) }
 

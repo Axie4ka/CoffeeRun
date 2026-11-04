@@ -16,7 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.local.TokenStore
 import ru.coffeerun.data.network.createCoffeeRunApi
 import ru.coffeerun.data.network.orderRequest
@@ -49,7 +49,7 @@ class RequestLogTest {
                    "lines":[{"productId":"croissant","quantity":2,"unitPrice":180}]}"""
             ).build()
         )
-        val order = api.placeOrder(orderRequest(listOf(CartLine(LocalMenu.CROISSANT, unitPrice = 180, quantity = 2)), Shop.STROITELEY, null))
+        val order = api.placeOrder(orderRequest(listOf(CartLine(DemoMenu.CROISSANT, unitPrice = 180, quantity = 2)), Shop.STROITELEY, null))
 
         val sent = server.takeRequest()
         assertEquals("POST", sent.method)

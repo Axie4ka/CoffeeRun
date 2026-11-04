@@ -16,8 +16,8 @@ import ru.coffeerun.data.FavoritesRepository
 import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.InMemoryProfileRepository
 import ru.coffeerun.data.InMemoryOrderRepository
-import ru.coffeerun.data.LocalMenu
-import ru.coffeerun.data.LocalMenuRepository
+import ru.coffeerun.data.DemoMenu
+import ru.coffeerun.data.DemoMenuRepository
 
 /** Сервер не принял сердечко: оно откатывается, а снэкбар объясняет почему (и не пропадает сразу). */
 @RunWith(AndroidJUnit4::class)
@@ -34,7 +34,7 @@ class FavoritesErrorTest {
         override fun before() {
             val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
             (app as CoffeeRunApplication).container = AppContainer(
-                menu = LocalMenuRepository(),
+                menu = DemoMenuRepository(),
                 auth = InMemoryAuthRepository(loggedIn = true),
                 profile = InMemoryProfileRepository(),
                 favorites = RejectingFavorites(),
@@ -50,7 +50,7 @@ class FavoritesErrorTest {
 
     @Test
     fun rejectedHeart_showsSnackbar_andStaysOff() {
-        rule.onNodeWithText(LocalMenu.LATTE.name).performClick()
+        rule.onNodeWithText(DemoMenu.LATTE.name).performClick()
         rule.onNodeWithContentDescription(str(R.string.action_favorite)).performClick()
         rule.onNodeWithText(str(R.string.favorites_toggle_error)).assertIsDisplayed()
         rule.onNodeWithContentDescription(str(R.string.action_favorite)).assertIsDisplayed()

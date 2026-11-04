@@ -1,6 +1,6 @@
 package ru.coffeerun.ui.orders
 
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -211,8 +211,8 @@ private fun OrdersScreenPreview() {
         ProvidePreviewNotifier {
             OrdersScreen(
                 orders = listOf(
-                    Order(1042, OrderStatus.PREPARING, listOf(CartLine(LocalMenu.CROISSANT, 180, id = 1)), Shop.MOSKOVSKAYA, now),
-                    Order(1037, OrderStatus.PICKED_UP, listOf(CartLine(LocalMenu.LATTE, 240, 2, id = 2)), Shop.STROITELEY, now - 172_800_000L)
+                    Order(1042, OrderStatus.PREPARING, listOf(CartLine(DemoMenu.CROISSANT, 180, id = 1)), Shop.MOSKOVSKAYA, now),
+                    Order(1037, OrderStatus.PICKED_UP, listOf(CartLine(DemoMenu.LATTE, 240, 2, id = 2)), Shop.STROITELEY, now - 172_800_000L)
                 ),
                 onRepeat = {},
                 onBrowseMenu = {}

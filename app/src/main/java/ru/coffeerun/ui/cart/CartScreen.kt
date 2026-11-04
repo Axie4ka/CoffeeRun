@@ -1,6 +1,6 @@
 package ru.coffeerun.ui.cart
 
-import ru.coffeerun.data.LocalMenu
+import ru.coffeerun.data.DemoMenu
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -180,8 +180,8 @@ private fun CartScreenPreview() {
         CartScreen(
             uiState = CartUiState(
                 lines = listOf(
-                    CartLine(LocalMenu.CROISSANT, unitPrice = 180, id = 1),
-                    CartLine(LocalMenu.LATTE, unitPrice = 240, quantity = 2, id = 2)
+                    CartLine(DemoMenu.CROISSANT, unitPrice = 180, id = 1),
+                    CartLine(DemoMenu.LATTE, unitPrice = 240, quantity = 2, id = 2)
                 ),
                 count = 3,
                 total = 660
