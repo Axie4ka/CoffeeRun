@@ -3,6 +3,10 @@ package ru.coffeerun
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.request.crossfade
 import androidx.annotation.VisibleForTesting
 import androidx.datastore.preferences.preferencesDataStore
 import ru.coffeerun.data.AuthRepository
@@ -49,7 +53,7 @@ class AppContainer(
 /** Один DataStore на файл на весь процесс — это гарантирует делегат. */
 private val Context.authDataStore by preferencesDataStore(AUTH_DATASTORE)
 
-class CoffeeRunApplication : Application() {
+class CoffeeRunApplication : Application(), SingletonImageLoader.Factory {
     /** Живёт, пока жив процесс: в нём репозитории следят за входом и выходом, пока экраны меняются. */
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -75,6 +79,9 @@ class CoffeeRunApplication : Application() {
             orders = NetworkOrderRepository(api, menu, auth.isLoggedIn, applicationScope)
         )
     }
+
+    /** Один загрузчик фото на всё приложение: фото проявляются плавно, а не появляются рывком. */
+    override fun newImageLoader(context: PlatformContext): ImageLoader = ImageLoader.Builder(context).crossfade(true).build()
 }
 
 /** Доступ к [AppContainer] из фабрики ViewModel (`viewModelFactory { initializer { … } }`). */
