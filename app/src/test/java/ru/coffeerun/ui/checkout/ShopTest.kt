@@ -1,5 +1,6 @@
-package ru.coffeerun
+package ru.coffeerun.ui.checkout
 
+import ru.coffeerun.MainDispatcherRule
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -9,7 +10,6 @@ import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
-import ru.coffeerun.ui.checkout.CheckoutViewModel
 
 class ShopTest {
     @get:Rule

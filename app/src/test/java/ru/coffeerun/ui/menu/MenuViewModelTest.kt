@@ -1,5 +1,7 @@
-package ru.coffeerun
+package ru.coffeerun.ui.menu
 
+import ru.coffeerun.MainDispatcherRule
+import ru.coffeerun.FakeMenuRepository
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
@@ -12,26 +14,6 @@ import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.Product
-import ru.coffeerun.ui.menu.MenuUiState
-import ru.coffeerun.ui.menu.MenuViewModel
-
-/** Меню из [DemoMenu]; при [fail] = true каждый запрос падает, как без сети. Общий для тестов ViewModel. */
-class FakeMenuRepository(var fail: Boolean = false) : MenuRepository {
-    var calls = 0
-
-    override suspend fun getMenu(): List<Product> {
-        calls++
-        if (fail) throw IOException("нет сети")
-        return DemoMenu.products
-    }
-
-    override suspend fun getProduct(id: String): Product? {
-        if (fail) throw IOException("нет сети")
-        return DemoMenu.byId(id)
-    }
-
-    override suspend fun getOptionPrices() = DemoMenu.prices
-}
 
 class MenuViewModelTest {
     @get:Rule

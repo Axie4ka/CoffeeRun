@@ -1,11 +1,7 @@
-package ru.coffeerun
+package ru.coffeerun.ui.theme
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import ru.coffeerun.ui.theme.darkScheme
-import ru.coffeerun.ui.theme.lightScheme
-import ru.coffeerun.ui.theme.onTertiaryFixed
-import ru.coffeerun.ui.theme.tertiaryFixedDim
 
 /** Бейдж корзины берёт фиксированные роли — в обеих темах это фирменная карамель, а не цвета Material по умолчанию. */
 class ThemeTest {

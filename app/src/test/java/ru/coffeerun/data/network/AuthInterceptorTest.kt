@@ -1,4 +1,4 @@
-package ru.coffeerun
+package ru.coffeerun.data.network
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import java.io.File
@@ -18,9 +18,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import ru.coffeerun.data.local.TokenStore
-import ru.coffeerun.data.network.CoffeeRunApi
-import ru.coffeerun.data.network.LoginRequest
-import ru.coffeerun.data.network.createCoffeeRunApi
 
 /** Токен в запросах и выход по 401 — на настоящем HTTP-сервере и настоящем клиенте приложения. */
 class AuthInterceptorTest {

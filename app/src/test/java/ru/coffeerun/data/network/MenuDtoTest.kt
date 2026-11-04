@@ -1,5 +1,6 @@
-package ru.coffeerun
+package ru.coffeerun.data.network
 
+import ru.coffeerun.BuildConfig
 import java.io.File
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -10,13 +11,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.coffeerun.data.DemoMenu
-import ru.coffeerun.data.network.CoffeeRunJson
-import ru.coffeerun.data.network.MenuDto
-import ru.coffeerun.data.network.ExtraOptionDto
-import ru.coffeerun.data.network.ProductDto
-import ru.coffeerun.data.network.SizeOptionDto
-import ru.coffeerun.data.network.toModel
-import ru.coffeerun.data.network.toOptionPrices
 import ru.coffeerun.model.Allergen
 
 /**

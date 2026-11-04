@@ -1,5 +1,6 @@
-package ru.coffeerun
+package ru.coffeerun.data
 
+import ru.coffeerun.StubApi
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import java.io.File
 import java.io.IOException
@@ -20,8 +21,6 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import retrofit2.HttpException
 import retrofit2.Response
-import ru.coffeerun.data.AuthResult
-import ru.coffeerun.data.NetworkAuthRepository
 import ru.coffeerun.data.local.TokenStore
 import ru.coffeerun.data.network.AuthResponse
 import ru.coffeerun.data.network.LoginRequest

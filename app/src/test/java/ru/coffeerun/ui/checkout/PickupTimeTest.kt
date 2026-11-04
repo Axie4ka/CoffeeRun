@@ -1,5 +1,6 @@
-package ru.coffeerun
+package ru.coffeerun.ui.checkout
 
+import ru.coffeerun.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -20,7 +21,6 @@ import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.OrderStatus
-import ru.coffeerun.ui.checkout.CheckoutViewModel
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId

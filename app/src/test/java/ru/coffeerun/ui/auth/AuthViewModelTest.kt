@@ -1,5 +1,7 @@
-package ru.coffeerun
+package ru.coffeerun.ui.auth
 
+import ru.coffeerun.MainDispatcherRule
+import ru.coffeerun.R
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.flow.flowOf
@@ -12,11 +14,6 @@ import org.junit.Test
 import ru.coffeerun.data.AuthRepository
 import ru.coffeerun.data.AuthResult
 import ru.coffeerun.data.InMemoryAuthRepository
-import ru.coffeerun.ui.auth.LoginViewModel
-import ru.coffeerun.ui.auth.PhoneVisualTransformation
-import ru.coffeerun.ui.auth.RegisterViewModel
-import ru.coffeerun.ui.auth.displayPhone
-import ru.coffeerun.ui.auth.formatPhone
 
 /** Вход и регистрация: проверка полей, ответы сервера и что переживает смерть процесса. */
 class AuthViewModelTest {

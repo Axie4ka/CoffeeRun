@@ -1,4 +1,4 @@
-package ru.coffeerun
+package ru.coffeerun.data.local
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import java.io.File
@@ -14,7 +14,6 @@ import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import ru.coffeerun.data.local.TokenStore
 
 /** Токен в DataStore: сохраняется, стирается и переживает «перезапуск» — новый DataStore на том же файле. */
 class TokenStoreTest {

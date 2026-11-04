@@ -1,5 +1,7 @@
-package ru.coffeerun
+package ru.coffeerun.ui.profile
 
+import ru.coffeerun.MainDispatcherRule
+import ru.coffeerun.R
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -12,7 +14,6 @@ import ru.coffeerun.data.InMemoryProfileRepository
 import ru.coffeerun.data.ProfileRepository
 import ru.coffeerun.data.ProfileSaveResult
 import ru.coffeerun.model.User
-import ru.coffeerun.ui.profile.EditProfileViewModel
 
 /** «Изменить профиль»: начальные значения, проверки, ответы сервера, смерть процесса. */
 class EditProfileViewModelTest {

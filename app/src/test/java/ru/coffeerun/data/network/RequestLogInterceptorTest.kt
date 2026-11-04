@@ -1,4 +1,4 @@
-package ru.coffeerun
+package ru.coffeerun.data.network
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import java.io.File
@@ -18,13 +18,11 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.local.TokenStore
-import ru.coffeerun.data.network.createCoffeeRunApi
-import ru.coffeerun.data.network.orderRequest
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
 
 /** Настоящий клиент приложения против MockWebServer: путь и тело POST /orders, разбор ответа и строка в логе. */
-class RequestLogTest {
+class RequestLogInterceptorTest {
     @get:Rule
     val folder = TemporaryFolder()
 

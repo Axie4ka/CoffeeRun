@@ -1,5 +1,8 @@
-package ru.coffeerun
+package ru.coffeerun.ui.profile
 
+import ru.coffeerun.MainDispatcherRule
+import ru.coffeerun.FakeMenuRepository
+import ru.coffeerun.R
 import androidx.lifecycle.SavedStateHandle
 import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,8 +20,6 @@ import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.InMemoryFavoritesRepository
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.DemoMenuRepository
-import ru.coffeerun.ui.profile.FavoritesUiState
-import ru.coffeerun.ui.profile.FavoritesViewModel
 import ru.coffeerun.ui.product.ProductUiState
 import ru.coffeerun.ui.product.ProductViewModel
 

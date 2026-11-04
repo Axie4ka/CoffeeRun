@@ -1,5 +1,6 @@
-package ru.coffeerun
+package ru.coffeerun.data
 
+import ru.coffeerun.StubApi
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -17,7 +18,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Response
-import ru.coffeerun.data.NetworkFavoritesRepository
 
 /** Избранное на сервере: загрузка после входа, мгновенное переключение с откатом, очистка при выходе. */
 @OptIn(ExperimentalCoroutinesApi::class)

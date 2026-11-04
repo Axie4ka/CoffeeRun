@@ -1,5 +1,7 @@
-package ru.coffeerun
+package ru.coffeerun.ui.orders
 
+import ru.coffeerun.MainDispatcherRule
+import ru.coffeerun.R
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,8 +26,6 @@ import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.checkout.CheckoutViewModel
-import ru.coffeerun.ui.orders.OrdersLoad
-import ru.coffeerun.ui.orders.OrdersViewModel
 
 /** Экраны заказов, когда сервер отвечает не «да»: оформление и загрузка истории. */
 @OptIn(ExperimentalCoroutinesApi::class)

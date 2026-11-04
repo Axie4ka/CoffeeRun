@@ -1,5 +1,6 @@
-package ru.coffeerun
+package ru.coffeerun.data
 
+import ru.coffeerun.StubApi
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -16,10 +17,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Response
-import ru.coffeerun.data.DemoMenu
-import ru.coffeerun.data.DemoMenuRepository
-import ru.coffeerun.data.NetworkOrderRepository
-import ru.coffeerun.data.PlaceOrderResult
 import ru.coffeerun.data.network.OrderDto
 import ru.coffeerun.data.network.OrderLineDto
 import ru.coffeerun.data.network.OrderRequest

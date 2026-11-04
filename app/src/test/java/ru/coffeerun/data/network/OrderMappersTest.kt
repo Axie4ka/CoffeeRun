@@ -1,4 +1,4 @@
-package ru.coffeerun
+package ru.coffeerun.data.network
 
 import java.io.File
 import java.time.ZoneOffset
@@ -9,12 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import ru.coffeerun.data.DemoMenu
-import ru.coffeerun.data.network.CoffeeRunJson
-import ru.coffeerun.data.network.DrinkOptionsDto
-import ru.coffeerun.data.network.OrderDto
-import ru.coffeerun.data.network.OrderLineDto
-import ru.coffeerun.data.network.orderRequest
-import ru.coffeerun.data.network.toModel
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.DrinkOptions
 import ru.coffeerun.model.DrinkSize

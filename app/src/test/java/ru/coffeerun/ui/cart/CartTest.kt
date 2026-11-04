@@ -1,5 +1,6 @@
-package ru.coffeerun
+package ru.coffeerun.ui.cart
 
+import ru.coffeerun.MainDispatcherRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -23,7 +24,6 @@ import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.itemCount
-import ru.coffeerun.ui.cart.CartViewModel
 import ru.coffeerun.ui.checkout.CheckoutViewModel
 import ru.coffeerun.ui.menu.MenuViewModel
 import ru.coffeerun.ui.checkout.OrderPlacedViewModel
@@ -52,7 +52,7 @@ class CartTest {
     }
 
     @Test
-    fun localMenu_idsAreUniqueAndResolvable() {
+    fun demoMenu_idsAreUniqueAndResolvable() {
         assertEquals(13, DemoMenu.products.size)
         assertEquals(DemoMenu.products.size, DemoMenu.products.map { it.id }.toSet().size)
         assertEquals(DemoMenu.LATTE, DemoMenu.byId("latte"))

@@ -1,5 +1,6 @@
-package ru.coffeerun
+package ru.coffeerun.ui.profile
 
+import ru.coffeerun.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -12,18 +13,16 @@ import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.ProfileRepository
 import ru.coffeerun.data.ProfileSaveResult
 import ru.coffeerun.model.User
-import ru.coffeerun.ui.profile.AccountState
 import ru.coffeerun.data.InMemoryFavoritesRepository
 import ru.coffeerun.data.InMemoryOrderRepository
 import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
-import ru.coffeerun.ui.profile.ProfileViewModel
 
 /** Профиль: счётчики заказов и избранного следуют за репозиториями. */
 @OptIn(ExperimentalCoroutinesApi::class)
-class ProfileTest {
+class ProfileViewModelTest {
     @get:Rule
     val mainRule = MainDispatcherRule()
 

@@ -1,5 +1,6 @@
-package ru.coffeerun
+package ru.coffeerun.data
 
+import ru.coffeerun.StubApi
 import java.io.IOException
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.SerializationException
@@ -8,8 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Response
-import ru.coffeerun.data.NetworkProfileRepository
-import ru.coffeerun.data.ProfileSaveResult
 import ru.coffeerun.data.network.UserDto
 import ru.coffeerun.model.User
 
