@@ -13,7 +13,8 @@ enum class OrderStatus(@StringRes val labelRes: Int) {
     ACCEPTED(R.string.status_accepted),
     PREPARING(R.string.status_preparing),
     READY(R.string.status_ready),
-    PICKED_UP(R.string.status_picked_up)
+    PICKED_UP(R.string.status_picked_up),
+    CANCELLED(R.string.status_cancelled)
 }
 
 enum class Shop(@StringRes val addressRes: Int) {
@@ -37,6 +38,9 @@ data class Order(
 ) {
     val readyAtMillis: Long get() = pickupAtMillis ?: (placedAtMillis + READY_IN_MINUTES * 60_000L)
 
-    /** Активный заказ — ещё не выдан клиенту. */
-    val isActive: Boolean get() = status != OrderStatus.PICKED_UP
+    /** Активный заказ — ещё не выдан клиенту и не отменён. */
+    val isActive: Boolean get() = status != OrderStatus.PICKED_UP && status != OrderStatus.CANCELLED
+
+    /** Отменить можно, пока заказ ко времени не начали готовить — то же правило у сервера. */
+    val canCancel: Boolean get() = status == OrderStatus.ACCEPTED
 }
