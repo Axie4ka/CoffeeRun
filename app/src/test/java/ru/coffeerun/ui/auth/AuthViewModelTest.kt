@@ -66,13 +66,28 @@ class AuthViewModelTest {
     }
 
     @Test
-    fun login_phoneMustBeMobile() {
+    fun login_phoneWithUnknownCode_notSent() {
         val vm = LoginViewModel(InMemoryAuthRepository(), SavedStateHandle())
         vm.typePhone("5551234567")
         vm.onPasswordChange(demoPassword)
         vm.submit()
-        assertEquals("городской или неверный номер не уходит на сервер", R.string.auth_phone_invalid, vm.uiState.value.phoneError)
+        assertEquals("номер с несуществующим кодом не уходит на сервер", R.string.auth_phone_invalid, vm.uiState.value.phoneError)
         assertFalse(vm.uiState.value.isDone)
+    }
+
+    @Test
+    fun phone_landlineAccepted_typedAndPasted() {
+        val vm = LoginViewModel(InMemoryAuthRepository(), SavedStateHandle())
+        vm.typePhone("8121234567")
+        assertEquals("набранный 812 — код Петербурга, а не «8» вместо +7", "8121234567", vm.uiState.value.phone)
+        vm.onPhoneChange("")
+        vm.onPhoneChange("+7 (812) 123-45-67")
+        assertEquals("8121234567", vm.uiState.value.phone)
+        vm.onPhoneChange("")
+        vm.onPhoneChange("8 495 123 45 67")
+        assertEquals("4951234567", vm.uiState.value.phone)
+        for (ok in listOf("8121234567", "4951234567", "3433001122", demoPhone)) assertTrue(ok, isValidPhone(ok))
+        for (bad in listOf("0123456789", "1234567890", "5551234567", "7123456789", "812123456")) assertFalse(bad, isValidPhone(bad))
     }
 
     @Test

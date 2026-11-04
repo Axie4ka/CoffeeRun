@@ -124,7 +124,7 @@
     <string name="auth_no_account">Нет аккаунта?</string>
     <string name="auth_have_account">Уже есть аккаунт?</string>
     <string name="auth_name_empty">Введите имя</string>
-    <string name="auth_phone_invalid">Номер мобильного — 10 цифр, начинается с 9</string>
+    <string name="auth_phone_invalid">Введите российский номер: 10 цифр после +7</string>
     <string name="auth_password_empty">Введите пароль</string>
     <string name="auth_password_short">Не меньше 6 символов</string>
     <string name="auth_wrong_credentials">Неверный телефон или пароль</string>

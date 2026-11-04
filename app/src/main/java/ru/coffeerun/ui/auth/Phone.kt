@@ -13,26 +13,22 @@ const val MIN_PASSWORD_LENGTH = 6
 
 /**
  * Из того, что ввели или вставили, — только цифры номера после +7, не больше [PHONE_DIGITS].
- * Код страны отбрасывается: и у вставленного целиком номера («+7 999 …», «8 999 …»), и у набора
- * «по привычке с 8» — первая 8 или 7 в пустом поле не цифра номера, ведь +7 уже показан.
+ * Код страны отбрасывается: у вставленного целиком номера («+7 812 …», «8 999 …») и у набора по привычке.
+ * Набранная первой 7 — всегда код страны. Первая 8 ждёт следующей цифры: «89…» — привычка набирать
+ * мобильный с 8, а «81…», «84…» — городской код (Петербург — 812), и восьмёрка остаётся.
  * [previous] — цифры до правки: 11 цифр при уже набранных 10 — лишняя цифра в конце, а не код страны.
+ * shortcut: «8 812 …» по одной цифре не распознаётся (вставка работает); понадобится — разбирать по списку кодов.
  */
 fun phoneDigits(input: String, previous: String = ""): String {
     val digits = input.filter(Char::isDigit)
-    val startsWithCountry = digits.isNotEmpty() && digits[0] in "78"
-    val withoutCountry = when {
-        startsWithCountry && digits.length == PHONE_DIGITS + 1 && previous.length != PHONE_DIGITS -> digits.drop(1)
-        startsWithCountry && previous.isEmpty() -> digits.drop(1)
-        else -> digits
-    }
+    val pastedWithCountry = digits.length == PHONE_DIGITS + 1 && digits[0] in "78" && previous.length != PHONE_DIGITS
+    val typedCountry = previous.length <= 1 && (digits.startsWith('7') || digits.startsWith("89"))
+    val withoutCountry = if (pastedWithCountry || typedCountry) digits.drop(1) else digits
     return withoutCountry.take(PHONE_DIGITS)
 }
 
-/**
- * Мобильный номер: 10 цифр после +7, первая — 9.
- * shortcut: городские номера (+7 812 …) не принимаются — кофейне нужен мобильный; понадобятся — ослабить до длины.
- */
-fun isValidPhone(digits: String): Boolean = digits.length == PHONE_DIGITS && digits[0] == '9'
+/** Российский номер: 10 цифр после +7. Коды начинаются с 3, 4, 8 (городские) или 9 (мобильные). */
+fun isValidPhone(digits: String): Boolean = digits.length == PHONE_DIGITS && digits[0] in "3489"
 
 /** Номер в формате контракта: +7 и 10 цифр. */
 fun fullPhone(digits: String): String = "+7$digits"

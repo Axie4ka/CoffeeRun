@@ -129,7 +129,7 @@
     <string name="auth_no_account">No account?</string>
     <string name="auth_have_account">Already have an account?</string>
     <string name="auth_name_empty">Enter your name</string>
-    <string name="auth_phone_invalid">Mobile number: 10 digits starting with 9</string>
+    <string name="auth_phone_invalid">Enter a Russian number: 10 digits after +7</string>
     <string name="auth_password_empty">Enter your password</string>
     <string name="auth_password_short">At least 6 characters</string>
     <string name="auth_wrong_credentials">Wrong phone or password</string>
