@@ -11,10 +11,18 @@ import androidx.annotation.VisibleForTesting
 import androidx.datastore.preferences.preferencesDataStore
 import ru.coffeerun.data.AuthRepository
 import ru.coffeerun.data.NetworkFavoritesRepository
+import ru.coffeerun.domain.favorites.FavoritesCoordinator
 import ru.coffeerun.data.NetworkOrderRepository
+import ru.coffeerun.domain.orders.OrdersCoordinator
+import ru.coffeerun.domain.checkout.PickupPolicy
+import ru.coffeerun.domain.usecase.PlaceOrderUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import ru.coffeerun.data.session.AuthSession
 import ru.coffeerun.data.NetworkAuthRepository
 import ru.coffeerun.data.NetworkProfileRepository
 import ru.coffeerun.data.ProfileRepository
@@ -23,13 +31,13 @@ import ru.coffeerun.data.local.TokenStore
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewmodel.CreationExtras
 import ru.coffeerun.data.CartRepository
-import ru.coffeerun.data.FavoritesRepository
+import ru.coffeerun.domain.favorites.Favorites
 import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.NetworkMenuRepository
 import ru.coffeerun.data.network.createCoffeeRunApi
 import ru.coffeerun.data.network.serverLanguage
 import ru.coffeerun.data.MenuRepository
-import ru.coffeerun.data.OrderRepository
+import ru.coffeerun.domain.orders.Orders
 import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.ShopRepository
 
@@ -43,24 +51,42 @@ class AppContainer(
     val menu: MenuRepository,
     val auth: AuthRepository,
     val profile: ProfileRepository,
-    val favorites: FavoritesRepository,
-    val orders: OrderRepository
+    val favorites: Favorites,
+    val orders: Orders,
+    val pickupPolicy: PickupPolicy = PickupPolicy()
 ) {
     val cart: CartRepository = InMemoryCartRepository()
     val shops: ShopRepository = InMemoryShopRepository()
+    val placeOrder = PlaceOrderUseCase(cart, orders, auth, pickupPolicy)
+
+    internal fun observeSession(scope: CoroutineScope): Job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+        var previous: AuthSession? = null
+        auth.sessions.collect { current ->
+            if (previous?.isLoggedIn == true && previous != current) cart.clear()
+            previous = current
+        }
+    }
 }
 
 /** Один DataStore на файл на весь процесс — это гарантирует делегат. */
 private val Context.authDataStore by preferencesDataStore(AUTH_DATASTORE)
 
 class CoffeeRunApplication : Application(), SingletonImageLoader.Factory {
-    /** Живёт, пока жив процесс: в нём репозитории следят за входом и выходом, пока экраны меняются. */
+    /** Живёт, пока жив процесс: координаторы согласуют операции и следят за сменой входа. */
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     // var — только чтобы UI-тесты начинали с пустой корзиной: процесс у них общий.
     // Создаётся в onCreate: DataStore нужен готовый Context, при создании объекта Application его ещё нет
+    private var installedContainer: AppContainer? = null
+    private var containerSessionJob: Job? = null
     @VisibleForTesting
-    lateinit var container: AppContainer
+    var container: AppContainer
+        get() = checkNotNull(installedContainer)
+        set(value) {
+            containerSessionJob?.cancel()
+            installedContainer = value
+            containerSessionJob = value.observeSession(applicationScope)
+        }
 
     override fun onCreate() {
         super.onCreate()
@@ -71,12 +97,14 @@ class CoffeeRunApplication : Application(), SingletonImageLoader.Factory {
         val api = createCoffeeRunApi(BuildConfig.BASE_URL, language, tokens, log)
         val auth = NetworkAuthRepository(api, tokens)
         val menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language)
+        val pickupPolicy = PickupPolicy()
         container = AppContainer(
             menu = menu,
             auth = auth,
-            profile = NetworkProfileRepository(api),
-            favorites = NetworkFavoritesRepository(api, auth.isLoggedIn, applicationScope),
-            orders = NetworkOrderRepository(api, menu, auth.isLoggedIn, applicationScope)
+            profile = NetworkProfileRepository(api, tokens),
+            favorites = FavoritesCoordinator(NetworkFavoritesRepository(api, tokens), tokens, applicationScope),
+            orders = OrdersCoordinator(NetworkOrderRepository(api, menu, tokens), tokens, applicationScope, pickupPolicy),
+            pickupPolicy = pickupPolicy
         )
     }
 

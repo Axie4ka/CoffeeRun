@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.coffeerun.container
-import ru.coffeerun.data.FavoritesRepository
+import ru.coffeerun.domain.favorites.Favorites
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.Product
 
@@ -32,7 +32,7 @@ sealed interface FavoritesUiState {
  * Избранное: товары каталога, чьи id в избранном, в порядке каталога; неизвестные id пропускаются.
  * При открытии экрана избранное заново берётся с сервера — вдруг его меняли на другом устройстве.
  */
-class FavoritesViewModel(private val menu: MenuRepository, private val favorites: FavoritesRepository) : ViewModel() {
+class FavoritesViewModel(private val menu: MenuRepository, private val favorites: Favorites) : ViewModel() {
     /** null — грузится, failure — ошибка загрузки. */
     private val catalog = MutableStateFlow<Result<List<Product>>?>(null)
     private var loadJob: Job? = null

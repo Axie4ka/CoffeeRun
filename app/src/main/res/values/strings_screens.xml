@@ -83,6 +83,10 @@
     <string name="order_cancel_confirm">Cancel order</string>
     <string name="order_cancel_keep">Keep order</string>
     <string name="order_repeat">Repeat</string>
+    <string name="order_item_unavailable">Item unavailable</string>
+    <string name="order_repeat_partial">Available items added. Unavailable items were skipped.</string>
+    <string name="order_repeat_unavailable">None of the items in this order are available</string>
+    <string name="order_repeat_error">Could not check the menu. Please try again.</string>
     <string name="status_accepted">Accepted</string>
     <string name="status_preparing">Preparing</string>
     <string name="status_ready">Ready</string>
@@ -151,4 +155,5 @@
     <string name="profile_save">Save</string>
     <string name="profile_saved">Profile saved</string>
     <string name="favorites_toggle_error">Couldn\'t update favorites</string>
+    <string name="pickup_time_unavailable">Pickup is unavailable at this time. Choose another pickup time or try again later.</string>
 </resources>

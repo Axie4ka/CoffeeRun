@@ -29,7 +29,7 @@ fun createCoffeeRunApi(baseUrl: String, language: () -> String, tokens: TokenSto
     val client = builder.build()
     return Retrofit.Builder()
         .baseUrl(baseUrl)
-        .client(client)
+        .callFactory(SessionCallFactory(client))
         .addConverterFactory(CoffeeRunJson.asConverterFactory("application/json".toMediaType()))
         .build()
         .create(CoffeeRunApi::class.java)

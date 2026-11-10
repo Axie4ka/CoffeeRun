@@ -1,5 +1,7 @@
 package ru.coffeerun.ui.checkout
 
+import ru.coffeerun.testCheckout
+
 import ru.coffeerun.MainDispatcherRule
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -10,7 +12,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
-import ru.coffeerun.data.InMemoryOrderRepository
+import ru.coffeerun.data.InMemoryOrders
 import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
@@ -29,20 +31,20 @@ class ShopTest {
     @Test
     fun placeOrder_usesSelectedShop() {
         val cart = InMemoryCartRepository()
-        val orders = InMemoryOrderRepository()
+        val orders = InMemoryOrders()
         val shops = InMemoryShopRepository()
         shops.select(Shop.STROITELEY)
         cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180))
-        CheckoutViewModel(cart, orders, shops).placeOrder()
+        testCheckout(cart, orders, shops).placeOrder()
         assertEquals(Shop.STROITELEY, orders.orders.value.first().shop)
     }
 
     @Test
     fun checkout_selectShop_changesItForMenuAndOrder() = runTest {
         val cart = InMemoryCartRepository().apply { add(CartLine(DemoMenu.CROISSANT, unitPrice = 180)) }
-        val orders = InMemoryOrderRepository()
+        val orders = InMemoryOrders()
         val shops = InMemoryShopRepository()
-        val checkout = CheckoutViewModel(cart, orders, shops, ticks = flowOf(Unit))
+        val checkout = testCheckout(cart, orders, shops, ticks = flowOf(Unit))
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { checkout.uiState.collect {} }
         checkout.selectShop(Shop.STROITELEY)
         assertEquals(Shop.STROITELEY, checkout.uiState.value.shop)

@@ -128,6 +128,7 @@ fun CoffeeRunNavHost(
 
         composable<OrdersRoute> {
             val vm: OrdersViewModel = viewModel(factory = OrdersViewModel.Factory)
+            val screenScope = rememberCoroutineScope()
             val orders by vm.orders.collectAsStateWithLifecycle()
             val load by vm.load.collectAsStateWithLifecycle()
             val cancelling by vm.cancelling.collectAsStateWithLifecycle()
@@ -148,8 +149,14 @@ fun CoffeeRunNavHost(
                 load = load,
                 onRetry = vm::retry,
                 onRepeat = {
-                    vm.repeat(it)
-                    navController.openTab(Tab.CART)
+                    val selected = it
+                    screenScope.launch {
+                        val result = vm.repeat(selected) ?: return@launch
+                        if (result.added) navController.openTab(Tab.CART)
+                        result.message?.let { message ->
+                            appScope.launch { snackbarHostState.showSnackbar(context.getString(message)) }
+                        }
+                    }
                 },
                 onBrowseMenu = { navController.openTab(Tab.MENU) },
                 modifier = tabModifier,
@@ -165,6 +172,7 @@ fun CoffeeRunNavHost(
 
         composable<OrderDetailsRoute> {
             val vm: OrderDetailsViewModel = viewModel(factory = OrderDetailsViewModel.Factory)
+            val screenScope = rememberCoroutineScope()
             OnLocale(vm::onLocale)
             val order by vm.order.collectAsStateWithLifecycle()
             val load by vm.load.collectAsStateWithLifecycle()
@@ -188,8 +196,13 @@ fun CoffeeRunNavHost(
                 onRetry = vm::retry,
                 onCancel = vm::cancel,
                 onRepeat = {
-                    vm.repeat()
-                    navController.jumpToTab(Tab.CART)
+                    screenScope.launch {
+                        val result = vm.repeat() ?: return@launch
+                        if (result.added) navController.jumpToTab(Tab.CART)
+                        result.message?.let { message ->
+                            appScope.launch { snackbarHostState.showSnackbar(context.getString(message)) }
+                        }
+                    }
                 },
                 snackbarHostState = snackbarHostState
             )

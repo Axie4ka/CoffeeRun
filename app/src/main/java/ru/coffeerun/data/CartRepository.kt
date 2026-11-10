@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.update
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.MIN_QUANTITY
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Корзина — единый источник правды для всех экранов. Наружу только чтение через [lines],
@@ -26,6 +27,9 @@ interface CartRepository {
 
     fun clear()
 
+    /** Удаляет отправленные количества по ID строк, сохраняя добавления во время запроса. */
+    fun removeOrdered(submitted: List<CartLine>)
+
     /** Подменяет товары в строках на [products] с тем же id — например, на названия на новом языке. */
     fun replaceProducts(products: List<Product>)
 }
@@ -35,11 +39,11 @@ class InMemoryCartRepository : CartRepository {
     private val _lines = MutableStateFlow<List<CartLine>>(emptyList())
     override val lines: StateFlow<List<CartLine>> = _lines.asStateFlow()
 
-    private var nextLineId = 1
+    private val nextLineId = AtomicInteger(1)
 
     override fun add(line: CartLine) {
         // id выдаём до update: его лямбда может выполниться повторно
-        val id = nextLineId++
+        val id = nextLineId.getAndIncrement()
         _lines.update { cart ->
             val index = cart.indexOfFirst { it.isSameItem(line) }
             if (index >= 0) {
@@ -60,6 +64,18 @@ class InMemoryCartRepository : CartRepository {
 
     override fun clear() {
         _lines.value = emptyList()
+    }
+
+    override fun removeOrdered(submitted: List<CartLine>) {
+        val byId = submitted.associateBy { it.id }
+        _lines.update { cart ->
+            cart.mapNotNull { current ->
+                val ordered = byId[current.id]
+                if (ordered == null || current.product.id != ordered.product.id ||
+                    current.unitPrice != ordered.unitPrice || current.options != ordered.options) current
+                else (current.quantity - ordered.quantity).takeIf { it > 0 }?.let { current.copy(quantity = it) }
+            }
+        }
     }
 
     override fun replaceProducts(products: List<Product>) {

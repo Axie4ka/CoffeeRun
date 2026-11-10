@@ -24,7 +24,7 @@ class AuthViewModelTest {
     private val demoPassword = InMemoryAuthRepository.DEMO_PASSWORD
 
     /** Сервер недоступен на любой запрос. */
-    private val offline = object : AuthRepository {
+    private val offline = object : AuthRepository by InMemoryAuthRepository() {
         override val isLoggedIn = flowOf(false)
         override suspend fun login(phone: String, password: String) = AuthResult.Unavailable
         override suspend fun register(name: String, phone: String, password: String) = AuthResult.Unavailable

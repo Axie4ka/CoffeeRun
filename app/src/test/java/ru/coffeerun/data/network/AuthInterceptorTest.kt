@@ -1,7 +1,13 @@
 package ru.coffeerun.data.network
 
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import ru.coffeerun.testPreferences
 import java.io.File
+import java.io.IOException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -10,9 +16,17 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
+import mockwebserver3.Dispatcher
+import mockwebserver3.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import ru.coffeerun.data.session.AuthSession
+import ru.coffeerun.data.session.RequestSession
+import kotlinx.coroutines.asContextElement
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -26,7 +40,7 @@ class AuthInterceptorTest {
 
     private val server = MockWebServer()
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private val tokens by lazy { TokenStore(PreferenceDataStoreFactory.create(scope = scope) { File(folder.root, "auth.preferences_pb") }) }
+    private val tokens by lazy { TokenStore(testPreferences(scope, File(folder.root, "auth.preferences_pb"))) }
     private val api: CoffeeRunApi by lazy { createCoffeeRunApi(server.url("/").toString(), language = { "ru" }, tokens = tokens) }
 
     private val emptyMenu = """{"products":[],"sizes":[],"milks":[],"extras":[]}"""
@@ -78,6 +92,57 @@ class AuthInterceptorTest {
     fun clearIfStill_keepsNewerToken() = runTest {
         tokens.save("new-token")
         tokens.clearIfStill("old-token")
+        assertEquals("new-token", tokens.token.first())
+    }
+
+    @Test
+    fun oldUnauthorized_afterSameTokenLogin_keepsNewSession() = runTest {
+        tokens.save("demo-token")
+        val started = CompletableDeferred<Unit>()
+        val release = CountDownLatch(1)
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                started.complete(Unit)
+                check(release.await(10, TimeUnit.SECONDS)) { "тест не освободил ответ сервера" }
+                return MockResponse.Builder().code(401).body("{}").build()
+            }
+        }
+        val pending = async { runCatching { api.getMenu() } }
+        try {
+            started.await()
+            tokens.save("demo-token") // Новый вход, но строка токена осталась прежней.
+        } finally {
+            release.countDown()
+        }
+        pending.await()
+        assertEquals("старый 401 не сбрасывает новый вход", "demo-token", tokens.token.first())
+    }
+
+    @Test
+    fun queuedOldSessionRequest_isNotSentWithNewToken() = runTest {
+        tokens.save("old-token")
+        val session = tokens.currentSession()
+        val client = OkHttpClient.Builder().addInterceptor(AuthInterceptor(tokens)).build()
+        val queued = client.newCall(Request.Builder().url(server.url("/orders")).tag(AuthSession::class.java, session).build())
+        tokens.save("new-token")
+        respond(200)
+        val outcome = withContext(Dispatchers.IO) { runCatching { queued.execute().close() } }
+        assertTrue("старый запрос должен остановиться до отправки", outcome.exceptionOrNull() is IOException)
+        assertEquals(0, server.requestCount)
+        assertEquals("new-token", tokens.token.first())
+    }
+
+    @Test
+    fun retrofitCall_carriesCapturedSessionToInterceptor() = runTest {
+        tokens.save("old-token")
+        val previous = tokens.currentSession()
+        tokens.save("new-token")
+        respond(200, "[]")
+        val result = withContext(RequestSession.current.asContextElement(previous)) {
+            runCatching { api.getOrders() }
+        }
+        assertTrue(result.exceptionOrNull() is IOException)
+        assertEquals(0, server.requestCount)
         assertEquals("new-token", tokens.token.first())
     }
 }

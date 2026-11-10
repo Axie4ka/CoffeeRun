@@ -9,18 +9,18 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.toRoute
 import java.io.IOException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.coffeerun.R
 import ru.coffeerun.container
-import ru.coffeerun.data.CancelOrderResult
 import ru.coffeerun.data.CartRepository
-import ru.coffeerun.data.OrderRepository
+import ru.coffeerun.domain.orders.Orders
+import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.Order
 import ru.coffeerun.ui.navigation.OrderDetailsRoute
 
@@ -30,13 +30,12 @@ import ru.coffeerun.ui.navigation.OrderDetailsRoute
  */
 class OrderDetailsViewModel(
     private val number: Int,
-    private val repository: OrderRepository,
-    private val cart: CartRepository
+    private val repository: Orders,
+    private val cart: CartRepository,
+    private val menu: MenuRepository
 ) : ViewModel() {
-    private val fresh = MutableStateFlow<Order?>(null)
-
     /** null — заказа пока нет: в списке его не было, а сервер ещё не ответил или ответил ошибкой. */
-    val order: StateFlow<Order?> = combine(fresh, repository.orders) { fresh, list -> fresh ?: list.find { it.number == number } }
+    val order: StateFlow<Order?> = repository.observeOrder(number)
         .stateIn(viewModelScope, SharingStarted.Eagerly, repository.find(number))
 
     private val _load = MutableStateFlow(OrdersLoad.LOADING)
@@ -52,6 +51,8 @@ class OrderDetailsViewModel(
     private val _message = MutableStateFlow<Int?>(null)
     val message: StateFlow<Int?> = _message.asStateFlow()
 
+    private var loadJob: Job? = null
+
     init {
         retry()
     }
@@ -62,11 +63,12 @@ class OrderDetailsViewModel(
     fun onLocale(locale: Locale) = languageWatch.onLocale(locale)
 
     fun retry() {
+        loadJob?.cancel()
+        _notFound.value = false
         _load.value = OrdersLoad.LOADING
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             _load.value = try {
-                val loaded = repository.load(number)
-                if (loaded == null) _notFound.value = true else fresh.value = loaded
+                _notFound.value = repository.load(number) == null
                 OrdersLoad.DONE
             } catch (e: IOException) {
                 // Заказ уже на экране — показываем его и говорим, что статус мог устареть
@@ -81,15 +83,26 @@ class OrderDetailsViewModel(
         if (_cancelling.value) return
         _cancelling.value = true
         viewModelScope.launch {
-            val result = repository.cancel(current.number)
-            if (result is CancelOrderResult.Cancelled) fresh.value = result.order
-            _message.value = result.messageRes()
-            _cancelling.value = false
+            try {
+                _message.value = repository.cancel(current.number).messageRes()
+            } finally {
+                _cancelling.value = false
+            }
         }
     }
 
-    /** Кладёт позиции заказа обратно в корзину. */
-    fun repeat() = order.value?.lines?.forEach { cart.add(it.copy(id = 0)) }
+    private var isRepeating = false
+
+    suspend fun repeat(): OrderRepeatResult? {
+        val current = order.value ?: return null
+        if (isRepeating) return null
+        isRepeating = true
+        return try {
+            repeatOrder(current, menu, cart)
+        } finally {
+            isRepeating = false
+        }
+    }
 
     fun onMessageShown() {
         _message.value = null
@@ -99,7 +112,7 @@ class OrderDetailsViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val number = createSavedStateHandle().toRoute<OrderDetailsRoute>().number
-                OrderDetailsViewModel(number, container.orders, container.cart)
+                OrderDetailsViewModel(number, container.orders, container.cart, container.menu)
             }
         }
     }

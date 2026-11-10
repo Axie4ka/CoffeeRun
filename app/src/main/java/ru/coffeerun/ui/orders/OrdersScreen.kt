@@ -35,6 +35,7 @@ import ru.coffeerun.ui.components.EmptyState
 import ru.coffeerun.ui.components.RetryMessage
 import androidx.compose.material3.CircularProgressIndicator
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.toOrderItem
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
@@ -45,6 +46,7 @@ import ru.coffeerun.ui.theme.priceSmall
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.ProvidePreviewNotifier
 import ru.coffeerun.ui.util.formatDateTime
+import ru.coffeerun.ui.util.LocalShopZone
 import ru.coffeerun.ui.util.formatTime
 import ru.coffeerun.ui.util.summaryText
 
@@ -153,7 +155,7 @@ internal fun CancelOrderDialog(number: Int, onConfirm: () -> Unit, onDismiss: ()
 /** «Сегодня, к 17:00» для активного заказа, дата и время оформления — для прошлого. */
 @Composable
 internal fun Order.timeText(): String =
-    if (isActive) stringResource(R.string.order_time_active, formatTime(readyAtMillis)) else formatDateTime(placedAtMillis)
+    if (isActive) stringResource(R.string.order_time_active, formatTime(readyAtMillis, LocalShopZone.current(shop))) else formatDateTime(placedAtMillis, LocalShopZone.current(shop))
 
 @Composable
 private fun GroupTitle(text: String, modifier: Modifier = Modifier) {
@@ -176,9 +178,9 @@ private fun OrderCard(
 ) {
     val address = stringResource(order.shop.addressRes)
     val meta = if (order.isActive) {
-        stringResource(R.string.order_meta_active, formatTime(order.readyAtMillis), address)
+        stringResource(R.string.order_meta_active, formatTime(order.readyAtMillis, LocalShopZone.current(order.shop)), address)
     } else {
-        stringResource(R.string.order_meta_history, formatDateTime(order.placedAtMillis), address)
+        stringResource(R.string.order_meta_history, formatDateTime(order.placedAtMillis, LocalShopZone.current(order.shop)), address)
     }
     Surface(
         onClick = onClick,
@@ -266,8 +268,8 @@ private fun OrdersScreenPreview() {
         ProvidePreviewNotifier {
             OrdersScreen(
                 orders = listOf(
-                    Order(1042, OrderStatus.PREPARING, listOf(CartLine(DemoMenu.CROISSANT, 180, id = 1)), Shop.MOSKOVSKAYA, now),
-                    Order(1037, OrderStatus.PICKED_UP, listOf(CartLine(DemoMenu.LATTE, 240, 2, id = 2)), Shop.STROITELEY, now - 172_800_000L)
+                    Order(1042, OrderStatus.PREPARING, listOf(CartLine(DemoMenu.CROISSANT, 180).toOrderItem()), Shop.MOSKOVSKAYA, now),
+                    Order(1037, OrderStatus.PICKED_UP, listOf(CartLine(DemoMenu.LATTE, 240, 2).toOrderItem()), Shop.STROITELEY, now - 172_800_000L)
                 ),
                 onRepeat = {},
                 onBrowseMenu = {}

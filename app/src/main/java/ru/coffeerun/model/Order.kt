@@ -25,14 +25,13 @@ enum class Shop(@StringRes val addressRes: Int) {
 data class Order(
     val number: Int,
     val status: OrderStatus,
-    val lines: List<CartLine>,
+    val lines: List<OrderItem>,
     val shop: Shop,
     val placedAtMillis: Long,
     /** Время, к которому клиент просил приготовить заказ; null — как можно скорее. */
     val pickupAtMillis: Long? = null,
     /**
-     * Итог в рублях. По умолчанию — сумма строк; заказ с сервера передаёт его явно: строки с позициями,
-     * которых больше нет в меню, не показываются, но заплачено за них было.
+     * Итог в рублях. Состав включает и позиции, которых больше нет в текущем каталоге.
      */
     val total: Int = lines.sumOf { it.total }
 ) {

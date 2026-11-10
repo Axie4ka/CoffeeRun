@@ -1,12 +1,14 @@
 package ru.coffeerun.data
 
+import ru.coffeerun.domain.favorites.Favorites
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 /** Избранное в памяти — для UI-тестов и превью. */
-class InMemoryFavoritesRepository : FavoritesRepository {
+class InMemoryFavorites : Favorites {
     private val _ids = MutableStateFlow<Set<String>>(emptySet())
     override val ids: StateFlow<Set<String>> = _ids.asStateFlow()
 

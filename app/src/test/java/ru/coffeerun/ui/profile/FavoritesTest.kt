@@ -15,9 +15,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import ru.coffeerun.data.FavoritesRepository
+import ru.coffeerun.domain.favorites.Favorites
 import ru.coffeerun.data.InMemoryCartRepository
-import ru.coffeerun.data.InMemoryFavoritesRepository
+import ru.coffeerun.data.InMemoryFavorites
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.DemoMenuRepository
 import ru.coffeerun.ui.product.ProductUiState
@@ -29,7 +29,7 @@ class FavoritesTest {
     @get:Rule
     val mainRule = MainDispatcherRule()
 
-    private val favorites = InMemoryFavoritesRepository()
+    private val favorites = InMemoryFavorites()
 
     @Test
     fun toggle_addsAndRemoves() = runTest {
@@ -81,7 +81,7 @@ class FavoritesTest {
     }
 
     /** Сервер избранного: refresh и toggle падают, пока [fail]. */
-    private class FlakyFavorites(var fail: Boolean) : FavoritesRepository {
+    private class FlakyFavorites(var fail: Boolean) : Favorites {
         override val ids = MutableStateFlow(setOf("latte"))
         override suspend fun refresh() {
             if (fail) throw IOException("нет сети")

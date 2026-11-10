@@ -1,18 +1,13 @@
 package ru.coffeerun.data
 
-import java.io.IOException
 import kotlinx.coroutines.flow.StateFlow
+import ru.coffeerun.data.session.AuthSession
 
-/** Избранное — id товаров. Наружу только чтение через [ids], менять можно лишь [toggle]. */
+/** Подтверждённые сервером ID. Последовательностью обращений управляет FavoritesCoordinator. */
 interface FavoritesRepository {
-    val ids: StateFlow<Set<String>>
-
-    /** Загрузить с сервера заново. Ошибка — [IOException], как у меню. */
-    suspend fun refresh()
-
-    /**
-     * Добавляет товар в избранное, а если он уже там — убирает. [ids] меняется сразу;
-     * false — сервер не принял изменение, и оно откачено.
-     */
-    suspend fun toggle(productId: String): Boolean
+    val confirmedIds: StateFlow<Set<String>>
+    suspend fun refresh(session: AuthSession)
+    suspend fun setFavorite(productId: String, selected: Boolean, session: AuthSession)
+    /** Сбрасывает данные для указанного актуального входа, включая гостевой. */
+    fun clear(session: AuthSession)
 }

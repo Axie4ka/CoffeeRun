@@ -74,13 +74,17 @@ class EditProfileViewModel(
         if (form.nameError != null || form.phoneError != null) return
         _uiState.update { it.copy(isSaving = true) }
         viewModelScope.launch {
-            val result = profile.updateMe(form.name.trim(), fullPhone(form.phone))
-            _uiState.update {
-                when (result) {
-                    is ProfileSaveResult.Success -> it.copy(isSaving = false, isDone = true)
-                    ProfileSaveResult.InvalidInput -> it.copy(isSaving = false, message = R.string.auth_invalid)
-                    ProfileSaveResult.Unavailable -> it.copy(isSaving = false, message = R.string.auth_unavailable)
+            try {
+                val result = profile.updateMe(form.name.trim(), fullPhone(form.phone))
+                _uiState.update {
+                    when (result) {
+                        is ProfileSaveResult.Success -> it.copy(isDone = true)
+                        ProfileSaveResult.InvalidInput -> it.copy(message = R.string.auth_invalid)
+                        ProfileSaveResult.Unavailable -> it.copy(message = R.string.auth_unavailable)
+                    }
                 }
+            } finally {
+                _uiState.update { it.copy(isSaving = false) }
             }
         }
     }

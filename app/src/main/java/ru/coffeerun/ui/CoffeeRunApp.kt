@@ -7,6 +7,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,6 +25,8 @@ import ru.coffeerun.ui.auth.SessionViewModel
 import ru.coffeerun.ui.cart.CartViewModel
 import ru.coffeerun.ui.navigation.CoffeeRunNavHost
 import ru.coffeerun.ui.navigation.openTab
+import ru.coffeerun.ui.navigation.MenuRoute
+import kotlinx.coroutines.flow.filterNotNull
 
 /**
  * Корень приложения: [CoffeeRunNavHost] внутри одного Scaffold. Нижняя панель видна только
@@ -42,7 +48,24 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
     // Здесь, а не на экране корзины: язык могут сменить, пока открыта любая вкладка
     OnLocale(cartVm::onLocale)
     // Вошёл ли пользователь: оформление, заказы и избранное — только после входа
-    val isLoggedIn by viewModel<SessionViewModel>(factory = SessionViewModel.Factory).isLoggedIn.collectAsStateWithLifecycle()
+    val sessionVm = viewModel<SessionViewModel>(factory = SessionViewModel.Factory)
+    val isLoggedIn by sessionVm.isLoggedIn.collectAsStateWithLifecycle()
+    var navigationGeneration by rememberSaveable { mutableStateOf<Long?>(null) }
+    var navigationLoggedIn by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(sessionVm, navController) {
+        sessionVm.sessions.filterNotNull().collect { current ->
+            if (navigationGeneration != null && navigationLoggedIn &&
+                (navigationGeneration != current.generation || !current.isLoggedIn)) {
+                Tab.entries.forEach { navController.clearBackStack(it.route) }
+                navController.navigate(MenuRoute) {
+                    popUpTo(navController.graph.id) { inclusive = true }
+                    launchSingleTop = true
+                }
+            }
+            navigationGeneration = current.generation
+            navigationLoggedIn = current.isLoggedIn
+        }
+    }
 
     Scaffold(
         // Статус-бар учитывают сами вкладки (TopAppBar / statusBarsPadding), иначе отступ сверху двойной;

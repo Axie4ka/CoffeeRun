@@ -11,6 +11,7 @@ import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Order
+import ru.coffeerun.model.OrderItem
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop
@@ -30,17 +31,25 @@ fun CartLine.toDto() = OrderLineDto(
 )
 
 /**
- * Заказ с сервера. Строка нужна целиком с позицией, а сервер присылает только productId —
- * поэтому нужен [products] из меню. Позиции, которой больше нет в меню, строка не показывается,
- * но итог считается по всем строкам ответа: за неё заплачено.
+ * Сервер пока не присылает исторические названия. Берём их из [knownItems] при обновлении
+ * статуса или из [products] при загрузке. Неизвестный товар остаётся отдельной строкой.
  * null — заказ не показать: незнакомая кофейня или время не по контракту.
  */
-fun OrderDto.toModel(products: Map<String, Product>): Order? {
+fun OrderDto.toModel(products: Map<String, Product>, knownItems: List<OrderItem> = emptyList()): Order? {
     val shop = enumOrNull<Shop>(shop) ?: return null
     val placed = parseMillis(placedAt) ?: return null
-    val shown = lines.mapIndexedNotNull { index, line ->
-        val product = products[line.productId] ?: return@mapIndexedNotNull null
-        CartLine(product, line.unitPrice, line.quantity, line.options?.toModel(), id = index + 1)
+    val knownById = knownItems.associateBy { it.productId }
+    val shown = lines.map { line ->
+        val known = knownById[line.productId]
+        val product = products[line.productId]
+        OrderItem(
+            productId = line.productId,
+            name = known?.name ?: product?.name,
+            unitPrice = line.unitPrice,
+            quantity = line.quantity,
+            options = line.options?.toModel(),
+            description = known?.description ?: product?.description.orEmpty()
+        )
     }
     return Order(
         number = number,

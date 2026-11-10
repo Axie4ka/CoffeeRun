@@ -4,6 +4,8 @@ import ru.coffeerun.MainDispatcherRule
 import ru.coffeerun.R
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -68,6 +70,25 @@ class EditProfileViewModelTest {
         assertFalse(offline.uiState.value.isSaving)
         offline.onMessageShown()
         assertNull(offline.uiState.value.message)
+    }
+
+    @Test
+    fun cancelledSave_clearsBusy_withoutSuccess() = runTest {
+        val reply = CompletableDeferred<Unit>()
+        val repo = object : ProfileRepository {
+            override suspend fun getMe() = User("Денис", "+79990000000")
+            override suspend fun updateMe(name: String, phone: String): ProfileSaveResult {
+                reply.await()
+                throw CancellationException("смена входа")
+            }
+        }
+        val vm = vm(repo)
+        vm.save()
+        assertTrue(vm.uiState.value.isSaving)
+        reply.complete(Unit)
+        assertFalse(vm.uiState.value.isSaving)
+        assertFalse(vm.uiState.value.isDone)
+        assertNull(vm.uiState.value.message)
     }
 
     @Test

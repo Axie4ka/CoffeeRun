@@ -1,115 +1,138 @@
 package ru.coffeerun.data
 
-import ru.coffeerun.StubApi
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.plus
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import kotlinx.coroutines.withContext
+import org.junit.Assert.*
 import org.junit.Test
-import retrofit2.HttpException
-import retrofit2.Response
+import ru.coffeerun.StubApi
+import ru.coffeerun.data.session.SessionStateStore
 
-/** Избранное на сервере: загрузка после входа, мгновенное переключение с откатом, очистка при выходе. */
-@OptIn(ExperimentalCoroutinesApi::class)
+/** Подтверждённые сервером данные; оптимистические сценарии проверяются отдельно. */
 class NetworkFavoritesRepositoryTest {
-    /** Сервер с избранным [server]; [fail] — следующие запросы падают. */
-    private class FakeApi(var server: MutableSet<String> = mutableSetOf("latte")) : StubApi() {
+    private class FakeApi : StubApi() {
+        val server = mutableSetOf("latte")
+        var reads = 0
         var fail = false
-        val sent = mutableListOf<String>()
         var gate: CompletableDeferred<Unit>? = null
-
         override suspend fun getFavorites(): List<String> {
-            if (fail) throw IOException("нет сети")
-            return server.toList()
+            reads++
+            val snapshot = server.toList()
+            withContext(NonCancellable) { gate?.await() }
+            if (fail) throw IOException("offline")
+            return snapshot
         }
-
         override suspend fun addFavorite(productId: String) {
-            gate?.await()
-            if (fail) throw HttpException(Response.error<Unit>(500, "".toResponseBody()))
-            sent += "PUT $productId"
+            withContext(NonCancellable) { gate?.await() }
+            if (fail) throw IOException("offline")
             server += productId
         }
-
         override suspend fun removeFavorite(productId: String) {
-            if (fail) throw IOException("нет сети")
-            sent += "DELETE $productId"
+            if (fail) throw IOException("offline")
             server -= productId
         }
     }
 
-    private val loggedIn = MutableStateFlow(true)
+    private val sessions = SessionStateStore("token")
 
-    private fun TestScope.repo(api: FakeApi) =
-        NetworkFavoritesRepository(api, loggedIn, backgroundScope + UnconfinedTestDispatcher(testScheduler))
-
-    @Test
-    fun login_loadsFromServer() = runTest {
-        loggedIn.value = false
-        val repo = repo(FakeApi())
-        assertEquals(emptySet<String>(), repo.ids.value)
-        loggedIn.value = true
-        assertEquals(setOf("latte"), repo.ids.value)
+    @Test fun constructor_doesNotLoad() = runTest {
+        val api = FakeApi()
+        val repo = NetworkFavoritesRepository(api, sessions)
+        assertEquals(0, api.reads)
+        assertTrue(repo.confirmedIds.value.isEmpty())
     }
 
-    @Test
-    fun toggle_addsWithPut_removesWithDelete() = runTest {
+    @Test fun explicitSelection_isIdempotent() = runTest {
         val api = FakeApi()
-        val repo = repo(api)
-        assertTrue(repo.toggle("croissant"))
-        assertEquals(setOf("latte", "croissant"), repo.ids.value)
-        assertTrue(repo.toggle("latte"))
-        assertEquals(setOf("croissant"), repo.ids.value)
-        assertEquals(listOf("PUT croissant", "DELETE latte"), api.sent)
+        val repo = NetworkFavoritesRepository(api, sessions)
+        val session = sessions.currentSession()
+        repo.refresh(session)
+        repo.setFavorite("croissant", true, session)
+        repo.setFavorite("croissant", true, session)
+        assertEquals(setOf("latte", "croissant"), repo.confirmedIds.value)
+        assertEquals(setOf("latte", "croissant"), api.server)
+        repo.setFavorite("latte", false, session)
+        assertEquals(setOf("croissant"), repo.confirmedIds.value)
         assertEquals(setOf("croissant"), api.server)
     }
 
-    @Test
-    fun toggle_changesIdsBeforeServerAnswers() = runTest {
-        val api = FakeApi().apply { gate = CompletableDeferred() }
-        val repo = repo(api)
-        // Сразу запускаем toggle: он дойдёт до запроса и встанет на gate — сервер «ещё не ответил»
-        val result = async(start = CoroutineStart.UNDISPATCHED) { repo.toggle("croissant") }
-        assertTrue("сердечко меняется сразу", "croissant" in repo.ids.value)
+    @Test fun pendingWrite_doesNotChangeConfirmedIds() = runTest {
+        val api = FakeApi()
+        val repo = NetworkFavoritesRepository(api, sessions)
+        val session = sessions.currentSession()
+        repo.refresh(session)
+        api.gate = CompletableDeferred()
+        val write = async(start = CoroutineStart.UNDISPATCHED) { repo.setFavorite("croissant", true, session) }
+        assertEquals(setOf("latte"), repo.confirmedIds.value)
         api.gate!!.complete(Unit)
-        assertTrue(result.await())
+        write.await()
+        assertEquals(setOf("latte", "croissant"), repo.confirmedIds.value)
     }
 
-    @Test
-    fun toggle_serverError_rollsBack() = runTest {
+    @Test fun failedRefresh_keepsConfirmedIds() = runTest {
         val api = FakeApi()
-        val repo = repo(api)
+        val repo = NetworkFavoritesRepository(api, sessions)
+        val session = sessions.currentSession()
+        repo.refresh(session)
         api.fail = true
-        assertFalse(repo.toggle("croissant"))
-        assertEquals(setOf("latte"), repo.ids.value)
-        assertFalse(repo.toggle("latte"))
-        assertEquals("откат удаления возвращает позицию", setOf("latte"), repo.ids.value)
+        assertTrue(runCatching { repo.refresh(session) }.exceptionOrNull() is IOException)
+        assertEquals(setOf("latte"), repo.confirmedIds.value)
     }
 
-    @Test
-    fun logout_clearsIds() = runTest {
-        val repo = repo(FakeApi())
-        assertEquals(setOf("latte"), repo.ids.value)
-        loggedIn.value = false
-        assertEquals(emptySet<String>(), repo.ids.value)
-    }
-
-    @Test
-    fun refresh_offline_isIOException() = runTest {
+    @Test fun failedWrite_keepsConfirmedIds() = runTest {
         val api = FakeApi()
-        val repo = repo(api)
+        val repo = NetworkFavoritesRepository(api, sessions)
+        val session = sessions.currentSession()
+        repo.refresh(session)
         api.fail = true
-        val error = runCatching { repo.refresh() }.exceptionOrNull()
-        assertEquals(IOException::class, error!!::class)
-        assertEquals("неудачная загрузка не стирает то, что было", setOf("latte"), repo.ids.value)
+        assertTrue(runCatching { repo.setFavorite("latte", false, session) }.exceptionOrNull() is IOException)
+        assertEquals(setOf("latte"), repo.confirmedIds.value)
+    }
+
+    @Test fun lateRefresh_doesNotOverwriteNewSession() = runTest {
+        val api = FakeApi()
+        val repo = NetworkFavoritesRepository(api, sessions)
+        val old = sessions.currentSession()
+        val reply = CompletableDeferred<Unit>().also { api.gate = it }
+        val read = async(start = CoroutineStart.UNDISPATCHED) { runCatching { repo.refresh(old) } }
+        sessions.replaceToken("token")
+        val current = sessions.currentSession()
+        repo.clear(current)
+        api.gate = null
+        api.server.clear()
+        api.server += "raf"
+        repo.refresh(current)
+        reply.complete(Unit)
+        assertTrue(read.await().exceptionOrNull() is kotlinx.coroutines.CancellationException)
+        assertEquals(setOf("raf"), repo.confirmedIds.value)
+    }
+
+    @Test fun lateWrite_doesNotRestoreClearedData() = runTest {
+        val api = FakeApi()
+        val repo = NetworkFavoritesRepository(api, sessions)
+        val old = sessions.currentSession()
+        repo.refresh(old)
+        val reply = CompletableDeferred<Unit>().also { api.gate = it }
+        val write = async(start = CoroutineStart.UNDISPATCHED) { runCatching { repo.setFavorite("croissant", true, old) } }
+        sessions.replaceToken(null)
+        repo.clear(sessions.currentSession())
+        reply.complete(Unit)
+        assertTrue(write.await().exceptionOrNull() is kotlinx.coroutines.CancellationException)
+        assertTrue(repo.confirmedIds.value.isEmpty())
+    }
+
+    @Test fun guest_doesNotSendPersonalRequest() = runTest {
+        sessions.replaceToken(null)
+        val api = FakeApi()
+        val repo = NetworkFavoritesRepository(api, sessions)
+        val guest = sessions.currentSession()
+        assertTrue(runCatching { repo.refresh(guest) }.exceptionOrNull() is kotlinx.coroutines.CancellationException)
+        assertTrue(runCatching { repo.setFavorite("croissant", true, guest) }.exceptionOrNull() is kotlinx.coroutines.CancellationException)
+        assertEquals(0, api.reads)
+        assertEquals(setOf("latte"), api.server)
     }
 }

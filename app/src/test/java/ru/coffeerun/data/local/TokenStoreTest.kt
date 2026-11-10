@@ -1,16 +1,23 @@
 package ru.coffeerun.data.local
 
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import ru.coffeerun.testPreferences
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -27,7 +34,7 @@ class TokenStoreTest {
     private fun store(): TokenStore {
         scopes.forEach { it.cancel() }
         val scope = CoroutineScope(Dispatchers.IO + SupervisorJob()).also { scopes += it }
-        return TokenStore(PreferenceDataStoreFactory.create(scope = scope) { file })
+        return TokenStore(testPreferences(scope, file))
     }
 
     @After
@@ -48,5 +55,76 @@ class TokenStoreTest {
         store().save("demo-token")
         // Как после закрытия приложения: новый DataStore читает тот же файл
         assertEquals("demo-token", store().token.first())
+    }
+
+    @Test
+    fun sameToken_savedAgain_startsAnotherSession() = runTest {
+        val store = store()
+        store.save("demo-token")
+        val previous = store.currentSession()
+        store.save("demo-token")
+        val current = store.currentSession()
+        assertTrue(current.isLoggedIn)
+        assertTrue(current.generation > previous.generation)
+        assertEquals("demo-token", store.token.first())
+    }
+
+    @Test
+    fun staleSession_cannotApplyLocalChanges() = runTest {
+        val store = store()
+        store.save("demo-token")
+        val previous = store.currentSession()
+        store.clear()
+        var applied = false
+        val result = runCatching { store.withSession(previous) { applied = true } }
+        assertTrue(result.exceptionOrNull() is ru.coffeerun.data.session.SessionChangedException)
+        assertFalse(applied)
+        assertFalse(store.currentSession().isLoggedIn)
+    }
+
+    @Test
+    fun failedPersistence_doesNotPublishTokenOrNewSession() = runTest {
+        val scope = CoroutineScope(Dispatchers.IO + SupervisorJob()).also { scopes += it }
+        val disk = testPreferences(scope, file)
+        val failing = object : DataStore<Preferences> by disk {
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                throw IOException("запись недоступна")
+            }
+        }
+        val store = TokenStore(failing)
+        val previous = store.currentSession()
+        assertTrue(runCatching { store.save("demo-token") }.exceptionOrNull() is IOException)
+        assertEquals(previous, store.currentSession())
+        assertNull(store.token.first())
+    }
+
+    @Test
+    fun cancellationAfterDiskCommit_keepsMemoryInSync() = runTest {
+        val scope = CoroutineScope(Dispatchers.IO + SupervisorJob()).also { scopes += it }
+        val disk = testPreferences(scope, file)
+        val committed = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        var pause = false
+        val delayed = object : DataStore<Preferences> by disk {
+            override suspend fun updateData(transform: suspend (Preferences) -> Preferences): Preferences {
+                val result = disk.updateData(transform)
+                if (pause) {
+                    committed.complete(Unit)
+                    release.await() // Моделирует ожидание подтверждения после записи на диск.
+                }
+                return result
+            }
+        }
+        val store = TokenStore(delayed)
+        store.save("old-token")
+        val previous = store.currentSession()
+        pause = true
+        val saving = launch { store.save("new-token") }
+        committed.await()
+        saving.cancel()
+        release.complete(Unit)
+        saving.join()
+        assertEquals("new-token", store.token.first())
+        assertTrue(store.currentSession().generation > previous.generation)
     }
 }

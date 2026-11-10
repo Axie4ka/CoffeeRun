@@ -1,6 +1,6 @@
 package ru.coffeerun.data.network
 
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import ru.coffeerun.testPreferences
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +28,7 @@ class RequestLogInterceptorTest {
 
     private val server = MockWebServer()
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private val tokens by lazy { TokenStore(PreferenceDataStoreFactory.create(scope = scope) { File(folder.root, "auth.preferences_pb") }) }
+    private val tokens by lazy { TokenStore(testPreferences(scope, File(folder.root, "auth.preferences_pb"))) }
     private val lines = mutableListOf<String>()
     private val api by lazy { createCoffeeRunApi(server.url("/").toString(), language = { "ru" }, tokens = tokens, log = { lines += it }) }
 

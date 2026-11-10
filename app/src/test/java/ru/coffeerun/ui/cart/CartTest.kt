@@ -1,5 +1,7 @@
 package ru.coffeerun.ui.cart
 
+import ru.coffeerun.testCheckout
+
 import ru.coffeerun.MainDispatcherRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -16,7 +18,7 @@ import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.DemoMenuRepository
 import ru.coffeerun.model.MAX_QUANTITY
-import ru.coffeerun.data.InMemoryOrderRepository
+import ru.coffeerun.data.InMemoryOrders
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.DEFAULT_DRINK_SIZE
 import ru.coffeerun.model.DrinkSize
@@ -34,7 +36,7 @@ class CartTest {
     @get:Rule val mainRule = MainDispatcherRule()
 
     private val cart = InMemoryCartRepository()
-    private val orders = InMemoryOrderRepository()
+    private val orders = InMemoryOrders()
     private val lines get() = cart.lines.value
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -130,7 +132,7 @@ class CartTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun placeOrder_movesCartToOrders() = runTest {
-        val checkout = CheckoutViewModel(cart, orders, InMemoryShopRepository(), ticks = flowOf(Unit))
+        val checkout = testCheckout(cart, orders, InMemoryShopRepository(), ticks = flowOf(Unit))
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { checkout.uiState.collect {} }
         checkout.placeOrder()
         assertNull("пустая корзина — заказа нет", checkout.uiState.value.placedOrderNumber)
@@ -151,10 +153,10 @@ class CartTest {
     }
 
     @Test
-    fun repeat_putsOrderLinesBackToCart() {
+    fun repeat_putsOrderLinesBackToCart() = runTest {
         val past = orders.orders.value.first { it.lines.size == 1 }
-        OrdersViewModel(orders, cart, flowOf(false)).repeat(past)
-        OrdersViewModel(orders, cart, flowOf(false)).repeat(past)
+        OrdersViewModel(orders, cart, flowOf(false), DemoMenuRepository()).repeat(past)
+        OrdersViewModel(orders, cart, flowOf(false), DemoMenuRepository()).repeat(past)
         assertEquals(1, lines.size)
         assertEquals(past.lines[0].quantity * 2, lines[0].quantity)
     }

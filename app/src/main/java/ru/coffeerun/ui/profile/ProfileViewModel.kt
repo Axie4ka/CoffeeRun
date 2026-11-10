@@ -10,8 +10,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -19,8 +19,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.coffeerun.container
 import ru.coffeerun.data.AuthRepository
-import ru.coffeerun.data.FavoritesRepository
-import ru.coffeerun.data.OrderRepository
+import ru.coffeerun.domain.favorites.Favorites
+import ru.coffeerun.domain.orders.Orders
 import ru.coffeerun.data.ProfileRepository
 import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.Shop
@@ -39,10 +39,11 @@ sealed interface AccountState {
  */
 data class ProfileUiState(
     val shop: Shop,
-    val ordersCount: Int,
+    val ordersCount: Int?,
     val favoritesCount: Int,
     val isLoggedIn: Boolean? = true,
-    val account: AccountState = AccountState.Loading
+    val account: AccountState = AccountState.Loading,
+    val ordersLoadFailed: Boolean = false
 )
 
 /**
@@ -52,16 +53,17 @@ data class ProfileUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProfileViewModel(
     private val shops: ShopRepository,
-    orders: OrderRepository,
-    favorites: FavoritesRepository,
+    orders: Orders,
+    favorites: Favorites,
     private val auth: AuthRepository,
     private val profile: ProfileRepository
 ) : ViewModel() {
     private val reload = MutableStateFlow(0)
+    private val orderLoadFailed = MutableStateFlow(false)
 
     private val account: Flow<AccountState> =
-        combine(auth.isLoggedIn.distinctUntilChanged(), reload) { loggedIn, _ -> loggedIn }.flatMapLatest { loggedIn ->
-            if (!loggedIn) flowOf<AccountState>(AccountState.Loading) // гость в сеть не ходит
+        combine(auth.sessions, reload) { session, _ -> session }.flatMapLatest { session ->
+            if (!session.isLoggedIn) flowOf<AccountState>(AccountState.Loading) // гость в сеть не ходит
             else flow {
                 emit(AccountState.Loading)
                 emit(
@@ -74,14 +76,32 @@ class ProfileViewModel(
             }
         }
 
+    // Загрузка нужна счётчику профиля; частичный кеш после load/place не даёт полного числа.
+    init {
+        viewModelScope.launch {
+            combine(auth.sessions, reload, orders.isLoaded) { session, _, loaded -> session to loaded }
+                .collectLatest { (session, loaded) ->
+                    orderLoadFailed.value = false
+                    if (session.isLoggedIn && !loaded) {
+                        try { orders.refresh() } catch (_: IOException) { orderLoadFailed.value = true }
+                    }
+                }
+        }
+    }
+
+    private val orderCount = combine(orders.orders, orders.isLoaded, orderLoadFailed) { list, loaded, failed ->
+        list.size.takeIf { loaded } to (failed && !loaded)
+    }
+
     val uiState: StateFlow<ProfileUiState> =
-        combine(shops.selected, orders.orders, favorites.ids, auth.isLoggedIn, account) { shop, orderList, ids, loggedIn, account ->
-            ProfileUiState(shop, orderList.size, ids.size, loggedIn, account)
+        combine(shops.selected, orderCount, favorites.ids, auth.isLoggedIn, account) { shop, countState, ids, loggedIn, account ->
+            val (count, failed) = countState
+            ProfileUiState(shop, count, ids.size, loggedIn, account, ordersLoadFailed = failed)
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
             // Начальное значение из текущих данных — чтобы счётчики не мигали нулём
-            ProfileUiState(shops.selected.value, orders.orders.value.size, favorites.ids.value.size, isLoggedIn = null)
+            ProfileUiState(shops.selected.value, orders.orders.value.size.takeIf { orders.isLoaded.value }, favorites.ids.value.size, isLoggedIn = null)
         )
 
     fun selectShop(shop: Shop) = shops.select(shop)

@@ -102,7 +102,7 @@ fun CheckoutScreen(
     if (showShopPicker) ShopPickerSheet(uiState.shop, onShopSelected, onDismiss = { showShopPicker = false })
 
     if (showTimePicker && earliestPickup != null) {
-        val initial = pickupAtMillis?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalTime() } ?: earliestPickup
+        val initial = pickupAtMillis?.let { Instant.ofEpochMilli(it).atZone(uiState.pickupZone).toLocalTime() } ?: earliestPickup
         val timeState = rememberTimePickerState(initial.hour, initial.minute, is24Hour = true)
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
@@ -174,7 +174,7 @@ fun CheckoutScreen(
                     label = stringResource(R.string.pickup_scheduled),
                     supporting = when {
                         earliestPickup == null -> stringResource(R.string.pickup_scheduled_closed)
-                        pickupAtMillis != null -> formatTime(pickupAtMillis)
+                        pickupAtMillis != null -> formatTime(pickupAtMillis, uiState.pickupZone)
                         else -> stringResource(R.string.pickup_scheduled_hint)
                     },
                     selected = pickupAtMillis != null,
@@ -231,6 +231,7 @@ private fun CheckoutScreenPreview() {
                 total = lines.sumOf { it.total },
                 shop = Shop.MOSKOVSKAYA,
                 pickupAtMillis = null,
+                pickupZone = ZoneId.of("Europe/Moscow"),
                 earliestPickup = LocalTime.NOON,
                 placedOrderNumber = null
             ),

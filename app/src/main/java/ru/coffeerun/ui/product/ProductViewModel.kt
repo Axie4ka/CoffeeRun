@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import ru.coffeerun.R
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
-import ru.coffeerun.data.FavoritesRepository
+import ru.coffeerun.domain.favorites.Favorites
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.MAX_NOTE_LENGTH
 import ru.coffeerun.model.MAX_QUANTITY
@@ -96,7 +96,7 @@ class ProductViewModel(
     private val productId: String,
     private val menu: MenuRepository,
     private val cart: CartRepository,
-    private val favorites: FavoritesRepository,
+    private val favorites: Favorites,
     private val savedState: SavedStateHandle
 ) : ViewModel() {
     val form: StateFlow<ProductForm> = savedState.getStateFlow(FORM_KEY, ProductForm())

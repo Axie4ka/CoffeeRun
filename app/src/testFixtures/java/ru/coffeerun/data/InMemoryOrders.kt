@@ -1,5 +1,7 @@
 package ru.coffeerun.data
 
+import ru.coffeerun.domain.orders.Orders
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,27 +12,31 @@ import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus
+import ru.coffeerun.data.session.AuthSession
 import ru.coffeerun.model.Shop
+import ru.coffeerun.model.toOrderItem
 
 private const val FIRST_ORDER_NUMBER = 1042
 private const val DAY_MILLIS = 24 * 60 * 60 * 1000L
 
 /** Заказы в памяти, стартуют с демо-истории. */
-class InMemoryOrderRepository(private val now: () -> Long = System::currentTimeMillis) : OrderRepository {
+class InMemoryOrders(private val now: () -> Long = System::currentTimeMillis) : Orders {
     private val _orders = MutableStateFlow(demoHistory(now()))
     override val orders: StateFlow<List<Order>> = _orders.asStateFlow()
+
+    override val isLoaded: StateFlow<Boolean> = MutableStateFlow(true)
 
     private var nextOrderNumber = FIRST_ORDER_NUMBER
 
     override suspend fun refresh() = Unit
 
-    override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?): PlaceOrderResult {
+    override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession): PlaceOrderResult {
         require(lines.isNotEmpty()) { "Пустой заказ" }
         val order = Order(
             number = nextOrderNumber++,
             // Заказ ко времени готовят не сразу — пока он только принят
             status = if (pickupAtMillis != null) OrderStatus.ACCEPTED else OrderStatus.PREPARING,
-            lines = lines,
+            lines = lines.map { it.toOrderItem() },
             shop = shop,
             placedAtMillis = now(),
             pickupAtMillis = pickupAtMillis
@@ -57,7 +63,7 @@ private fun demoHistory(now: Long): List<Order> {
         Order(
             number = 1037,
             status = OrderStatus.PICKED_UP,
-            lines = listOf(CartLine(DemoMenu.LATTE, unitPrice = 240, quantity = 2, options = regular, id = 1)),
+            lines = listOf(CartLine(DemoMenu.LATTE, unitPrice = 240, quantity = 2, options = regular).toOrderItem()),
             shop = Shop.MOSKOVSKAYA,
             placedAtMillis = now - 2 * DAY_MILLIS
         ),
@@ -65,8 +71,8 @@ private fun demoHistory(now: Long): List<Order> {
             number = 1029,
             status = OrderStatus.PICKED_UP,
             lines = listOf(
-                CartLine(DemoMenu.RAF, unitPrice = 300, options = regular.copy(size = DrinkSize.LARGE), id = 1),
-                CartLine(DemoMenu.ESPRESSO, unitPrice = 150, id = 2)
+                CartLine(DemoMenu.RAF, unitPrice = 300, options = regular.copy(size = DrinkSize.LARGE)).toOrderItem(),
+                CartLine(DemoMenu.ESPRESSO, unitPrice = 150).toOrderItem()
             ),
             shop = Shop.STROITELEY,
             placedAtMillis = now - 6 * DAY_MILLIS
