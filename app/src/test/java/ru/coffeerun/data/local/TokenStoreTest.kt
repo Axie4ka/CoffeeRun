@@ -31,11 +31,16 @@ class TokenStoreTest {
     private val file: File by lazy { File(folder.root, "auth.preferences_pb") }
 
     /** DataStore на временном файле. На один файл — один активный DataStore, поэтому старый scope гасим. */
-    private fun store(): TokenStore {
+    private fun store() = TokenStore(openDisk())
+
+    private fun openDisk(): DataStore<Preferences> {
         scopes.forEach { it.cancel() }
         val scope = CoroutineScope(Dispatchers.IO + SupervisorJob()).also { scopes += it }
-        return TokenStore(testPreferences(scope, file))
+        return testPreferences(scope, file)
     }
+
+    private suspend fun persistedOwner(): String? =
+        openDisk().data.first()[androidx.datastore.preferences.core.stringPreferencesKey("local_owner")]
 
     @After
     fun tearDown() = scopes.forEach { it.cancel() }
@@ -67,6 +72,38 @@ class TokenStoreTest {
         assertTrue(current.isLoggedIn)
         assertTrue(current.generation > previous.generation)
         assertEquals("demo-token", store.token.first())
+    }
+
+    @Test
+    fun localOwner_survivesRestartButChangesOnSameTokenLogin() = runTest {
+        val first = store()
+        first.save("demo-token")
+        val owner = persistedOwner()
+        assertTrue(!owner.isNullOrBlank())
+
+        val restarted = store()
+        assertEquals(owner, restarted.currentSession().localOwner)
+        restarted.save("demo-token")
+        assertTrue(restarted.currentSession().localOwner != owner)
+        assertEquals(restarted.currentSession().localOwner, persistedOwner())
+        store().clear()
+        assertNull(persistedOwner())
+    }
+
+    @Test
+    fun existingTokenWithoutOwner_getsOneStableOwner() = runTest {
+        val scope = CoroutineScope(Dispatchers.IO + SupervisorJob()).also { scopes += it }
+        val disk = testPreferences(scope, file)
+        disk.updateData {
+            androidx.datastore.preferences.core.preferencesOf(
+                androidx.datastore.preferences.core.stringPreferencesKey("token") to "old-token"
+            )
+        }
+        assertTrue(store().currentSession().isLoggedIn)
+        val owner = persistedOwner()
+        assertTrue(!owner.isNullOrBlank())
+        assertTrue(store().currentSession().isLoggedIn)
+        assertEquals(owner, persistedOwner())
     }
 
     @Test

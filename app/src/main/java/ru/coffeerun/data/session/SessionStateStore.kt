@@ -20,8 +20,8 @@ internal class SessionStateStore(initialToken: String? = null) : SessionProvider
 
     fun credentials(): SessionCredentials = synchronized(guard) { state.value }
 
-    fun replaceToken(token: String?) = synchronized(guard) {
-        state.value = SessionCredentials(AuthSession(state.value.session.generation + 1, token != null), token)
+    fun replaceToken(token: String?, localOwner: String? = null) = synchronized(guard) {
+        state.value = SessionCredentials(AuthSession(state.value.session.generation + 1, token != null, localOwner), token)
     }
 
     override fun <T> withSession(session: AuthSession, action: () -> T): T = synchronized(guard) {

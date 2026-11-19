@@ -1,5 +1,6 @@
 package ru.coffeerun.data.local
 
+import java.util.UUID
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -87,8 +88,17 @@ class TokenStore(private val dataStore: DataStore<Preferences>) : SessionProvide
     private suspend fun persist(token: String?) {
         currentCoroutineContext().ensureActive()
         withContext(NonCancellable) {
-            dataStore.edit { if (token == null) it.remove(TOKEN) else it[TOKEN] = token }
-            state.replaceToken(token)
+            val owner = token?.let { UUID.randomUUID().toString() }
+            dataStore.edit { preferences ->
+                if (token == null) {
+                    preferences.remove(TOKEN)
+                    preferences.remove(LOCAL_OWNER)
+                } else {
+                    preferences[TOKEN] = token
+                    preferences[LOCAL_OWNER] = checkNotNull(owner)
+                }
+            }
+            state.replaceToken(token, owner)
         }
     }
 
@@ -97,11 +107,18 @@ class TokenStore(private val dataStore: DataStore<Preferences>) : SessionProvide
     /** TokenStore — единственный владелец записи токена; дальнейшие изменения публикует сам. */
     private suspend fun initializeLocked() {
         if (initialized) return
-        state.replaceToken(dataStore.data.first()[TOKEN])
+        val stored = dataStore.data.first()
+        val token = stored[TOKEN]
+        val owner = if (token == null) null else stored[LOCAL_OWNER] ?: migrateOwner()
+        state.replaceToken(token, owner)
         initialized = true
     }
 
+    private suspend fun migrateOwner(): String =
+        checkNotNull(dataStore.edit { it[LOCAL_OWNER] = UUID.randomUUID().toString() }[LOCAL_OWNER])
+
     private companion object {
+        val LOCAL_OWNER = stringPreferencesKey("local_owner")
         val TOKEN = stringPreferencesKey("token")
     }
 }
