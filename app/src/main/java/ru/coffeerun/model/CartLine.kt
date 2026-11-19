@@ -15,7 +15,9 @@ data class DrinkOptions(
     val extras: Set<Extra>,
     /** Примечание для бариста; пустая строка — примечания нет. */
     val note: String = ""
-)
+) {
+    internal fun normalized() = if (note == note.trim()) this else copy(note = note.trim())
+}
 
 /**
  * Позиция корзины. [unitPrice] — цена одной порции с учётом опций (в рублях).
@@ -33,9 +35,9 @@ data class CartLine(
 
     /** Та же позиция с теми же опциями — такие строки в корзине объединяются. */
     fun isSameItem(other: CartLine) =
-        product == other.product &&
+        product.id == other.product.id &&
         unitPrice == other.unitPrice &&
-        options == other.options
+        options?.normalized() == other.options?.normalized()
 }
 
 /** Сколько порций в корзине — число на бейдже. */
