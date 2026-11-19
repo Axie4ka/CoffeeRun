@@ -15,6 +15,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExternalResource
@@ -36,6 +37,7 @@ import ru.coffeerun.model.Shop
 class OrderHistoryTest {
     private val menuReply = CompletableDeferred<Unit>()
     private var delayMenu = false
+    @Volatile private var croissantPrice = 180
     private var menuWaiting = false
     private lateinit var container: AppContainer
     private lateinit var historyState: MutableStateFlow<List<Order>>
@@ -44,7 +46,11 @@ class OrderHistoryTest {
     val freshData = object : ExternalResource() {
         override fun before() {
             val menu = object : MenuRepository by DemoMenuRepository() {
-                override suspend fun getMenu() = DemoMenuRepository().getMenu().also {
+                override suspend fun refresh() = ru.coffeerun.model.MenuSnapshot(getMenu(), getOptionPrices())
+
+                override suspend fun getMenu() = DemoMenuRepository().getMenu().map {
+                    if (it.id == "croissant") it.copy(price = croissantPrice) else it
+                }.also {
                     if (delayMenu) {
                         menuWaiting = true
                         menuReply.await()
@@ -114,4 +120,30 @@ class OrderHistoryTest {
         }
         rule.onNodeWithText(str(R.string.status_ready)).assertIsDisplayed()
     }
+    private fun assertRepeatedAtFreshPrice() {
+        clickable(R.string.tab_cart).assertIsSelected()
+        rule.onNodeWithText(str(R.string.order_repeat_partial_prices)).assertIsDisplayed()
+        rule.runOnIdle {
+            assertEquals(240, container.cart.lines.value.single().unitPrice)
+            assertEquals(820, historyState.value.single().total)
+            assertEquals(180, historyState.value.single().lines.first().unitPrice)
+        }
+    }
+
+    @Test
+    fun repeatFromList_usesFreshPriceAndExplainsSkipped() {
+        rule.runOnIdle { croissantPrice = 240 }
+        clickable(R.string.tab_orders).performClick()
+        clickable(R.string.order_repeat).performClick()
+        assertRepeatedAtFreshPrice()
+    }
+
+    @Test
+    fun repeatFromDetails_usesFreshPriceAndKeepsHistory() {
+        openDetails()
+        rule.runOnIdle { croissantPrice = 240 }
+        clickable(R.string.order_repeat).performClick()
+        assertRepeatedAtFreshPrice()
+    }
+
 }

@@ -1,5 +1,7 @@
 package ru.coffeerun.ui.orders
 
+import ru.coffeerun.testRepeatOrder
+
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,7 +66,7 @@ class OrderDetailsViewModelTest {
 
     @Test
     fun freshStatusFromServer_replacesListed() {
-        val vm = OrderDetailsViewModel(1042, FakeOrders(listOf(accepted)) { accepted.copy(status = OrderStatus.READY) }, cart, DemoMenuRepository())
+        val vm = OrderDetailsViewModel(1042, FakeOrders(listOf(accepted)) { accepted.copy(status = OrderStatus.READY) }, testRepeatOrder(DemoMenuRepository(), cart))
         assertEquals(OrderStatus.READY, vm.order.value!!.status)
         assertEquals(OrdersLoad.DONE, vm.load.value)
         assertNull(vm.message.value)
@@ -72,7 +74,7 @@ class OrderDetailsViewModelTest {
 
     @Test
     fun offline_withListed_showsItAndExplains() {
-        val vm = OrderDetailsViewModel(1042, FakeOrders(listOf(accepted)) { throw IOException("нет сети") }, cart, DemoMenuRepository())
+        val vm = OrderDetailsViewModel(1042, FakeOrders(listOf(accepted)) { throw IOException("нет сети") }, testRepeatOrder(DemoMenuRepository(), cart))
         assertEquals("заказ из списка остаётся на экране", accepted, vm.order.value)
         assertEquals(R.string.orders_refresh_error, vm.message.value)
     }
@@ -80,7 +82,7 @@ class OrderDetailsViewModelTest {
     @Test
     fun offline_nothingListed_retryLoads() {
         val orders = FakeOrders(emptyList()) { throw IOException("нет сети") }
-        val vm = OrderDetailsViewModel(1042, orders, cart, DemoMenuRepository())
+        val vm = OrderDetailsViewModel(1042, orders, testRepeatOrder(DemoMenuRepository(), cart))
         assertNull(vm.order.value)
         assertEquals("показывать нечего — экран просит повторить", OrdersLoad.FAILED, vm.load.value)
         assertNull("снэкбар не нужен: на экране и так ошибка", vm.message.value)
@@ -91,13 +93,13 @@ class OrderDetailsViewModelTest {
 
     @Test
     fun unknownOrder_closesScreen() {
-        val vm = OrderDetailsViewModel(9999, FakeOrders(emptyList()) { null }, cart, DemoMenuRepository())
+        val vm = OrderDetailsViewModel(9999, FakeOrders(emptyList()) { null }, testRepeatOrder(DemoMenuRepository(), cart))
         assertTrue(vm.notFound.value)
     }
 
     @Test
     fun cancel_showsCancelled_andMessage() {
-        val vm = OrderDetailsViewModel(1042, FakeOrders(listOf(accepted)) { accepted }, cart, DemoMenuRepository())
+        val vm = OrderDetailsViewModel(1042, FakeOrders(listOf(accepted)) { accepted }, testRepeatOrder(DemoMenuRepository(), cart))
         vm.cancel()
         assertEquals(OrderStatus.CANCELLED, vm.order.value!!.status)
         assertEquals(R.string.order_cancelled, vm.message.value)
@@ -106,7 +108,7 @@ class OrderDetailsViewModelTest {
 
     @Test
     fun repeat_putsLinesBackToCart() = runTest {
-        val vm = OrderDetailsViewModel(1042, FakeOrders(listOf(accepted)) { accepted }, cart, DemoMenuRepository())
+        val vm = OrderDetailsViewModel(1042, FakeOrders(listOf(accepted)) { accepted }, testRepeatOrder(DemoMenuRepository(), cart))
         assertEquals(OrderRepeatResult(added = true), vm.repeat())
         assertEquals(listOf(DemoMenu.CROISSANT), cart.lines.value.map { it.product })
         assertEquals(2, cart.lines.value.single().quantity)
@@ -115,7 +117,7 @@ class OrderDetailsViewModelTest {
     @Test
     fun repeat_skipsUnavailableLine() = runTest {
         val past = accepted.copy(lines = accepted.lines + OrderItem("pumpkin_latte", null, 320))
-        val vm = OrderDetailsViewModel(1042, FakeOrders(listOf(past)) { past }, cart, DemoMenuRepository())
+        val vm = OrderDetailsViewModel(1042, FakeOrders(listOf(past)) { past }, testRepeatOrder(DemoMenuRepository(), cart))
         assertEquals(OrderRepeatResult(added = true, message = R.string.order_repeat_partial), vm.repeat())
         assertEquals(listOf("croissant"), cart.lines.value.map { it.product.id })
     }
@@ -123,7 +125,7 @@ class OrderDetailsViewModelTest {
     @Test
     fun repositoryStatusChange_afterLoad_updatesOpenDetails() {
         val orders = FakeOrders(listOf(accepted)) { accepted }
-        val vm = OrderDetailsViewModel(1042, orders, cart, DemoMenuRepository())
+        val vm = OrderDetailsViewModel(1042, orders, testRepeatOrder(DemoMenuRepository(), cart))
         orders.orders.value = listOf(accepted.copy(status = OrderStatus.READY))
         assertEquals(OrderStatus.READY, vm.order.value?.status)
         assertEquals(orders.find(1042), vm.order.value)
@@ -132,7 +134,7 @@ class OrderDetailsViewModelTest {
     @Test
     fun repositoryCleared_afterLoad_removesOrderFromDetails() {
         val orders = FakeOrders(listOf(accepted)) { accepted }
-        val vm = OrderDetailsViewModel(1042, orders, cart, DemoMenuRepository())
+        val vm = OrderDetailsViewModel(1042, orders, testRepeatOrder(DemoMenuRepository(), cart))
         orders.orders.value = emptyList()
         assertNull(vm.order.value)
     }
@@ -140,7 +142,7 @@ class OrderDetailsViewModelTest {
     @Test
     fun cancelTooLate_usesUpdatedRepositoryStatus() {
         val orders = FakeOrders(listOf(accepted)) { accepted }
-        val vm = OrderDetailsViewModel(1042, orders, cart, DemoMenuRepository())
+        val vm = OrderDetailsViewModel(1042, orders, testRepeatOrder(DemoMenuRepository(), cart))
         orders.onCancel = {
             orders.orders.value = listOf(accepted.copy(status = OrderStatus.PREPARING))
             CancelOrderResult.TooLate
@@ -166,7 +168,7 @@ class OrderDetailsViewModelTest {
                 }
             } else accepted.copy(status = OrderStatus.READY)
         }
-        val vm = OrderDetailsViewModel(1042, orders, cart, DemoMenuRepository())
+        val vm = OrderDetailsViewModel(1042, orders, testRepeatOrder(DemoMenuRepository(), cart))
         vm.retry()
         assertTrue("предыдущий запрос должен быть отменён", firstCancelled)
         firstReply.complete(Unit)

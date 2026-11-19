@@ -77,10 +77,12 @@ sealed interface ProductUiState {
  * Форма, в которой выбрано только то, что сейчас есть в кофейне: размер по умолчанию или
  * сохранённый выбор мог пропасть из меню, молоко — закончиться, добавка — исчезнуть.
  */
-private fun ProductForm.fitTo(prices: OptionPrices) = copy(
+private fun ProductForm.fitTo(product: Product, prices: OptionPrices) = copy(
     size = prices.fitSize(size),
     milk = prices.fitMilk(milk),
-    extras = extras.filterTo(mutableSetOf()) { it in prices.extras }
+    extras = extras.filterTo(mutableSetOf()) { it in product.extras && it in prices.extras },
+    isIced = isIced && Customization.ICE in product.customizations,
+    note = note.takeIf { Customization.NOTE in product.customizations }.orEmpty()
 )
 
 /** Результат загрузки товара; вместе с формой собирается в [ProductUiState]. */
@@ -108,7 +110,7 @@ class ProductViewModel(
             Loaded.Missing -> ProductUiState.NotFound
             Loaded.Failed -> ProductUiState.Error
             is Loaded.Found -> {
-                val fitted = form.fitTo(loaded.prices)
+                val fitted = form.fitTo(loaded.product, loaded.prices)
                 ProductUiState.Success(
                     loaded.product, fitted, loaded.product.unitPrice(fitted.size, fitted.milk, fitted.extras, loaded.prices),
                     prices = loaded.prices,
@@ -172,25 +174,20 @@ class ProductViewModel(
         _message.value = null
     }
 
-    fun addToCart() {
-        val (product, prices) = loaded.value as? Loaded.Found ?: return
-        val form = form.value.fitTo(prices)
+    fun addToCart(): Boolean {
+        val (product, prices) = loaded.value as? Loaded.Found ?: return false
+        val form = form.value.fitTo(product, prices)
         val features = product.customizations
-        cart.add(
-            CartLine(
-                product = product,
-                unitPrice = product.unitPrice(form.size, form.milk, form.extras, prices),
-                quantity = form.quantity,
-                // Те же опции по умолчанию, что у «+» в меню, — иначе одинаковые строки не сольются
-                options = product.defaultOptions()?.copy(
-                    size = form.size.takeIf { Customization.SIZE in features },
-                    milk = form.milk.takeIf { Customization.MILK in features },
-                    isIced = form.isIced,
-                    extras = form.extras,
-                    note = form.note.trim()
-                )
-            )
+        val options = product.defaultOptions()?.copy(
+            size = form.size.takeIf { Customization.SIZE in features },
+            milk = form.milk.takeIf { Customization.MILK in features },
+            isIced = form.isIced,
+            extras = form.extras,
+            note = form.note.trim()
         )
+        val price = product.recipePrice(options, prices) ?: return false
+        cart.add(CartLine(product, price, form.quantity, options))
+        return true
     }
 
     private fun update(transform: ProductForm.() -> ProductForm) {

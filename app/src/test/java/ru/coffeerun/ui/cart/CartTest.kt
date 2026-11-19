@@ -1,5 +1,7 @@
 package ru.coffeerun.ui.cart
 
+import ru.coffeerun.testRepeatOrder
+
 import ru.coffeerun.testCheckout
 
 import ru.coffeerun.MainDispatcherRule
@@ -155,8 +157,8 @@ class CartTest {
     @Test
     fun repeat_putsOrderLinesBackToCart() = runTest {
         val past = orders.orders.value.first { it.lines.size == 1 }
-        OrdersViewModel(orders, cart, flowOf(false), DemoMenuRepository()).repeat(past)
-        OrdersViewModel(orders, cart, flowOf(false), DemoMenuRepository()).repeat(past)
+        OrdersViewModel(orders, flowOf(false), testRepeatOrder(DemoMenuRepository(), cart)).repeat(past)
+        OrdersViewModel(orders, flowOf(false), testRepeatOrder(DemoMenuRepository(), cart)).repeat(past)
         assertEquals(1, lines.size)
         assertEquals(past.lines[0].quantity * 2, lines[0].quantity)
     }

@@ -1,5 +1,7 @@
 package ru.coffeerun.ui.orders
 
+import ru.coffeerun.testRepeatOrder
+
 import ru.coffeerun.testCheckout
 
 import ru.coffeerun.MainDispatcherRule
@@ -158,7 +160,7 @@ class OrderErrorsTest {
 
     @Test
     fun sessionChangesWhileCancelling_clearsBusy_withoutOldMessage() = runTest {
-        val vm = OrdersViewModel(orders, cart, flowOf(true), DemoMenuRepository())
+        val vm = OrdersViewModel(orders, flowOf(true), testRepeatOrder(DemoMenuRepository(), cart))
         val gate = CompletableDeferred<Unit>().also { orders.gate = it }
         orders.cancelAfterGate = true
         vm.cancel(Order(1042, OrderStatus.ACCEPTED, emptyList(), Shop.MOSKOVSKAYA, 0L))
@@ -171,7 +173,7 @@ class OrderErrorsTest {
     @Test
     fun ordersLoadFails_thenRetry_loads() = runTest {
         orders.refreshFails = true
-        val vm = OrdersViewModel(orders, cart, flowOf(true), DemoMenuRepository())
+        val vm = OrdersViewModel(orders, flowOf(true), testRepeatOrder(DemoMenuRepository(), cart))
         vm.onShown()
         assertEquals(OrdersLoad.FAILED, vm.load.value)
         orders.refreshFails = false
@@ -183,7 +185,7 @@ class OrderErrorsTest {
     @Test
     fun eachShow_reloads_guestNever() = runTest {
         val loggedIn = MutableStateFlow(false)
-        val vm = OrdersViewModel(orders, cart, loggedIn, DemoMenuRepository())
+        val vm = OrdersViewModel(orders, loggedIn, testRepeatOrder(DemoMenuRepository(), cart))
         vm.onShown()
         assertEquals("гостю грузить нечего", 0, orders.refreshCalls)
         loggedIn.value = true
@@ -197,7 +199,7 @@ class OrderErrorsTest {
 
     @Test
     fun cancel_eachResult_hasItsMessage() = runTest {
-        val vm = OrdersViewModel(orders, cart, flowOf(true), DemoMenuRepository())
+        val vm = OrdersViewModel(orders, flowOf(true), testRepeatOrder(DemoMenuRepository(), cart))
         val cases = listOf(
             CancelOrderResult.Cancelled(evening.copy(status = OrderStatus.CANCELLED)) to R.string.order_cancelled,
             CancelOrderResult.TooLate to R.string.order_cancel_too_late,
@@ -214,7 +216,7 @@ class OrderErrorsTest {
 
     @Test
     fun whileCancelling_buttonBusy_secondTapIgnored() = runTest {
-        val vm = OrdersViewModel(orders, cart, flowOf(true), DemoMenuRepository())
+        val vm = OrdersViewModel(orders, flowOf(true), testRepeatOrder(DemoMenuRepository(), cart))
         val gate = CompletableDeferred<Unit>().also { orders.gate = it }
         vm.cancel(evening)
         assertEquals(1042, vm.cancelling.value)
@@ -226,7 +228,7 @@ class OrderErrorsTest {
 
     @Test
     fun pullToRefresh_failure_keepsList_andExplains() = runTest {
-        val vm = OrdersViewModel(orders, cart, flowOf(true), DemoMenuRepository())
+        val vm = OrdersViewModel(orders, flowOf(true), testRepeatOrder(DemoMenuRepository(), cart))
         vm.onShown()
         assertEquals(listOf(1037), vm.orders.value.map { it.number })
         orders.refreshFails = true

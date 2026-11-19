@@ -74,18 +74,18 @@ class MenuViewModel(
      * Если их нет в кофейне — то же, что подставит экран позиции, иначе строки корзины не сольются.
      * Кнопка видна только при загруженном меню, поэтому цены уже есть.
      */
-    fun quickAdd(product: Product) {
-        val prices = (_uiState.value as? MenuUiState.Success)?.prices ?: return
+    fun quickAdd(product: Product): Boolean {
+        val snapshot = _uiState.value as? MenuUiState.Success ?: return false
+        val current = snapshot.products.firstOrNull { it.id == product.id } ?: return false
+        val prices = snapshot.prices
         val size = prices.fitSize(DEFAULT_DRINK_SIZE)
         val milk = prices.fitMilk(MilkType.REGULAR)
-        cart.add(
-            CartLine(
-                product = product,
-                unitPrice = product.unitPrice(size, milk, emptySet(), prices),
-                // null у опции остаётся null: у эспрессо нет выбора молока
-                options = product.defaultOptions()?.run { copy(size = this.size?.let { size }, milk = this.milk?.let { milk }) }
-            )
-        )
+        val options = current.defaultOptions()?.let {
+            it.copy(size = it.size?.let { size }, milk = it.milk?.let { milk })
+        }
+        val price = current.recipePrice(options, prices) ?: return false
+        cart.add(CartLine(current, price, options = options))
+        return true
     }
 
     companion object {

@@ -18,9 +18,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.coffeerun.R
 import ru.coffeerun.container
-import ru.coffeerun.data.CartRepository
 import ru.coffeerun.domain.orders.Orders
-import ru.coffeerun.data.MenuRepository
+import ru.coffeerun.domain.usecase.RepeatOrderUseCase
 import ru.coffeerun.model.Order
 import ru.coffeerun.ui.navigation.OrderDetailsRoute
 
@@ -31,8 +30,7 @@ import ru.coffeerun.ui.navigation.OrderDetailsRoute
 class OrderDetailsViewModel(
     private val number: Int,
     private val repository: Orders,
-    private val cart: CartRepository,
-    private val menu: MenuRepository
+    private val repeatOrderUseCase: RepeatOrderUseCase
 ) : ViewModel() {
     /** null — заказа пока нет: в списке его не было, а сервер ещё не ответил или ответил ошибкой. */
     val order: StateFlow<Order?> = repository.observeOrder(number)
@@ -98,7 +96,7 @@ class OrderDetailsViewModel(
         if (isRepeating) return null
         isRepeating = true
         return try {
-            repeatOrder(current, menu, cart)
+            repeatOrderUseCase(current).toUiResult()
         } finally {
             isRepeating = false
         }
@@ -112,7 +110,7 @@ class OrderDetailsViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val number = createSavedStateHandle().toRoute<OrderDetailsRoute>().number
-                OrderDetailsViewModel(number, container.orders, container.cart, container.menu)
+                OrderDetailsViewModel(number, container.orders, container.repeatOrder)
             }
         }
     }

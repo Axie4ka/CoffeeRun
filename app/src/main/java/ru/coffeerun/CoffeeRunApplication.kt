@@ -16,6 +16,7 @@ import ru.coffeerun.data.NetworkOrderRepository
 import ru.coffeerun.domain.orders.OrdersCoordinator
 import ru.coffeerun.domain.checkout.PickupPolicy
 import ru.coffeerun.domain.usecase.PlaceOrderUseCase
+import ru.coffeerun.domain.usecase.RepeatOrderUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -58,6 +59,7 @@ class AppContainer(
     val cart: CartRepository = InMemoryCartRepository()
     val shops: ShopRepository = InMemoryShopRepository()
     val placeOrder = PlaceOrderUseCase(cart, orders, auth, pickupPolicy)
+    val repeatOrder = RepeatOrderUseCase(menu, cart, auth)
 
     internal fun observeSession(scope: CoroutineScope): Job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
         var previous: AuthSession? = null

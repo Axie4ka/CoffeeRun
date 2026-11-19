@@ -82,6 +82,7 @@ fun CoffeeRunNavHost(
 ) {
     // Для снэкбаров, которые должны пережить закрытие экрана (например, «Профиль сохранён»)
     val appScope = rememberCoroutineScope()
+    val recipeUnavailable = stringResource(R.string.recipe_unavailable)
     // Сцена для общих элементов: фото позиции перелетает между меню, избранным и экраном напитка
     SharedTransitionLayout {
     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
@@ -106,7 +107,11 @@ fun CoffeeRunNavHost(
                     onShopSelected = vm::selectShop,
                     onRetry = vm::loadMenu,
                     onProductClick = { navController.navigate(ProductRoute(it.id)) },
-                    onAddProduct = vm::quickAdd,
+                    onAddProduct = { product ->
+                        if (!vm.quickAdd(product)) appScope.launch {
+                            snackbarHostState.showSnackbar(recipeUnavailable)
+                        }
+                    },
                     modifier = tabModifier
                 )
             }
@@ -355,8 +360,10 @@ fun CoffeeRunNavHost(
                             // Добавили — назад, откуда пришли (меню или избранное). dropUnlessResumed не даст
                             // второму нажатию во время перехода добавить ещё раз и снять со стека само меню
                             onAddToCart = dropUnlessResumed {
-                                vm.addToCart()
-                                navController.popBackStack()
+                                if (vm.addToCart()) navController.popBackStack()
+                                else appScope.launch {
+                                    snackbarHostState.showSnackbar(recipeUnavailable)
+                                }
                             },
                             onBack = { navController.popBackStack() },
                             isFavorite = state.isFavorite,

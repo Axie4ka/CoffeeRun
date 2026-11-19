@@ -11,7 +11,8 @@ data class OrderItem(
     val unitPrice: Int,
     val quantity: Int = 1,
     val options: DrinkOptions? = null,
-    val description: String = ""
+    val description: String = "",
+    val unknownOptionCodes: List<String> = emptyList()
 ) {
     val total: Int get() = unitPrice * quantity
 }

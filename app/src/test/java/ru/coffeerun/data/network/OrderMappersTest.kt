@@ -126,6 +126,18 @@ class OrderMappersTest {
     }
 
     @Test
+    fun invalidOrderLines_cannotProduceNegativeOrWrappedTotals() {
+        val cases = listOf(
+            listOf(OrderLineDto("latte", 0, 240)),
+            listOf(OrderLineDto("latte", 11, 240)),
+            listOf(OrderLineDto("latte", 1, -1)),
+            listOf(OrderLineDto("latte", 2, Int.MAX_VALUE)),
+            listOf(OrderLineDto("latte", 1, Int.MAX_VALUE), OrderLineDto("croissant", 1, 180))
+        )
+        cases.forEach { assertNull(demo[0].copy(lines = it).toModel(products)) }
+    }
+
+    @Test
     fun unknownStatus_isAccepted_unknownShop_isDropped() {
         assertEquals(OrderStatus.ACCEPTED, demo[0].copy(status = "COOKING_ON_MARS").toModel(products)!!.status)
         assertNull(demo[0].copy(shop = "MARS").toModel(products))

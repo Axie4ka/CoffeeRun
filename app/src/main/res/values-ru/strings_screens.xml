@@ -77,8 +77,8 @@
     <string name="order_cancel_keep">Не отменять</string>
     <string name="order_repeat">Повторить</string>
     <string name="order_item_unavailable">Товар недоступен</string>
-    <string name="order_repeat_partial">Доступные позиции добавлены. Недоступные товары пропущены.</string>
-    <string name="order_repeat_unavailable">Все товары из этого заказа недоступны</string>
+    <string name="order_repeat_partial">Доступные позиции добавлены. Позиции с недоступными товарами, настройками или количеством пропущены.</string>
+    <string name="order_repeat_unavailable">Не удалось повторить заказ: товары, настройки или нужное количество недоступны.</string>
     <string name="order_repeat_error">Не удалось проверить меню. Попробуйте ещё раз.</string>
     <string name="status_accepted">Принят</string>
     <string name="status_preparing">Готовится</string>
@@ -151,4 +151,6 @@
     <string name="profile_saved">Профиль сохранён</string>
     <string name="favorites_toggle_error">Не удалось обновить избранное</string>
     <string name="pickup_time_unavailable">Заказать на это время нельзя. Выберите другое время самовывоза или попробуйте позже.</string>
+    <string name="order_repeat_updated_prices">Заказ добавлен по актуальным ценам.</string>
+    <string name="order_repeat_partial_prices">Доступные позиции добавлены по актуальным ценам. Позиции с недоступными товарами, настройками или количеством пропущены.</string>
 </resources>

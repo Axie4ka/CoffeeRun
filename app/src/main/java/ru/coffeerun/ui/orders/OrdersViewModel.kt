@@ -15,9 +15,8 @@ import kotlinx.coroutines.launch
 import ru.coffeerun.R
 import ru.coffeerun.container
 import ru.coffeerun.data.CancelOrderResult
-import ru.coffeerun.data.CartRepository
 import ru.coffeerun.domain.orders.Orders
-import ru.coffeerun.data.MenuRepository
+import ru.coffeerun.domain.usecase.RepeatOrderUseCase
 import ru.coffeerun.model.Order
 
 /** Текст снэкбара об итоге отмены — один и тот же в списке и на экране заказа. */
@@ -36,9 +35,8 @@ enum class OrdersLoad { LOADING, DONE, FAILED }
  */
 class OrdersViewModel(
     private val repository: Orders,
-    private val cart: CartRepository,
     private val isLoggedIn: Flow<Boolean>,
-    private val menu: MenuRepository
+    private val repeatOrderUseCase: RepeatOrderUseCase
 ) : ViewModel() {
     val orders: StateFlow<List<Order>> = repository.orders
 
@@ -117,7 +115,7 @@ class OrdersViewModel(
         if (isRepeating) return null
         isRepeating = true
         return try {
-            repeatOrder(order, menu, cart)
+            repeatOrderUseCase(order).toUiResult()
         } finally {
             isRepeating = false
         }
@@ -125,7 +123,7 @@ class OrdersViewModel(
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { OrdersViewModel(container.orders, container.cart, container.auth.isLoggedIn, container.menu) }
+            initializer { OrdersViewModel(container.orders, container.auth.isLoggedIn, container.repeatOrder) }
         }
     }
 }
