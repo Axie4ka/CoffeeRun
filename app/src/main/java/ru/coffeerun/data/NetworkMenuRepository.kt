@@ -41,7 +41,7 @@ class NetworkMenuRepository(
 
     private suspend fun fetch(language: String): Loaded {
         val dto = try {
-            api.getMenu()
+            api.getMenu(language)
         } catch (e: HttpException) {
             throw IOException("HTTP ${e.code()}", e)
         } catch (e: SerializationException) {

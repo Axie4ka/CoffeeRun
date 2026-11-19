@@ -27,7 +27,7 @@ class NetworkMenuRepositoryTest {
 
     private class FakeApi(var answer: () -> MenuDto) : StubApi() {
         var calls = 0
-        override suspend fun getMenu(): MenuDto {
+        override suspend fun getMenu(language: String?): MenuDto {
             calls++
             return answer()
         }

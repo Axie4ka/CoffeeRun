@@ -21,7 +21,9 @@ fun Context.serverLanguage(): String = if (resources.configuration.locales[0].la
 fun createCoffeeRunApi(baseUrl: String, language: () -> String, tokens: TokenStore, log: ((String) -> Unit)? = null): CoffeeRunApi {
     val builder = OkHttpClient.Builder()
         .addInterceptor { chain ->
-            chain.proceed(chain.request().newBuilder().header("Accept-Language", language()).build())
+            val request = chain.request()
+            chain.proceed(if (request.header("Accept-Language") != null) request
+                else request.newBuilder().header("Accept-Language", language()).build())
         }
         .addInterceptor(AuthInterceptor(tokens))
     // Последним: видит запрос уже с токеном, а время — только сеть и сервер

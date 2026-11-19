@@ -32,6 +32,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import ru.coffeerun.data.local.TokenStore
+import ru.coffeerun.data.NetworkMenuRepository
 
 /** Токен в запросах и выход по 401 — на настоящем HTTP-сервере и настоящем клиенте приложения. */
 class AuthInterceptorTest {
@@ -54,6 +55,18 @@ class AuthInterceptorTest {
     fun tearDown() {
         server.close()
         scope.cancel()
+    }
+
+    @Test
+    fun menuRequest_usesLanguageOfCatalogSnapshot() = runTest {
+        val baseUrl = server.url("/").toString()
+        val client = createCoffeeRunApi(baseUrl, language = { "en" }, tokens = tokens)
+        val menu = NetworkMenuRepository(client, baseUrl, language = { "ru" })
+        respond(200, emptyMenu)
+
+        menu.getMenu()
+
+        assertEquals("ru", server.takeRequest().headers["Accept-Language"])
     }
 
     @Test

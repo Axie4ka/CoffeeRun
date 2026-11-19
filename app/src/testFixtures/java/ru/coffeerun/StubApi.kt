@@ -14,7 +14,7 @@ import ru.coffeerun.data.network.UserDto
  * Фейк переопределяет только свои запросы, поэтому новый метод в [CoffeeRunApi] не ломает старые тесты.
  */
 open class StubApi : CoffeeRunApi {
-    override suspend fun getMenu(): MenuDto = unused()
+    override suspend fun getMenu(language: String?): MenuDto = unused()
     override suspend fun login(request: LoginRequest): AuthResponse = unused()
     override suspend fun register(request: RegisterRequest): AuthResponse = unused()
     override suspend fun getMe(): UserDto = unused()

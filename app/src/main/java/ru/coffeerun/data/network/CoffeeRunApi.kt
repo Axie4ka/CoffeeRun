@@ -4,6 +4,7 @@ import kotlinx.serialization.json.Json
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -11,7 +12,7 @@ import retrofit2.http.Path
 /** Запросы к серверу CoffeeRun. Контракт — docs/openapi.yaml. */
 interface CoffeeRunApi {
     @GET("menu")
-    suspend fun getMenu(): MenuDto
+    suspend fun getMenu(@Header("Accept-Language") language: String? = null): MenuDto
 
     @POST("auth/login")
     suspend fun login(@Body request: LoginRequest): AuthResponse
