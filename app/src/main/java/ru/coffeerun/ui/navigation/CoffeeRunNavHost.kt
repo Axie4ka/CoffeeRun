@@ -395,7 +395,7 @@ fun CoffeeRunNavHost(
             CheckoutScreen(
                 uiState = checkoutState,
                 onBack = { navController.popBackStack() },
-                onConfirm = vm::placeOrder,
+                onConfirm = { vm.placeOrder(checkoutState.quote) },
                 onPickupAsap = vm::pickupAsap,
                 onPickupTimeChosen = vm::setPickupTime,
                 onShopSelected = vm::selectShop,

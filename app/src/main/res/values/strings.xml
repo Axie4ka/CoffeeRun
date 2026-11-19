@@ -1,4 +1,10 @@
 <resources>
+    <string name="checkout_prices_changed">Prices changed. Review the updated order total.</string>
+    <string name="checkout_accept_price">Confirm updated total</string>
+    <string name="checkout_cart_changed">Your cart changed. Review it before confirming.</string>
+    <string name="checkout_invalid_total">The order total is too high. Reduce the quantities and try again.</string>
+    <string name="checkout_catalog_error">Couldn’t check current prices and availability. Your cart is saved.</string>
+    <string name="checkout_unavailable_items">Review the recipe or remove these items: %1$s</string>
     <string name="recipe_unavailable">This item can’t be prepared with the available options.</string>
     <string name="session_read_error">Couldn’t read your session. Try again.</string>
     <string name="app_name" translatable="false">CoffeeRun</string>

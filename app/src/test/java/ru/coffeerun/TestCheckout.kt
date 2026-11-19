@@ -4,6 +4,7 @@ import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import ru.coffeerun.data.CartRepository
+import ru.coffeerun.data.DemoMenuRepository
 import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.domain.orders.Orders
@@ -18,5 +19,5 @@ fun testCheckout(
     ticks: Flow<Unit> = flowOf(Unit)
 ): CheckoutViewModel {
     val policy = testPickupPolicy(now)
-    return CheckoutViewModel(cart, PlaceOrderUseCase(cart, orders, InMemoryAuthRepository(loggedIn = true), policy), shops, policy, ticks)
+    return CheckoutViewModel(cart, PlaceOrderUseCase(cart, orders, InMemoryAuthRepository(loggedIn = true), policy, DemoMenuRepository()), shops, policy, ticks)
 }

@@ -31,8 +31,70 @@ class PlaceOrderUseCaseTest {
         }
     }
     private val orders = ControlledOrders()
-    private fun useCase() = PlaceOrderUseCase(cart, orders, sessions, policy)
+    private fun useCase(menu: MenuRepository = DemoMenuRepository()) = PlaceOrderUseCase(cart, orders, sessions, policy, menu)
     private fun add(quantity: Int = 1) = cart.add(CartLine(DemoMenu.CROISSANT, 180, quantity))
+
+    @Test fun changedPrice_doesNotSendOldCartWithoutConfirmation() = runTest {
+        cart.add(CartLine(DemoMenu.CROISSANT, 150, 2))
+        val before = cart.lines.value
+
+        val place = useCase()
+        val result = place(Shop.MOSKOVSKAYA, null) as CheckoutResult.PricesChanged
+
+        assertEquals(0, orders.calls)
+        assertEquals(before, cart.lines.value)
+        assertEquals(180, result.quote.updatedLines.single().unitPrice)
+        assertTrue(place(Shop.MOSKOVSKAYA, null, result.quote) is CheckoutResult.Placed)
+        assertEquals(180, orders.submitted.single().unitPrice)
+        assertTrue(cart.lines.value.isEmpty())
+    }
+
+    @Test fun priceChangesAgain_requiresAnotherConfirmation() = runTest {
+        add()
+        var price = 200
+        val menu = object : MenuRepository by DemoMenuRepository() {
+            override suspend fun refresh() = MenuSnapshot(listOf(DemoMenu.CROISSANT.copy(price = price)), DemoMenu.prices)
+        }
+        val place = useCase(menu)
+        val first = (place(Shop.MOSKOVSKAYA, null) as CheckoutResult.PricesChanged).quote
+        price = 180
+        val second = (place(Shop.MOSKOVSKAYA, null, first) as CheckoutResult.PricesChanged).quote
+        assertEquals(180, second.updatedLines.single().unitPrice)
+        assertEquals(0, orders.calls)
+    }
+
+    @Test fun catalogUnavailable_orProductRemoved_doesNotSubmitOrConsumeCart() = runTest {
+        add()
+        val before = cart.lines.value
+        val menu = object : MenuRepository by DemoMenuRepository() {
+            override suspend fun refresh(): MenuSnapshot = throw java.io.IOException("offline")
+        }
+        assertEquals(CheckoutResult.CatalogUnavailable, useCase(menu)(Shop.MOSKOVSKAYA, null))
+        val emptyMenu = object : MenuRepository by DemoMenuRepository() {
+            override suspend fun refresh() = MenuSnapshot(emptyList(), DemoMenu.prices)
+        }
+        assertEquals(CheckoutResult.UnavailableLines(listOf(DemoMenu.CROISSANT.name)),
+            useCase(emptyMenu)(Shop.MOSKOVSKAYA, null))
+        assertEquals(0, orders.calls)
+        assertEquals(before, cart.lines.value)
+    }
+
+    @Test fun cartChangedDuringCatalogRefresh_keepsNewCartAndDoesNotSubmit() = runTest {
+        add()
+        val gate = CompletableDeferred<Unit>()
+        val menu = object : MenuRepository by DemoMenuRepository() {
+            override suspend fun refresh(): MenuSnapshot {
+                gate.await()
+                return MenuSnapshot(DemoMenu.products, DemoMenu.prices)
+            }
+        }
+        val pending = async(start = CoroutineStart.UNDISPATCHED) { useCase(menu)(Shop.MOSKOVSKAYA, null) }
+        add()
+        gate.complete(Unit)
+        assertEquals(CheckoutResult.CartChanged, pending.await())
+        assertEquals(0, orders.calls)
+        assertEquals(2, cart.lines.value.single().quantity)
+    }
 
     @Test fun emptyCart_doesNotSendOrder() = runTest {
         assertEquals(CheckoutResult.EmptyCart, useCase()(Shop.MOSKOVSKAYA, null))

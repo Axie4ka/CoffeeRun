@@ -136,8 +136,13 @@ fun CheckoutScreen(
                         .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.medium),
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
                 ) {
-                    TotalRow(total = uiState.total)
-                    SubmitButton(R.string.checkout_confirm, isLoading = uiState.isPlacing, onClick = onConfirm)
+                    if (uiState.quote != null) Text(stringResource(R.string.checkout_prices_changed))
+                    if (uiState.totalOverflow) Text(stringResource(R.string.checkout_invalid_total))
+                    else TotalRow(total = uiState.total)
+                    SubmitButton(
+                        if (uiState.quote != null) R.string.checkout_accept_price else R.string.checkout_confirm,
+                        isLoading = uiState.isPlacing, onClick = onConfirm
+                    )
                 }
             }
         }
@@ -158,7 +163,9 @@ fun CheckoutScreen(
                 },
                 trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
                 colors = transparentItem,
-                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.menu_choose_shop)) { showShopPicker = true }
+                modifier = Modifier.clickable(enabled = !uiState.isPlacing, onClickLabel = stringResource(R.string.menu_choose_shop)) {
+                    showShopPicker = true
+                }
             )
             HorizontalDivider(gutter)
 
@@ -168,7 +175,8 @@ fun CheckoutScreen(
                     label = stringResource(R.string.pickup_asap),
                     supporting = stringResource(R.string.pickup_asap_hint),
                     selected = pickupAtMillis == null,
-                    onClick = onPickupAsap
+                    onClick = onPickupAsap,
+                    enabled = !uiState.isPlacing
                 )
                 RadioRow(
                     label = stringResource(R.string.pickup_scheduled),
@@ -179,7 +187,7 @@ fun CheckoutScreen(
                     },
                     selected = pickupAtMillis != null,
                     onClick = { showTimePicker = true },
-                    enabled = earliestPickup != null
+                    enabled = earliestPickup != null && !uiState.isPlacing
                 )
             }
             HorizontalDivider(gutter)
@@ -194,6 +202,13 @@ fun CheckoutScreen(
             HorizontalDivider(gutter)
 
             SectionTitle(stringResource(R.string.section_order), gutter)
+            if (uiState.unavailableItems.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.checkout_unavailable_items, uiState.unavailableItems.joinToString()),
+                    modifier = gutter,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
             lines.forEach { line ->
                 Row(gutter.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(
@@ -202,7 +217,7 @@ fun CheckoutScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = stringResource(R.string.price_rub, line.total),
+                        text = stringResource(R.string.price_rub, line.unitPrice.toLong() * line.quantity),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

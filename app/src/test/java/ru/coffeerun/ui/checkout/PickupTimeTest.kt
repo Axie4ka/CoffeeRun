@@ -52,6 +52,24 @@ class PickupTimeTest {
     }
 
     @Test
+    fun priceUpdate_requiresConfirmationFromUpdatedScreen() = runTest {
+        cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 150, quantity = 2))
+        val before = orders.orders.value
+        keepActive(vm)
+        vm.placeOrder()
+
+        val updated = checkNotNull(vm.uiState.value.quote)
+        assertEquals(360, vm.uiState.value.total)
+        vm.placeOrder()
+        assertEquals(before, orders.orders.value)
+
+        vm.placeOrder(updated)
+        assertEquals(before.size + 1, orders.orders.value.size)
+        assertEquals(360, orders.orders.value.first().total)
+        assertTrue(cart.lines.value.isEmpty())
+    }
+
+    @Test
     fun validTime_isStoredAndUsedInOrder() {
         cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180))
         assertTrue(vm.setPickupTime(13, 0))

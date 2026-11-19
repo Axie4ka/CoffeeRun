@@ -523,7 +523,7 @@ class OrdersCoordinatorTest {
             val cart = InMemoryCartRepository().apply { add(croissant.single()) }
             val before = cart.lines.value
             val purchase = async(start = CoroutineStart.UNDISPATCHED) {
-                PlaceOrderUseCase(cart, coordinator, sessions, policy)(Shop.MOSKOVSKAYA, pickup)
+                PlaceOrderUseCase(cart, coordinator, sessions, policy, ru.coffeerun.data.DemoMenuRepository())(Shop.MOSKOVSKAYA, pickup)
             }
             current = Instant.parse("2026-11-10T18:46:00Z").toEpochMilli()
             gate.complete(Unit)
