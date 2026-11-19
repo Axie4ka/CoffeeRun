@@ -110,7 +110,7 @@ class OrderSessionTest {
     fun logout_removesPersonalDataFromOpenDetails() {
         openDetails()
         val cart = (rule.activity.application as CoffeeRunApplication).container.cart
-        rule.runOnIdle { cart.add(CartLine(DemoMenu.CROISSANT, 180)) }
+        rule.runOnIdle { (cart as ru.coffeerun.data.InMemoryCartRepository).add(CartLine(DemoMenu.CROISSANT, 180)) }
         runBlocking { auth.logout() }
         rule.waitUntil(5_000) { orders.orders.value.isEmpty() }
         rule.onNodeWithText(str(R.string.status_picked_up)).assertDoesNotExist()
@@ -127,7 +127,7 @@ class OrderSessionTest {
     @Test
     fun logoutAfterActivityClosed_clearsApplicationCart() {
         val cart = (rule.activity.application as CoffeeRunApplication).container.cart
-        rule.runOnIdle { cart.add(CartLine(DemoMenu.CROISSANT, 180)) }
+        rule.runOnIdle { (cart as ru.coffeerun.data.InMemoryCartRepository).add(CartLine(DemoMenu.CROISSANT, 180)) }
         rule.activityRule.scenario.close()
         runBlocking { auth.logout() }
         rule.waitUntil(5_000) { cart.lines.value.isEmpty() }

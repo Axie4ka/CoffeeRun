@@ -33,6 +33,8 @@ sealed interface AccountState {
     data class Loaded(val user: User) : AccountState
 }
 
+enum class LogoutState { Idle, InProgress, Failed }
+
 /**
  * Состояние профиля: выбранная кофейня, число заказов и избранных позиций, данные аккаунта.
  * [isLoggedIn] — null, пока не прочитан токен: экран ничего не рисует, чтобы не мигнуть чужим видом.
@@ -104,15 +106,29 @@ class ProfileViewModel(
             ProfileUiState(shops.selected.value, orders.orders.value.size.takeIf { orders.isLoaded.value }, favorites.ids.value.size, isLoggedIn = null)
         )
 
-    fun selectShop(shop: Shop) = shops.select(shop)
+    fun selectShop(shop: Shop, onFailure: () -> Unit = {}) {
+        viewModelScope.launch { try { shops.saveSelection(shop) } catch (_: IOException) { onFailure() } }
+    }
 
     /** «Повторить» после ошибки загрузки. */
     fun retry() {
         reload.value++
     }
 
+    private val _logoutState = MutableStateFlow(LogoutState.Idle)
+    val logoutState: StateFlow<LogoutState> = _logoutState
+
     fun logout() {
-        viewModelScope.launch { auth.logout() }
+        if (_logoutState.value == LogoutState.InProgress) return
+        _logoutState.value = LogoutState.InProgress
+        viewModelScope.launch {
+            try {
+                auth.logout()
+                _logoutState.value = LogoutState.Idle
+            } catch (_: IOException) {
+                _logoutState.value = LogoutState.Failed
+            }
+        }
     }
 
     companion object {

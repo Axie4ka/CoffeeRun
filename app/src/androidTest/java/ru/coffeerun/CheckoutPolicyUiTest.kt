@@ -33,7 +33,7 @@ class CheckoutPolicyUiTest {
             orders = InMemoryOrders(now = { nowMillis })
             container = AppContainer(DemoMenuRepository(), InMemoryAuthRepository(loggedIn = true),
                 InMemoryProfileRepository(), InMemoryFavorites(), orders, pickupPolicy = testPickupPolicy { nowMillis })
-            container.cart.add(CartLine(DemoMenu.CROISSANT, 180))
+            (container.cart as ru.coffeerun.data.InMemoryCartRepository).add(CartLine(DemoMenu.CROISSANT, 180))
             val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as CoffeeRunApplication
             app.container = container
         }

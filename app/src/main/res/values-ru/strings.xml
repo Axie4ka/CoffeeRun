@@ -1,4 +1,9 @@
 <resources>
+    <string name="profile_logout_failed">Не удалось завершить выход из аккаунта. Попробуйте ещё раз.</string>
+    <string name="shop_storage_unavailable">Не удалось открыть настройки кофейни. Попробуйте ещё раз.</string>
+    <string name="checkout_shop_changed">Кофейня изменилась. Проверьте адрес и подтвердите ещё раз.</string>
+    <string name="cart_read_unavailable">Не удалось прочитать сохранённую корзину. Попробуйте ещё раз.</string>
+    <string name="cart_storage_unavailable">Не удалось сохранить изменение корзины. Попробуйте ещё раз.</string>
     <string name="checkout_storage_unavailable">Не удалось обратиться к сохранённой попытке. Проверьте историю заказов и попробуйте снова.</string>
     <string name="checkout_outcome_unknown">Не удалось узнать, принят ли заказ. Проверьте историю заказов.</string>
     <string name="checkout_check_history">Проверить историю заказов</string>

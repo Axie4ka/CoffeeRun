@@ -28,7 +28,7 @@ class SessionViewModelTest {
         container.observeSession(backgroundScope + UnconfinedTestDispatcher(testScheduler))
         val cart = container.cart
         val vm = SessionViewModel(auth)
-        cart.add(CartLine(DemoMenu.CROISSANT, 180))
+        cart.addLine(CartLine(DemoMenu.CROISSANT, 180))
         auth.logout()
         assertTrue(cart.lines.value.isEmpty())
         assertEquals(false, vm.isLoggedIn.value)
@@ -40,7 +40,7 @@ class SessionViewModelTest {
         container.observeSession(backgroundScope + UnconfinedTestDispatcher(testScheduler))
         val cart = container.cart
         val vm = SessionViewModel(auth)
-        cart.add(CartLine(DemoMenu.CROISSANT, 180))
+        cart.addLine(CartLine(DemoMenu.CROISSANT, 180))
         auth.login(InMemoryAuthRepository.DEMO.phone, InMemoryAuthRepository.DEMO_PASSWORD)
         assertEquals(1, cart.lines.value.size)
         auth.login(InMemoryAuthRepository.DEMO.phone, InMemoryAuthRepository.DEMO_PASSWORD)

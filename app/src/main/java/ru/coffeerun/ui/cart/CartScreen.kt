@@ -3,6 +3,7 @@ package ru.coffeerun.ui.cart
 import ru.coffeerun.data.DemoMenu
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +32,7 @@ import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.MIN_QUANTITY
 import ru.coffeerun.ui.components.EmptyState
+import ru.coffeerun.ui.components.RetryMessage
 import ru.coffeerun.ui.components.ProductImage
 import ru.coffeerun.ui.components.QuantityStepper
 import ru.coffeerun.ui.components.ScreenTopBar
@@ -50,11 +53,16 @@ fun CartScreen(
     onRemove: (id: Int) -> Unit,
     onCheckout: () -> Unit,
     onBrowseMenu: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRetryRead: () -> Unit = {}
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.cart_title))
-        if (uiState.lines.isEmpty()) {
+        if (uiState.isLoading) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        } else if (uiState.readFailed) {
+            RetryMessage(stringResource(R.string.cart_read_unavailable), onRetryRead, Modifier.weight(1f))
+        } else if (uiState.lines.isEmpty()) {
             EmptyState(
                 text = stringResource(R.string.cart_empty),
                 onBrowseMenu = onBrowseMenu,

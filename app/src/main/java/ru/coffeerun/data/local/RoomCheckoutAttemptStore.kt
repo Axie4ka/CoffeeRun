@@ -12,6 +12,7 @@ import ru.coffeerun.model.Shop
 
 class RoomCheckoutAttemptStore(private val db: CoffeeRunDatabase) : CheckoutAttemptStore {
     private val dao = db.checkoutAttempts()
+    override val consumesCart = true
     override fun observeActiveId(owner: String) = dao.observeActiveId(owner).catch {
         if (it is SQLiteException) throw IOException("Cannot read checkout attempts", it)
         throw it
@@ -33,8 +34,15 @@ class RoomCheckoutAttemptStore(private val db: CoffeeRunDatabase) : CheckoutAtte
             }
         }
 
-    override suspend fun finish(owner: String, id: String, orderNumber: Int?) = database {
-        if (orderNumber == null) dao.reject(owner, id) == 1 else dao.complete(owner, id, orderNumber) == 1
+    override suspend fun finish(owner: String, id: String, orderNumber: Int?, submitted: List<CartLine>) = database {
+        if (orderNumber == null) dao.reject(owner, id) == 1
+        else db.withTransaction {
+            if (db.localOwner().current() != owner || dao.complete(owner, id, orderNumber) != 1) false
+            else {
+                db.cart().consume(owner, submitted)
+                true
+            }
+        }
     }
 
     override suspend fun dismiss(owner: String, id: String) = database { dao.dismiss(owner, id) == 1 }

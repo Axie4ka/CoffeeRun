@@ -84,9 +84,12 @@ class PlaceOrderUseCase(
                     return@runInSession CheckoutResult.LocalStorageUnavailable
                 }
             }
-            val lines = sessions.withSession(session) {
-                if (activeAttempt.value?.session == session) null else cart.lines.value.toList()
-            } ?: return@runInSession CheckoutResult.AttemptPending
+            if (sessions.withSession(session) { activeAttempt.value?.session == session }) {
+                return@runInSession CheckoutResult.AttemptPending
+            }
+            val lines = try { cart.snapshot(session) } catch (_: IOException) {
+                return@runInSession CheckoutResult.LocalStorageUnavailable
+            }
             if (lines.isEmpty()) return@runInSession CheckoutResult.EmptyCart
             if (confirmed != null && (confirmed.session != session || !confirmed.matches(lines, shop, pickupAtMillis))) {
                 return@runInSession CheckoutResult.CartChanged
@@ -98,7 +101,10 @@ class PlaceOrderUseCase(
                 return@runInSession CheckoutResult.CatalogUnavailable
             }
             currentCoroutineContext().ensureActive()
-            if (sessions.withSession(session) { cart.lines.value != lines }) return@runInSession CheckoutResult.CartChanged
+            val currentLines = try { cart.snapshot(session) } catch (_: IOException) {
+                return@runInSession CheckoutResult.LocalStorageUnavailable
+            }
+            if (currentLines != lines) return@runInSession CheckoutResult.CartChanged
             if (!pickup.isValid(shop, pickupAtMillis)) return@runInSession CheckoutResult.InvalidPickupTime
             val products = snapshot.products.associateBy { it.id }
             val unavailable = mutableListOf<String>()
@@ -129,20 +135,21 @@ class PlaceOrderUseCase(
                     return@runInSession CheckoutResult.AttemptPending
                 }
                 currentCoroutineContext().ensureActive()
-                if (sessions.withSession(session) { cart.lines.value != lines }) {
+                if (cart.snapshot(session) != lines) {
                     outcomeKnown = owner == null || store == null || store.finish(owner, attempt.id, null)
                     return@runInSession CheckoutResult.CartChanged
                 }
                 val result = orders.place(updated, shop, pickupAtMillis, session)
                 if (owner != null && store != null && result != PlaceOrderResult.OutcomeUnknown) {
                     val number = (result as? PlaceOrderResult.Placed)?.order?.number
-                    if (!store.finish(owner, attempt.id, number)) return@runInSession CheckoutResult.AttemptPending
+                    if (!store.finish(owner, attempt.id, number, lines)) return@runInSession CheckoutResult.AttemptPending
                 }
                 outcomeKnown = result != PlaceOrderResult.OutcomeUnknown && result !is PlaceOrderResult.Placed
                 when (result) {
                     is PlaceOrderResult.Placed -> {
                         currentCoroutineContext().ensureActive()
-                        sessions.withSession(session) { cart.removeOrdered(lines) }
+                        sessions.withSession(session) { }
+                        if (store?.consumesCart != true) cart.removeOrderedLines(lines, session)
                         outcomeKnown = true
                         CheckoutResult.Placed(result.order)
                     }

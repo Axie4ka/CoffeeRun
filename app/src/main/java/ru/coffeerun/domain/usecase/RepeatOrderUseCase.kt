@@ -26,10 +26,10 @@ class RepeatOrderUseCase(
             }
             val products = snapshot.products.associateBy { it.id }
             currentCoroutineContext().ensureActive()
-            sessions.withSession(session) {
+            sessions.withSession(session) { }
+            try {
                 val skipped = mutableListOf<RepeatSkippedItem>()
-                var added = 0
-                var pricesChanged = false
+                val candidates = mutableListOf<Pair<OrderItem, CartLine>>()
                 for (item in order.lines) {
                     val product = products[item.productId]
                     val price = product?.recipePrice(item.options, snapshot.prices)
@@ -44,17 +44,19 @@ class RepeatOrderUseCase(
                         continue
                     }
                     val line = CartLine(requireNotNull(product), requireNotNull(price), item.quantity, item.options)
-                    val existing = cart.lines.value.firstOrNull { it.isSameItem(line) }?.quantity ?: 0
-                    if (existing + item.quantity > MAX_QUANTITY) {
-                        skipped += RepeatSkippedItem(item.productId, RepeatSkipReason.QuantityUnavailable)
-                        continue
-                    }
-                    cart.add(line)
-                    added++
-                    pricesChanged = pricesChanged || price != item.unitPrice
+                    candidates += item to line
+                }
+                val accepted = cart.addWithinLimit(candidates.map { it.second }, session)
+                val added = accepted.count { it }
+                var pricesChanged = false
+                candidates.zip(accepted).forEach { (entry, ok) ->
+                    if (!ok) skipped += RepeatSkippedItem(entry.first.productId, RepeatSkipReason.QuantityUnavailable)
+                    else if (entry.first.unitPrice != entry.second.unitPrice) pricesChanged = true
                 }
                 if (added == 0) RepeatOrderResult.Unavailable(skipped)
                 else RepeatOrderResult.Added(added, skipped, pricesChanged)
+            } catch (_: IOException) {
+                RepeatOrderResult.NetworkError
             }
         }
     }

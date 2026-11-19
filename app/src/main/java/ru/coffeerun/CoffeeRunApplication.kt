@@ -33,6 +33,8 @@ import ru.coffeerun.data.local.TokenStore
 import ru.coffeerun.data.local.CoffeeRunDatabase
 import ru.coffeerun.data.local.RoomCheckoutAttemptStore
 import ru.coffeerun.data.local.RoomOwnerScope
+import ru.coffeerun.data.local.RoomCartRepository
+import ru.coffeerun.data.local.DataStoreShopRepository
 import ru.coffeerun.domain.checkout.CheckoutAttemptStore
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -60,17 +62,17 @@ class AppContainer(
     val favorites: Favorites,
     val orders: Orders,
     val pickupPolicy: PickupPolicy = PickupPolicy(),
-    checkoutAttemptStore: CheckoutAttemptStore? = null
-) {
-    val cart: CartRepository = InMemoryCartRepository()
+    checkoutAttemptStore: CheckoutAttemptStore? = null,
+    val cart: CartRepository = InMemoryCartRepository(),
     val shops: ShopRepository = InMemoryShopRepository()
+) {
     val placeOrder = PlaceOrderUseCase(cart, orders, auth, pickupPolicy, menu, checkoutAttemptStore)
     val repeatOrder = RepeatOrderUseCase(menu, cart, auth)
 
     internal fun observeSession(scope: CoroutineScope): Job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
         var previous: AuthSession? = null
         auth.sessions.collect { current ->
-            if (previous?.isLoggedIn == true && previous != current) cart.clear()
+            if (previous?.isLoggedIn == true && previous != current) cart.onSessionEnded()
             previous = current
         }
     }
@@ -78,6 +80,7 @@ class AppContainer(
 
 /** Один DataStore на файл на весь процесс — это гарантирует делегат. */
 private val Context.authDataStore by preferencesDataStore(AUTH_DATASTORE)
+private val Context.shopDataStore by preferencesDataStore("shop")
 
 class CoffeeRunApplication : Application(), SingletonImageLoader.Factory {
     /** Живёт, пока жив процесс: координаторы согласуют операции и следят за сменой входа. */
@@ -114,7 +117,9 @@ class CoffeeRunApplication : Application(), SingletonImageLoader.Factory {
             favorites = FavoritesCoordinator(NetworkFavoritesRepository(api, tokens), tokens, applicationScope),
             orders = OrdersCoordinator(NetworkOrderRepository(api, menu, tokens), tokens, applicationScope, pickupPolicy),
             pickupPolicy = pickupPolicy,
-            checkoutAttemptStore = RoomCheckoutAttemptStore(database)
+            checkoutAttemptStore = RoomCheckoutAttemptStore(database),
+            cart = RoomCartRepository(database, tokens, applicationScope),
+            shops = DataStoreShopRepository(shopDataStore, applicationScope)
         )
     }
 

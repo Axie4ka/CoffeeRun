@@ -30,6 +30,15 @@ interface CartDao {
     @Insert
     suspend fun insert(line: CartLineEntity): Long
 
+    @Query("UPDATE cart_line SET quantity = :quantity WHERE owner = :owner AND id = :id")
+    suspend fun setQuantity(owner: String, id: Int, quantity: Int)
+
+    @Query("UPDATE cart_line SET productJson = :json WHERE owner = :owner AND id = :id")
+    suspend fun setProduct(owner: String, id: Int, json: String)
+
+    @Query("DELETE FROM cart_line WHERE owner = :owner AND id = :id")
+    suspend fun delete(owner: String, id: Int)
+
     @Query("UPDATE cart_line SET owner = :owner WHERE owner = 'guest'")
     suspend fun transferGuest(owner: String)
 

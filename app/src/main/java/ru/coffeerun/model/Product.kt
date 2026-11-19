@@ -1,4 +1,5 @@
 package ru.coffeerun.model
+import kotlinx.serialization.Serializable
 
 import androidx.annotation.StringRes
 import ru.coffeerun.R
@@ -34,6 +35,7 @@ enum class Allergen(@StringRes val labelRes: Int) {
  * [extras] — добавки, подходящие именно этой позиции (порядок сохраняется);
  * пустой набор — блока добавок нет.
  */
+@Serializable
 data class Product(
     val id: String,
     val category: ProductCategory,

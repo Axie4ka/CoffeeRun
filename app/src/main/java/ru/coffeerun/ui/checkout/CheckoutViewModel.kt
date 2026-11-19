@@ -116,7 +116,13 @@ class CheckoutViewModel(
     }
 
     /** Кофейня общая с меню и профилем: выбор здесь меняет её и там. */
-    fun selectShop(shop: Shop) = shops.select(shop)
+    fun selectShop(shop: Shop) {
+        if (submit.value.isPlacing) return
+        viewModelScope.launch {
+            try { shops.saveSelection(shop) }
+            catch (_: IOException) { submit.update { it.copy(message = R.string.shop_storage_unavailable) } }
+        }
+    }
 
     /** Выбирает допустимое время в часовом поясе выбранной кофейни. */
     fun setPickupTime(hour: Int, minute: Int): Boolean {
@@ -145,6 +151,10 @@ class CheckoutViewModel(
         submit.value = Submit(isPlacing = true, quote = confirmed)
         viewModelScope.launch {
             try {
+                if (shops.current() != shop) {
+                    submit.value = Submit(message = R.string.checkout_shop_changed)
+                    return@launch
+                }
                 submit.value = when (val result = placeOrderUseCase(shop, pickupAt, confirmed)) {
                     is CheckoutResult.Placed -> Submit(placedOrderNumber = result.order.number)
                     is CheckoutResult.PricesChanged -> Submit(quote = result.quote)
@@ -159,6 +169,8 @@ class CheckoutViewModel(
                     CheckoutResult.AttemptPending -> Submit()
                     CheckoutResult.LocalStorageUnavailable -> Submit(message = R.string.checkout_storage_unavailable)
                 }
+            } catch (_: IOException) {
+                submit.value = Submit(message = R.string.shop_storage_unavailable, quote = confirmed)
             } finally {
                 submit.update { it.copy(isPlacing = false) }
             }

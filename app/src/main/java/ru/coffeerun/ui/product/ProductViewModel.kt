@@ -174,8 +174,11 @@ class ProductViewModel(
         _message.value = null
     }
 
-    fun addToCart(): Boolean {
-        val (product, prices) = loaded.value as? Loaded.Found ?: return false
+    private var addingToCart = false
+
+    fun addToCart(onResult: (Int?) -> Unit = {}) {
+        if (addingToCart) return
+        val (product, prices) = loaded.value as? Loaded.Found ?: return
         val form = form.value.fitTo(product, prices)
         val features = product.customizations
         val options = product.defaultOptions()?.copy(
@@ -185,9 +188,18 @@ class ProductViewModel(
             extras = form.extras,
             note = form.note.trim()
         )
-        val price = product.recipePrice(options, prices) ?: return false
-        cart.add(CartLine(product, price, form.quantity, options))
-        return true
+        val price = product.recipePrice(options, prices) ?: return onResult(R.string.recipe_unavailable)
+        addingToCart = true
+        viewModelScope.launch {
+            try {
+                cart.addLine(CartLine(product, price, form.quantity, options))
+                onResult(null)
+            } catch (_: IOException) {
+                onResult(R.string.cart_storage_unavailable)
+            } finally {
+                addingToCart = false
+            }
+        }
     }
 
     private fun update(transform: ProductForm.() -> ProductForm) {

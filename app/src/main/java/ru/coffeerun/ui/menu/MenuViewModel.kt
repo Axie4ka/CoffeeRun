@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.coffeerun.container
+import ru.coffeerun.R
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.data.ShopRepository
@@ -38,7 +39,9 @@ class MenuViewModel(
 ) : ViewModel() {
     val shop: StateFlow<Shop> = shops.selected
 
-    fun selectShop(shop: Shop) = shops.select(shop)
+    fun selectShop(shop: Shop, onFailure: () -> Unit = {}) {
+        viewModelScope.launch { try { shops.saveSelection(shop) } catch (_: IOException) { onFailure() } }
+    }
 
 
     private val _uiState = MutableStateFlow<MenuUiState>(MenuUiState.Loading)
@@ -74,18 +77,24 @@ class MenuViewModel(
      * Если их нет в кофейне — то же, что подставит экран позиции, иначе строки корзины не сольются.
      * Кнопка видна только при загруженном меню, поэтому цены уже есть.
      */
-    fun quickAdd(product: Product): Boolean {
-        val snapshot = _uiState.value as? MenuUiState.Success ?: return false
-        val current = snapshot.products.firstOrNull { it.id == product.id } ?: return false
+    fun quickAdd(product: Product, onResult: (Int?) -> Unit = {}) {
+        val snapshot = _uiState.value as? MenuUiState.Success ?: return
+        val current = snapshot.products.firstOrNull { it.id == product.id } ?: return onResult(R.string.recipe_unavailable)
         val prices = snapshot.prices
         val size = prices.fitSize(DEFAULT_DRINK_SIZE)
         val milk = prices.fitMilk(MilkType.REGULAR)
         val options = current.defaultOptions()?.let {
             it.copy(size = it.size?.let { size }, milk = it.milk?.let { milk })
         }
-        val price = current.recipePrice(options, prices) ?: return false
-        cart.add(CartLine(current, price, options = options))
-        return true
+        val price = current.recipePrice(options, prices) ?: return onResult(R.string.recipe_unavailable)
+        viewModelScope.launch {
+            try {
+                cart.addLine(CartLine(current, price, options = options))
+                onResult(null)
+            } catch (_: IOException) {
+                onResult(R.string.cart_storage_unavailable)
+            }
+        }
     }
 
     companion object {

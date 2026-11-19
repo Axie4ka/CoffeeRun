@@ -26,7 +26,14 @@ class AuthInterceptor(private val tokens: TokenStore) : Interceptor {
         }
         val token = credentials.token ?: return chain.proceed(request)
         val response = chain.proceed(request.newBuilder().header("Authorization", "Bearer $token").build())
-        if (response.code == 401) runBlocking { tokens.clearIfStill(token, credentials.session) }
+        if (response.code == 401) {
+            try {
+                runBlocking { tokens.clearIfStill(token, credentials.session) }
+            } catch (error: IOException) {
+                response.close()
+                throw error
+            }
+        }
         return response
     }
 }

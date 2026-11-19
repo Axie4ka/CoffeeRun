@@ -16,6 +16,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.io.IOException
 import ru.coffeerun.data.InMemoryAuthRepository
+import ru.coffeerun.data.AuthRepository
 import ru.coffeerun.data.ProfileRepository
 import ru.coffeerun.data.ProfileSaveResult
 import ru.coffeerun.model.User
@@ -50,6 +51,25 @@ class ProfileViewModelTest {
 
     // viewModelScope привязывается к Main при создании, поэтому VM строим после установки правила
     private fun newVm(auth: InMemoryAuthRepository = this.auth) = ProfileViewModel(InMemoryShopRepository(), orders, favorites, auth, profile)
+
+    @Test
+    fun logoutFailure_canBeRetriedWithoutShowingSuccess() = runTest {
+        var fail = true
+        val repository = object : AuthRepository by auth {
+            override suspend fun logout() {
+                if (fail) throw IOException("storage unavailable")
+                auth.logout()
+            }
+        }
+        val vm = ProfileViewModel(InMemoryShopRepository(), orders, favorites, repository, profile)
+        vm.logout()
+        assertEquals(LogoutState.Failed, vm.logoutState.value)
+        assertTrue(auth.currentSession().isLoggedIn)
+        fail = false
+        vm.logout()
+        assertFalse(auth.currentSession().isLoggedIn)
+        assertEquals(LogoutState.Idle, vm.logoutState.value)
+    }
 
     @Test
     fun loggedIn_loadsNameAndPhone() = runTest {
