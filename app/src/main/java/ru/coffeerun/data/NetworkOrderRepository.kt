@@ -17,6 +17,7 @@ import ru.coffeerun.data.session.SessionProvider
 import ru.coffeerun.data.session.runInSession
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Order
+import ru.coffeerun.model.Product
 import ru.coffeerun.model.Shop
 
 private const val HTTP_CONFLICT = 409
@@ -36,8 +37,9 @@ class NetworkOrderRepository(
     override val isLoaded: StateFlow<Boolean> = _isLoaded.asStateFlow()
 
     override suspend fun refresh(session: AuthSession) = sessions.runInSession(session) {
-        val products = menu.getMenu().associateBy { it.id }
-        val loaded = network { api.getOrders() }.mapNotNull { it.toModel(products) }
+        val orders = network { api.getOrders() }
+        val products = menuNames()
+        val loaded = orders.mapNotNull { it.toModel(products) }
         commit(session) { _orders.value = loaded; _isLoaded.value = true }
     }
 
@@ -81,7 +83,7 @@ class NetworkOrderRepository(
             }
             throw e
         }
-        val products = menu.getMenu().associateBy { it.id }
+        val products = menuNames()
         val order = dto.toModel(products) ?: throw IOException("Заказ не по контракту")
         commit(session) {
             _orders.update { list ->
@@ -114,6 +116,12 @@ class NetworkOrderRepository(
             _orders.value = emptyList()
             owner = session
         }
+    }
+
+    private suspend fun menuNames(): Map<String, Product> = try {
+        menu.getMenu().associateBy { it.id }
+    } catch (_: IOException) {
+        emptyMap()
     }
 
     private suspend fun <T> network(request: suspend () -> T): T = try {

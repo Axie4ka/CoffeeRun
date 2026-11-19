@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import org.junit.Assert.*
 import org.junit.Test
+import ru.coffeerun.FakeMenuRepository
 import ru.coffeerun.StubApi
 import ru.coffeerun.data.network.OrderDto
 import ru.coffeerun.data.network.OrderLineDto
@@ -23,6 +24,9 @@ class NetworkOrderRepositoryTest {
     private class FakeApi : StubApi() {
         val order = OrderDto(1037, "ACCEPTED", "MOSKOVSKAYA", "2026-10-31T09:15:00+03:00", null,
             listOf(OrderLineDto("latte", 2, 240)))
+        val acceptedOrders = mutableListOf<OrderDto>()
+        var losePlacementResponse = false
+        var servedOrder = order
         var reads = 0
         var fail = false
         var gate: CompletableDeferred<Unit>? = null
@@ -30,10 +34,15 @@ class NetworkOrderRepositoryTest {
             reads++
             withContext(NonCancellable) { gate?.await() }
             if (fail) throw IOException("offline")
-            return listOf(order)
+            return listOf(servedOrder)
         }
-        override suspend fun getOrder(number: Int) = order
-        override suspend fun placeOrder(request: OrderRequest) = order.copy(number = 1042, lines = request.lines)
+        override suspend fun getOrder(number: Int) = servedOrder
+        override suspend fun placeOrder(request: OrderRequest): OrderDto {
+            val accepted = order.copy(number = 1042, lines = request.lines)
+            acceptedOrders += accepted
+            if (losePlacementResponse) throw IOException("response lost after accepting order")
+            return accepted
+        }
     }
     private val sessions = SessionStateStore("token")
     private fun repo(api: FakeApi) = NetworkOrderRepository(api, DemoMenuRepository(), sessions)
@@ -51,6 +60,32 @@ class NetworkOrderRepositoryTest {
         repository.refresh(sessions.currentSession())
         assertTrue(repository.isLoaded.value)
         assertEquals(listOf(1037), repository.orders.value.map { it.number })
+    }
+
+    @Test fun refreshAndDetails_keepOrdersAccessibleWhenMenuFails() = runTest {
+        val api = FakeApi()
+        val repository = NetworkOrderRepository(api, FakeMenuRepository(fail = true), sessions)
+        val session = sessions.currentSession()
+
+        repository.refresh(session)
+
+        val order = repository.load(1037, session)
+        assertTrue(repository.isLoaded.value)
+        assertEquals(listOf(1037), repository.orders.value.map { it.number })
+        assertEquals(480, order?.total)
+        assertEquals("latte", order?.lines?.single()?.productId)
+    }
+
+    @Test fun lostPlacementResponse_canLeaveAnAcceptedOrderOnServer() = runTest {
+        val api = FakeApi().apply { losePlacementResponse = true }
+        val repository = repo(api)
+
+        val result = repository.place(listOf(CartLine(DemoMenu.CROISSANT, 180)), Shop.MOSKOVSKAYA,
+            null, sessions.currentSession())
+
+        assertEquals(PlaceOrderResult.NetworkError, result)
+        assertTrue(repository.orders.value.isEmpty())
+        assertEquals(listOf(1042), api.acceptedOrders.map { it.number })
     }
 
     @Test fun load_doesNotClaimFullHistoryLoaded() = runTest {
@@ -78,6 +113,20 @@ class NetworkOrderRepositoryTest {
         assertTrue(runCatching { repository.refresh(session) }.exceptionOrNull() is IOException)
         assertTrue(repository.isLoaded.value)
         assertEquals(listOf(1037), repository.orders.value.map { it.number })
+    }
+
+    @Test fun twoAccounts_canLoadDifferentOrdersWithTheSameNumber() = runTest {
+        val api = FakeApi()
+        val repository = repo(api)
+        repository.refresh(sessions.currentSession())
+        assertEquals(480, repository.find(1037)?.total)
+
+        sessions.replaceToken("account-b")
+        api.servedOrder = api.order.copy(lines = listOf(OrderLineDto("croissant", 1, 180)))
+        repository.refresh(sessions.currentSession())
+
+        assertEquals(180, repository.find(1037)?.total)
+        assertEquals("croissant", repository.find(1037)?.lines?.single()?.productId)
     }
 
     @Test fun clear_resetsDataAndLoadedFlag() = runTest {
