@@ -135,11 +135,13 @@ class ProductViewModel(
         loadJob?.cancel() // повторное «Повторить» не должно гоняться с прошлой загрузкой
         loaded.value = Loaded.Loading
         loadJob = viewModelScope.launch {
-            loaded.value = try {
-                val product = menu.getProduct(productId)
-                if (product == null) Loaded.Missing else Loaded.Found(product, menu.getOptionPrices())
+            try {
+                menu.observeSnapshot().collect { snapshot ->
+                    val product = snapshot.products.firstOrNull { it.id == productId }
+                    loaded.value = if (product == null) Loaded.Missing else Loaded.Found(product, snapshot.prices)
+                }
             } catch (e: IOException) {
-                Loaded.Failed
+                loaded.value = Loaded.Failed
             }
         }
     }

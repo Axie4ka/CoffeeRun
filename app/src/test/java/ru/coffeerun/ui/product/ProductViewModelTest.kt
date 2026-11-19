@@ -68,8 +68,10 @@ class ProductViewModelTest {
     fun form_survivesWhileProductLoads() = runTest {
         val gate = CompletableDeferred<Product?>()
         val slow = object : MenuRepository {
-            override suspend fun getMenu(): List<Product> = DemoMenu.products
-            override suspend fun getProduct(id: String): Product? = gate.await()
+            override suspend fun refresh() = ru.coffeerun.model.MenuSnapshot(getMenu(), getOptionPrices())
+
+            override suspend fun getMenu(): List<Product> = listOfNotNull(gate.await())
+            override suspend fun getProduct(id: String): Product? = getMenu().firstOrNull { it.id == id }
             override suspend fun getOptionPrices() = DemoMenu.prices
         }
         val vm = ProductViewModel(DemoMenu.LATTE.id, slow, cart, InMemoryFavorites(), savedState)
@@ -131,6 +133,8 @@ class ProductViewModelTest {
             milks = DemoMenu.prices.milks.map { if (it.milk == MilkType.REGULAR) it.copy(isAvailable = false) else it }
         )
         val repo = object : MenuRepository {
+            override suspend fun refresh() = ru.coffeerun.model.MenuSnapshot(getMenu(), getOptionPrices())
+
             override suspend fun getMenu(): List<Product> = DemoMenu.products
             override suspend fun getProduct(id: String): Product? = DemoMenu.byId(id)
             override suspend fun getOptionPrices() = prices

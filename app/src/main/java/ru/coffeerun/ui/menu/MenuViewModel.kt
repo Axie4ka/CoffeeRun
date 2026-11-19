@@ -59,10 +59,12 @@ class MenuViewModel(
         loadJob?.cancel() // повторное «Повторить» не должно гоняться с прошлой загрузкой
         _uiState.value = MenuUiState.Loading
         loadJob = viewModelScope.launch {
-            _uiState.value = try {
-                MenuUiState.Success(menu.getMenu(), menu.getOptionPrices())
+            try {
+                menu.observeSnapshot().collect { snapshot ->
+                    _uiState.value = MenuUiState.Success(snapshot.products, snapshot.prices)
+                }
             } catch (e: IOException) {
-                MenuUiState.Error
+                _uiState.value = MenuUiState.Error
             }
         }
     }

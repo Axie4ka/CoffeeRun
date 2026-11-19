@@ -15,6 +15,8 @@ import retrofit2.Response
 import ru.coffeerun.data.network.CoffeeRunApi
 import ru.coffeerun.data.network.MenuDto
 import ru.coffeerun.data.network.ProductDto
+import ru.coffeerun.data.network.SizeOptionDto
+import ru.coffeerun.model.DrinkSize
 
 /** Сетевое меню: один запрос на всё, ошибки — только [IOException], смена языка — новый запрос. */
 class NetworkMenuRepositoryTest {
@@ -35,6 +37,24 @@ class NetworkMenuRepositoryTest {
 
     private var language = "ru"
     private fun repo(api: CoffeeRunApi) = NetworkMenuRepository(api, "http://host/", language = { language })
+
+    @Test
+    fun malformedPhoto_keepsProductWithoutRemoteImage() = runTest {
+        val repository = repo(FakeApi { dto.copy(products = listOf(latte.copy(imageUrl = "images/bad path.jpg"))) })
+        assertEquals("", repository.getProduct("latte")?.imageUrl)
+    }
+
+    @Test
+    fun invalidMenu_doesNotReplaceLastValidSnapshot() = runTest {
+        val api = FakeApi { dto }
+        val repository = repo(api)
+        repository.getMenu()
+        for (invalid in listOf(listOf(latte.copy(price = -1)), listOf(latte, latte.copy(name = "Дубликат")))) {
+            api.answer = { dto.copy(products = invalid) }
+            org.junit.Assert.assertTrue(runCatching { repository.refresh() }.exceptionOrNull() is IOException)
+            assertEquals(240, repository.getMenu().single().price)
+        }
+    }
 
     @Test
     fun menuProductAndPrices_oneRequest() = runTest {
@@ -72,4 +92,29 @@ class NetworkMenuRepositoryTest {
         val repo = repo(FakeApi { throw SerializationException("нет поля") })
         assertEquals(IOException::class, runCatching { repo.getMenu() }.exceptionOrNull()!!::class)
     }
+    @Test
+    fun explicitRefresh_returnsOneFreshSnapshotAndUpdatesCache() = runTest {
+        val api = FakeApi { dto }
+        val repository = repo(api)
+        repository.getMenu()
+        api.answer = { dto.copy(products = listOf(latte.copy(price = 300, name = "Fresh")), sizes = listOf(SizeOptionDto("MEDIUM", 280))) }
+        val fresh = repository.refresh()
+        assertEquals(300, fresh.products.single().price)
+        assertEquals(280, fresh.prices.sizePrice(DrinkSize.MEDIUM))
+        assertEquals("Fresh", repository.getProduct("latte")!!.name)
+        assertEquals(fresh.prices, repository.getOptionPrices())
+        assertEquals(2, api.calls)
+    }
+
+    @Test
+    fun failedRefresh_doesNotReturnStaleSnapshotOrDestroyCache() = runTest {
+        val api = FakeApi { dto }
+        val repository = repo(api)
+        repository.getMenu()
+        api.answer = { throw IOException("offline") }
+        assertEquals(IOException::class, runCatching { repository.refresh() }.exceptionOrNull()!!::class)
+        assertEquals(240, repository.getMenu().single().price)
+        assertEquals(2, api.calls)
+    }
+
 }

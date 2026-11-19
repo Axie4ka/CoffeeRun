@@ -257,7 +257,7 @@ private fun ProductHeader(
 ) {
     Column(modifier = modifier) {
         AsyncImage(
-            model = product.imageUrl,
+            model = product.imageUrl.takeIf { it.isNotBlank() },
             // Фото декоративное: название идёт текстом ниже,
             // поэтому TalkBack картинку пропускает.
             contentDescription = null,
