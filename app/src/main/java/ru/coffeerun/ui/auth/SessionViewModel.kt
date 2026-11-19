@@ -16,10 +16,13 @@ import ru.coffeerun.data.AuthRepository
  * Вошёл ли пользователь — для навигации: куда вести с «Оформить» и сердечка, что показать во вкладках.
  * null — токен ещё читается из DataStore.
  */
-class SessionViewModel(auth: AuthRepository) : ViewModel() {
+class SessionViewModel(private val auth: AuthRepository) : ViewModel() {
     val sessions: StateFlow<AuthSession?> = auth.sessions.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val isLoggedIn: StateFlow<Boolean?> = sessions.map { it?.isLoggedIn }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    val readFailed = auth.sessionReadFailed.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun retrySessionRead() = auth.retrySessionRead()
 
     companion object {
         val Factory = viewModelFactory { initializer { SessionViewModel(container.auth) } }

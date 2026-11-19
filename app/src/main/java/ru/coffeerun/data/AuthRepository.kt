@@ -1,6 +1,7 @@
 package ru.coffeerun.data
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import ru.coffeerun.data.session.SessionProvider
 import ru.coffeerun.model.User
 
@@ -27,6 +28,8 @@ sealed interface AuthResult {
 /** Вход в аккаунт. Вошёл ли пользователь — есть ли сохранённый токен. */
 interface AuthRepository : SessionProvider {
     val isLoggedIn: Flow<Boolean>
+    val sessionReadFailed: Flow<Boolean> get() = flowOf(false)
+    fun retrySessionRead() = Unit
     suspend fun login(phone: String, password: String): AuthResult
     suspend fun register(name: String, phone: String, password: String): AuthResult
     suspend fun logout()

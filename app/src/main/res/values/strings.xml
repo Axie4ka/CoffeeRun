@@ -1,4 +1,5 @@
 <resources>
+    <string name="session_read_error">Couldn’t read your session. Try again.</string>
     <string name="app_name" translatable="false">CoffeeRun</string>
 
     <!-- Напиток -->

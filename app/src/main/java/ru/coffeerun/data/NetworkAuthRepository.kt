@@ -17,6 +17,8 @@ import ru.coffeerun.model.User
 class NetworkAuthRepository(private val api: CoffeeRunApi, private val tokens: TokenStore) : AuthRepository, SessionProvider by tokens {
     override val isLoggedIn: Flow<Boolean> = tokens.token.map { it != null }
     override val sessions = tokens.sessions
+    override val sessionReadFailed = tokens.sessionReadFailed
+    override fun retrySessionRead() = tokens.retrySessionRead()
 
     override suspend fun login(phone: String, password: String) = auth { api.login(LoginRequest(phone, password)) }
 

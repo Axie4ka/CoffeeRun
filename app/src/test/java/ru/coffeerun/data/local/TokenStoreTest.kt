@@ -12,6 +12,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -44,6 +46,35 @@ class TokenStoreTest {
 
     @After
     fun tearDown() = scopes.forEach { it.cancel() }
+
+    @Test
+    fun readFailure_waitsForRetryWithoutPublishingGuest() = runTest {
+        val disk = openDisk()
+        disk.updateData {
+            androidx.datastore.preferences.core.preferencesOf(
+                androidx.datastore.preferences.core.stringPreferencesKey("token") to "saved-token"
+            )
+        }
+        var fail = true
+        val unreadable = object : DataStore<Preferences> by disk {
+            override val data = flow {
+                if (fail) throw IOException("unreadable")
+                emit(disk.data.first())
+            }
+        }
+        val store = TokenStore(unreadable)
+        val session = async { store.sessions.first() }
+        val token = async { store.token.first() }
+        testScheduler.runCurrent()
+        assertFalse(session.isCompleted)
+        assertFalse(token.isCompleted)
+        assertTrue(store.sessionReadFailed.value)
+        fail = false
+        store.retrySessionRead()
+        assertTrue(session.await().isLoggedIn)
+        assertEquals("saved-token", token.await())
+        assertFalse(store.sessionReadFailed.value)
+    }
 
     @Test
     fun saveAndClear() = runTest {

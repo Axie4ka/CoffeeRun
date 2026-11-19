@@ -1,11 +1,14 @@
 package ru.coffeerun.data.local
 
 import java.util.UUID
+import java.io.IOException
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -32,15 +35,21 @@ class TokenStore(private val dataStore: DataStore<Preferences>) : SessionProvide
     private val updates = Mutex()
     private val state = SessionStateStore()
     private var initialized = false // Читается и меняется только под updates.
+    private val readFailed = MutableStateFlow(false)
+    val sessionReadFailed = readFailed.asStateFlow()
+
+    fun retrySessionRead() {
+        readFailed.value = false
+    }
 
     /** null — пользователь не вошёл. Новое значение приходит сразу после [save] или [clear]. */
     val token: Flow<String?> = flow {
-        initialize()
+        awaitInitialization()
         emitAll(state.tokens)
     }
 
     override val sessions: Flow<AuthSession> = flow {
-        initialize()
+        awaitInitialization()
         emitAll(state.sessions)
     }
 
@@ -104,6 +113,22 @@ class TokenStore(private val dataStore: DataStore<Preferences>) : SessionProvide
 
     private suspend fun initialize() = updates.withLock { initializeLocked() }
 
+    private suspend fun awaitInitialization() {
+        do {
+            readFailed.first { !it }
+            val ready = updates.withLock {
+                if (readFailed.value) return@withLock false
+                try {
+                    initializeLocked()
+                    true
+                } catch (_: IOException) {
+                    readFailed.value = true
+                    false
+                }
+            }
+        } while (!ready)
+    }
+
     /** TokenStore — единственный владелец записи токена; дальнейшие изменения публикует сам. */
     private suspend fun initializeLocked() {
         if (initialized) return
@@ -112,6 +137,7 @@ class TokenStore(private val dataStore: DataStore<Preferences>) : SessionProvide
         val owner = if (token == null) null else stored[LOCAL_OWNER] ?: migrateOwner()
         state.replaceToken(token, owner)
         initialized = true
+        readFailed.value = false
     }
 
     private suspend fun migrateOwner(): String =
