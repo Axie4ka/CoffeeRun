@@ -1,4 +1,5 @@
 <resources>
+    <string name="checkout_storage_unavailable">Couldn’t access the saved order attempt. Check order history and try again.</string>
     <string name="checkout_outcome_unknown">We couldn’t confirm whether the order was accepted. Check your order history.</string>
     <string name="checkout_check_history">Check order history</string>
     <string name="checkout_new_order">Start a separate order</string>

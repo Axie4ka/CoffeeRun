@@ -1,4 +1,5 @@
 <resources>
+    <string name="checkout_storage_unavailable">Не удалось обратиться к сохранённой попытке. Проверьте историю заказов и попробуйте снова.</string>
     <string name="checkout_outcome_unknown">Не удалось узнать, принят ли заказ. Проверьте историю заказов.</string>
     <string name="checkout_check_history">Проверить историю заказов</string>
     <string name="checkout_new_order">Начать новый заказ</string>

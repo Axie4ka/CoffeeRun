@@ -31,4 +31,5 @@ sealed interface CheckoutResult {
     data object Unavailable : CheckoutResult
     data object NetworkError : CheckoutResult
     data object AttemptPending : CheckoutResult
+    data object LocalStorageUnavailable : CheckoutResult
 }

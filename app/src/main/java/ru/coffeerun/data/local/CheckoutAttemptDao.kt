@@ -10,6 +10,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Relation
 import androidx.room.Transaction
+import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "checkout_attempt", indices = [Index("owner", "orderNumber")])
 data class CheckoutAttemptEntity(
@@ -53,6 +54,9 @@ abstract class CheckoutAttemptDao {
     @Query("SELECT * FROM checkout_attempt WHERE owner = :owner AND orderNumber IS NULL AND dismissed = 0 LIMIT 1")
     abstract suspend fun active(owner: String): StoredCheckoutAttempt?
 
+    @Query("SELECT id FROM checkout_attempt WHERE owner = :owner AND orderNumber IS NULL AND dismissed = 0 LIMIT 1")
+    abstract fun observeActiveId(owner: String): Flow<String?>
+
     @Insert
     protected abstract suspend fun insertAttempt(attempt: CheckoutAttemptEntity)
 
@@ -74,4 +78,10 @@ abstract class CheckoutAttemptDao {
         WHERE owner = :owner AND id = :attemptId AND orderNumber IS NULL AND dismissed = 0
     """)
     abstract suspend fun complete(owner: String, attemptId: String, number: Int): Int
+
+    @Query("DELETE FROM checkout_attempt WHERE owner = :owner AND id = :attemptId AND orderNumber IS NULL AND dismissed = 0")
+    abstract suspend fun reject(owner: String, attemptId: String): Int
+
+    @Query("UPDATE checkout_attempt SET dismissed = 1 WHERE owner = :owner AND id = :attemptId AND orderNumber IS NULL AND dismissed = 0")
+    abstract suspend fun dismiss(owner: String, attemptId: String): Int
 }

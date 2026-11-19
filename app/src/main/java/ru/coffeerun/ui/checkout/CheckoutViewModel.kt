@@ -1,6 +1,7 @@
 package ru.coffeerun.ui.checkout
 
 import androidx.annotation.StringRes
+import java.io.IOException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -156,6 +157,7 @@ class CheckoutViewModel(
                     CheckoutResult.Unavailable -> Submit(message = R.string.order_unavailable)
                     CheckoutResult.NetworkError -> Submit(message = R.string.order_network_error, quote = confirmed)
                     CheckoutResult.AttemptPending -> Submit()
+                    CheckoutResult.LocalStorageUnavailable -> Submit(message = R.string.checkout_storage_unavailable)
                 }
             } finally {
                 submit.update { it.copy(isPlacing = false) }
@@ -170,7 +172,13 @@ class CheckoutViewModel(
     fun onMessageShown() = submit.update { it.copy(message = null) }
 
     fun allowNewOrder() {
-        viewModelScope.launch { placeOrderUseCase.dismissUnknownAttempt() }
+        viewModelScope.launch {
+            try {
+                placeOrderUseCase.dismissUnknownAttempt()
+            } catch (_: IOException) {
+                submit.update { it.copy(message = R.string.checkout_storage_unavailable) }
+            }
+        }
     }
 
     companion object {
