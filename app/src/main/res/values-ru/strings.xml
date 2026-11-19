@@ -1,4 +1,9 @@
 <resources>
+    <string name="checkout_outcome_unknown">Не удалось узнать, принят ли заказ. Проверьте историю заказов.</string>
+    <string name="checkout_check_history">Проверить историю заказов</string>
+    <string name="checkout_new_order">Начать новый заказ</string>
+    <string name="checkout_duplicate_warning">Предыдущий заказ мог быть принят. Если отправить ещё один, заказы могут продублироваться. Сначала проверьте историю.</string>
+    <string name="checkout_allow_new_order">Разрешить новый заказ</string>
     <string name="checkout_prices_changed">Цены изменились. Проверьте новую сумму заказа.</string>
     <string name="checkout_accept_price">Подтвердить новую сумму</string>
     <string name="checkout_cart_changed">Корзина изменилась. Проверьте её перед подтверждением.</string>

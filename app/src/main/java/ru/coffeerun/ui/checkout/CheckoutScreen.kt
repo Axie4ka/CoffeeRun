@@ -76,6 +76,8 @@ fun CheckoutScreen(
     onPickupTimeChosen: (hour: Int, minute: Int) -> Boolean,
     onShopSelected: (Shop) -> Unit = {},
     modifier: Modifier = Modifier,
+    onCheckOrderHistory: () -> Unit = {},
+    onAllowNewOrder: () -> Unit = {},
     onMessageShown: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
@@ -88,6 +90,7 @@ fun CheckoutScreen(
     val transparentItem = ListItemDefaults.colors(containerColor = Color.Transparent)
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
     var showShopPicker by rememberSaveable { mutableStateOf(false) }
+    var confirmNewOrder by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val invalidMessage = stringResource(R.string.pickup_time_invalid)
     val context = LocalContext.current
@@ -100,6 +103,23 @@ fun CheckoutScreen(
     }
 
     if (showShopPicker) ShopPickerSheet(uiState.shop, onShopSelected, onDismiss = { showShopPicker = false })
+
+    if (confirmNewOrder && uiState.outcomeUnknown) {
+        AlertDialog(
+            onDismissRequest = { confirmNewOrder = false },
+            title = { Text(stringResource(R.string.checkout_new_order)) },
+            text = { Text(stringResource(R.string.checkout_duplicate_warning)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmNewOrder = false
+                    onAllowNewOrder()
+                }) { Text(stringResource(R.string.checkout_allow_new_order)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmNewOrder = false }) { Text(stringResource(android.R.string.cancel)) }
+            }
+        )
+    }
 
     if (showTimePicker && earliestPickup != null) {
         val initial = pickupAtMillis?.let { Instant.ofEpochMilli(it).atZone(uiState.pickupZone).toLocalTime() } ?: earliestPickup
@@ -136,13 +156,19 @@ fun CheckoutScreen(
                         .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.medium),
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
                 ) {
-                    if (uiState.quote != null) Text(stringResource(R.string.checkout_prices_changed))
-                    if (uiState.totalOverflow) Text(stringResource(R.string.checkout_invalid_total))
-                    else TotalRow(total = uiState.total)
-                    SubmitButton(
-                        if (uiState.quote != null) R.string.checkout_accept_price else R.string.checkout_confirm,
-                        isLoading = uiState.isPlacing, onClick = onConfirm
-                    )
+                    if (uiState.outcomeUnknown) {
+                        Text(stringResource(R.string.checkout_outcome_unknown))
+                        SubmitButton(R.string.checkout_check_history, isLoading = false, onClick = onCheckOrderHistory)
+                        TextButton(onClick = { confirmNewOrder = true }) { Text(stringResource(R.string.checkout_new_order)) }
+                    } else {
+                        if (uiState.quote != null) Text(stringResource(R.string.checkout_prices_changed))
+                        if (uiState.totalOverflow) Text(stringResource(R.string.checkout_invalid_total))
+                        else TotalRow(total = uiState.total)
+                        SubmitButton(
+                            if (uiState.quote != null) R.string.checkout_accept_price else R.string.checkout_confirm,
+                            isLoading = uiState.isPlacing, onClick = onConfirm
+                        )
+                    }
                 }
             }
         }

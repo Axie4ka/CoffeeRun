@@ -18,6 +18,7 @@ sealed interface PlaceOrderResult {
 
     /** Нет сети или сервер ответил не так. */
     data object NetworkError : PlaceOrderResult
+    data object OutcomeUnknown : PlaceOrderResult
 }
 
 /** Чем закончилась отмена заказа. */

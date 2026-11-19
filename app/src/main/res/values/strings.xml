@@ -1,4 +1,9 @@
 <resources>
+    <string name="checkout_outcome_unknown">We couldn’t confirm whether the order was accepted. Check your order history.</string>
+    <string name="checkout_check_history">Check order history</string>
+    <string name="checkout_new_order">Start a separate order</string>
+    <string name="checkout_duplicate_warning">The previous order may already have been accepted. Sending another order could create a duplicate. Check your order history first.</string>
+    <string name="checkout_allow_new_order">Allow a new order</string>
     <string name="checkout_prices_changed">Prices changed. Review the updated order total.</string>
     <string name="checkout_accept_price">Confirm updated total</string>
     <string name="checkout_cart_changed">Your cart changed. Review it before confirming.</string>

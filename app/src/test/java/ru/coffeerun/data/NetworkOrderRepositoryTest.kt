@@ -83,7 +83,7 @@ class NetworkOrderRepositoryTest {
         val result = repository.place(listOf(CartLine(DemoMenu.CROISSANT, 180)), Shop.MOSKOVSKAYA,
             null, sessions.currentSession())
 
-        assertEquals(PlaceOrderResult.NetworkError, result)
+        assertEquals(PlaceOrderResult.OutcomeUnknown, result)
         assertTrue(repository.orders.value.isEmpty())
         assertEquals(listOf(1042), api.acceptedOrders.map { it.number })
     }

@@ -5,7 +5,9 @@ import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
 import ru.coffeerun.data.session.AuthSession
 
-data class CheckoutQuote internal constructor(
+enum class CheckoutAttemptStatus { Idle, Sending, OutcomeUnknown }
+
+class CheckoutQuote internal constructor(
     internal val session: AuthSession,
     val originalLines: List<CartLine>,
     val updatedLines: List<CartLine>,
@@ -28,4 +30,5 @@ sealed interface CheckoutResult {
     data object InvalidPickupTime : CheckoutResult
     data object Unavailable : CheckoutResult
     data object NetworkError : CheckoutResult
+    data object AttemptPending : CheckoutResult
 }

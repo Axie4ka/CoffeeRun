@@ -49,12 +49,14 @@ class NetworkOrderRepository(
             val dto = try {
                 network { api.placeOrder(orderRequest(lines, shop, pickupAtMillis)) }
             } catch (e: IOException) {
-                return@runInSession if ((e.cause as? HttpException)?.code() == HTTP_CONFLICT) {
-                    PlaceOrderResult.Unavailable
-                } else PlaceOrderResult.NetworkError
+                return@runInSession when ((e.cause as? HttpException)?.code()) {
+                    HTTP_CONFLICT -> PlaceOrderResult.Unavailable
+                    400, 401 -> PlaceOrderResult.NetworkError
+                    else -> PlaceOrderResult.OutcomeUnknown
+                }
             }
             val order = dto.toModel(lines.associate { it.product.id to it.product })
-                ?: return@runInSession PlaceOrderResult.NetworkError
+                ?: return@runInSession PlaceOrderResult.OutcomeUnknown
             commit(session) { _orders.update { listOf(order) + it } }
             PlaceOrderResult.Placed(order)
         }

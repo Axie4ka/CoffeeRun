@@ -22,6 +22,7 @@ import ru.coffeerun.domain.usecase.PlaceOrderUseCase
 import ru.coffeerun.domain.checkout.PickupPolicy
 import ru.coffeerun.domain.checkout.CheckoutResult
 import ru.coffeerun.domain.checkout.CheckoutQuote
+import ru.coffeerun.domain.checkout.CheckoutAttemptStatus
 import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
@@ -46,7 +47,8 @@ data class CheckoutUiState(
     @StringRes val message: Int? = null,
     val quote: CheckoutQuote? = null,
     val unavailableItems: List<String> = emptyList(),
-    val totalOverflow: Boolean = false
+    val totalOverflow: Boolean = false,
+    val outcomeUnknown: Boolean = false
 )
 
 /** Ход отправки заказа — одним потоком, чтобы три поля менялись вместе. */
@@ -77,8 +79,10 @@ class CheckoutViewModel(
     private val submit = MutableStateFlow(Submit())
 
     val uiState: StateFlow<CheckoutUiState> =
-        combine(cart.lines, shops.selected, _pickupAtMillis, submit, ticks) { lines, shop, pickupAt, submit, _ ->
-            stateOf(lines, shop, pickupAt, submit)
+        combine(cart.lines, shops.selected, _pickupAtMillis, submit,
+            combine(ticks, placeOrderUseCase.attemptStatus) { _, status -> status }
+        ) { lines, shop, pickupAt, submit, attempt ->
+            stateOf(lines, shop, pickupAt, submit, attempt)
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
@@ -86,7 +90,10 @@ class CheckoutViewModel(
             stateOf(cart.lines.value, shops.selected.value, _pickupAtMillis.value, submit.value)
         )
 
-    private fun stateOf(lines: List<CartLine>, shop: Shop, pickupAt: Long?, submit: Submit): CheckoutUiState {
+    private fun stateOf(
+        lines: List<CartLine>, shop: Shop, pickupAt: Long?, submit: Submit,
+        attempt: CheckoutAttemptStatus = CheckoutAttemptStatus.Idle
+    ): CheckoutUiState {
         val quote = submit.quote?.takeIf { it.matches(lines, shop, pickupAt) }
         val shown = quote?.updatedLines ?: lines
         val total = shown.sumOf { it.unitPrice.toLong() * it.quantity }
@@ -98,11 +105,12 @@ class CheckoutViewModel(
             earliestPickup = earliestPickupTime(),
             pickupZone = pickupPolicy.zone(shop),
             placedOrderNumber = submit.placedOrderNumber,
-            isPlacing = submit.isPlacing,
+            isPlacing = submit.isPlacing || attempt == CheckoutAttemptStatus.Sending,
             message = submit.message,
             quote = quote,
             unavailableItems = submit.unavailableItems,
-            totalOverflow = total > Int.MAX_VALUE
+            totalOverflow = total > Int.MAX_VALUE,
+            outcomeUnknown = attempt == CheckoutAttemptStatus.OutcomeUnknown
         )
     }
 
@@ -147,6 +155,7 @@ class CheckoutViewModel(
                     CheckoutResult.InvalidPickupTime -> Submit(message = R.string.pickup_time_unavailable)
                     CheckoutResult.Unavailable -> Submit(message = R.string.order_unavailable)
                     CheckoutResult.NetworkError -> Submit(message = R.string.order_network_error, quote = confirmed)
+                    CheckoutResult.AttemptPending -> Submit()
                 }
             } finally {
                 submit.update { it.copy(isPlacing = false) }
@@ -159,6 +168,10 @@ class CheckoutViewModel(
 
     /** Снэкбар показан — второй раз его не будет. */
     fun onMessageShown() = submit.update { it.copy(message = null) }
+
+    fun allowNewOrder() {
+        viewModelScope.launch { placeOrderUseCase.dismissUnknownAttempt() }
+    }
 
     companion object {
         val Factory = viewModelFactory {

@@ -60,6 +60,19 @@ class RequestLogInterceptorTest {
     }
 
     @Test
+    fun placeOrder_isNotResentWhenServerSuggestsRetry() = runTest {
+        server.start()
+        server.enqueue(MockResponse.Builder().code(503).addHeader("Retry-After", "0").build())
+        server.enqueue(MockResponse.Builder().code(409).build())
+        val request = orderRequest(listOf(CartLine(DemoMenu.CROISSANT, 180)), Shop.STROITELEY, null)
+
+        val error = runCatching { api.placeOrder(request) }.exceptionOrNull() as retrofit2.HttpException
+
+        assertEquals(503, error.code())
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
     fun noServer_logsFailure() = runTest {
         server.start()
         val url = server.url("/").toString()

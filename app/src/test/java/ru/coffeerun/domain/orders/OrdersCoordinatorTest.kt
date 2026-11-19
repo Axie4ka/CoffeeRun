@@ -136,16 +136,16 @@ class OrdersCoordinatorTest {
     }
 
     @Test
-    fun place_conflict_isUnavailable_offline_isNetworkError() = runTest {
+    fun place_conflict_isUnavailable_transportOrServerFailure_hasUnknownOutcome() = runTest {
         val api = FakeApi()
         val repo = repo(api)
         api.fail = true
         api.failCode = 409
         assertEquals(PlaceOrderResult.Unavailable, repo.place(croissant, Shop.MOSKOVSKAYA))
         api.failCode = 500
-        assertEquals(PlaceOrderResult.NetworkError, repo.place(croissant, Shop.MOSKOVSKAYA))
+        assertEquals(PlaceOrderResult.OutcomeUnknown, repo.place(croissant, Shop.MOSKOVSKAYA))
         api.failCode = 0
-        assertEquals(PlaceOrderResult.NetworkError, repo.place(croissant, Shop.MOSKOVSKAYA))
+        assertEquals(PlaceOrderResult.OutcomeUnknown, repo.place(croissant, Shop.MOSKOVSKAYA))
         assertEquals("непринятые заказы в список не попадают", listOf(1037), repo.orders.value.map { it.number })
     }
 

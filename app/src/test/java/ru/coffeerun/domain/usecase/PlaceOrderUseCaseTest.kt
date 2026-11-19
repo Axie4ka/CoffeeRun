@@ -101,6 +101,50 @@ class PlaceOrderUseCaseTest {
         assertEquals(0, orders.calls)
     }
 
+    @Test fun cancelledWaiter_afterSubmission_blocksSecondCheckout() = runTest {
+        add()
+        val place = useCase()
+        orders.gate = CompletableDeferred()
+        val pending = launch(start = CoroutineStart.UNDISPATCHED) { place(Shop.MOSKOVSKAYA, null) }
+        assertEquals(1, orders.calls)
+        pending.cancelAndJoin()
+        orders.gate!!.complete(Unit)
+
+        assertEquals(CheckoutResult.AttemptPending, place(Shop.MOSKOVSKAYA, null))
+
+        assertEquals(1, orders.calls)
+        assertEquals(1, cart.lines.value.single().quantity)
+    }
+
+    @Test fun unknownOutcome_requiresExplicitReleaseWithoutConsumingCart() = runTest {
+        add()
+        val place = useCase()
+        orders.result = PlaceOrderResult.OutcomeUnknown
+        assertEquals(CheckoutResult.AttemptPending, place(Shop.MOSKOVSKAYA, null))
+        assertEquals(CheckoutResult.AttemptPending, place(Shop.MOSKOVSKAYA, null))
+        assertEquals(1, orders.calls)
+        place.dismissUnknownAttempt()
+        assertEquals(1, orders.calls)
+        assertEquals(1, cart.lines.value.single().quantity)
+        orders.result = null
+        assertTrue(place(Shop.MOSKOVSKAYA, null) is CheckoutResult.Placed)
+        assertEquals(2, orders.calls)
+    }
+
+    @Test fun newSession_doesNotInheritUnknownAttemptFromPreviousLogin() = runTest {
+        add()
+        val place = useCase()
+        orders.result = PlaceOrderResult.OutcomeUnknown
+        assertEquals(CheckoutResult.AttemptPending, place(Shop.MOSKOVSKAYA, null))
+        sessions.replaceToken("token")
+        cart.clear()
+        add()
+        orders.result = null
+
+        assertTrue(place(Shop.MOSKOVSKAYA, null) is CheckoutResult.Placed)
+        assertEquals(2, orders.calls)
+    }
+
     @Test fun invalidPickup_keepsCartAndDoesNotSend() = runTest {
         add()
         val before = cart.lines.value
