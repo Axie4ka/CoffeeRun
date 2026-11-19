@@ -46,7 +46,7 @@ fun CoffeeRunApp(snackbarHostState: SnackbarHostState) {
     val sessionVm = viewModel<SessionViewModel>(factory = SessionViewModel.Factory)
     val isLoggedIn by sessionVm.isLoggedIn.collectAsStateWithLifecycle()
     val readFailed by sessionVm.readFailed.collectAsStateWithLifecycle()
-    if (isLoggedIn == null) {
+    if (isLoggedIn == null || readFailed) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             if (readFailed) RetryMessage(stringResource(R.string.session_read_error), sessionVm::retrySessionRead)
             else CircularProgressIndicator()

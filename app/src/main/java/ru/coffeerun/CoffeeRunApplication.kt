@@ -32,6 +32,7 @@ import ru.coffeerun.data.local.AUTH_DATASTORE
 import ru.coffeerun.data.local.TokenStore
 import ru.coffeerun.data.local.CoffeeRunDatabase
 import ru.coffeerun.data.local.RoomCheckoutAttemptStore
+import ru.coffeerun.data.local.RoomOwnerScope
 import ru.coffeerun.domain.checkout.CheckoutAttemptStore
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewmodel.CreationExtras
@@ -98,14 +99,14 @@ class CoffeeRunApplication : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
         val language = { serverLanguage() } // спрашивается на каждый запрос: язык могут сменить на ходу
-        val tokens = TokenStore(authDataStore) // один на процесс: им пользуются и запросы, и вход
+        val database = Room.databaseBuilder(this, CoffeeRunDatabase::class.java, "coffeerun.db").build()
+        val tokens = TokenStore(authDataStore, RoomOwnerScope(database)::reconcile)
         // Запросы в Logcat (тег CoffeeRunHttp) — только в debug-сборке
         val log = if (BuildConfig.DEBUG) { line: String -> Log.d("CoffeeRunHttp", line); Unit } else null
         val api = createCoffeeRunApi(BuildConfig.BASE_URL, language, tokens, log)
         val auth = NetworkAuthRepository(api, tokens)
         val menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language)
         val pickupPolicy = PickupPolicy()
-        val database = Room.databaseBuilder(this, CoffeeRunDatabase::class.java, "coffeerun.db").build()
         container = AppContainer(
             menu = menu,
             auth = auth,
@@ -113,7 +114,7 @@ class CoffeeRunApplication : Application(), SingletonImageLoader.Factory {
             favorites = FavoritesCoordinator(NetworkFavoritesRepository(api, tokens), tokens, applicationScope),
             orders = OrdersCoordinator(NetworkOrderRepository(api, menu, tokens), tokens, applicationScope, pickupPolicy),
             pickupPolicy = pickupPolicy,
-            checkoutAttemptStore = RoomCheckoutAttemptStore(database.checkoutAttempts())
+            checkoutAttemptStore = RoomCheckoutAttemptStore(database)
         )
     }
 

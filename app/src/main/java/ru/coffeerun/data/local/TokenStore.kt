@@ -31,7 +31,10 @@ const val AUTH_DATASTORE = "auth"
  * поэтому входить заново не нужно. Пароль не хранится никогда.
  * [dataStore] передаётся снаружи: в приложении — файл [AUTH_DATASTORE], в тестах — временный.
  */
-class TokenStore(private val dataStore: DataStore<Preferences>) : SessionProvider {
+class TokenStore(
+    private val dataStore: DataStore<Preferences>,
+    private val ownerScope: (suspend (String?) -> Unit)? = null
+) : SessionProvider {
     private val updates = Mutex()
     private val state = SessionStateStore()
     private var initialized = false // Читается и меняется только под updates.
@@ -107,6 +110,18 @@ class TokenStore(private val dataStore: DataStore<Preferences>) : SessionProvide
                     preferences[LOCAL_OWNER] = checkNotNull(owner)
                 }
             }
+            if (ownerScope != null) {
+                // С этого момента на диске уже новый вход. Поздние ответы старого входа недействительны.
+                initialized = false
+                state.replaceToken(null)
+                try {
+                    ownerScope.invoke(owner)
+                } catch (error: IOException) {
+                    readFailed.value = true
+                    throw error
+                }
+                initialized = true
+            }
             state.replaceToken(token, owner)
         }
     }
@@ -135,6 +150,7 @@ class TokenStore(private val dataStore: DataStore<Preferences>) : SessionProvide
         val stored = dataStore.data.first()
         val token = stored[TOKEN]
         val owner = if (token == null) null else stored[LOCAL_OWNER] ?: migrateOwner()
+        ownerScope?.invoke(owner)
         state.replaceToken(token, owner)
         initialized = true
         readFailed.value = false

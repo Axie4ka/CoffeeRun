@@ -1,6 +1,7 @@
 package ru.coffeerun.data.local
 
 import android.database.sqlite.SQLiteException
+import androidx.room.withTransaction
 import java.io.IOException
 import kotlinx.coroutines.flow.catch
 import ru.coffeerun.data.network.CoffeeRunJson
@@ -9,7 +10,8 @@ import ru.coffeerun.domain.checkout.CheckoutAttemptStore
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
 
-class RoomCheckoutAttemptStore(private val dao: CheckoutAttemptDao) : CheckoutAttemptStore {
+class RoomCheckoutAttemptStore(private val db: CoffeeRunDatabase) : CheckoutAttemptStore {
+    private val dao = db.checkoutAttempts()
     override fun observeActiveId(owner: String) = dao.observeActiveId(owner).catch {
         if (it is SQLiteException) throw IOException("Cannot read checkout attempts", it)
         throw it
@@ -25,7 +27,10 @@ class RoomCheckoutAttemptStore(private val dao: CheckoutAttemptDao) : CheckoutAt
                     line.toDto().options?.let { CoffeeRunJson.encodeToString(it) }
                 )
             }
-            dao.begin(CheckoutAttemptEntity(id, owner, shop.name, pickupAtMillis), snapshot)
+            db.withTransaction {
+                if (db.localOwner().current() != owner) false
+                else dao.begin(CheckoutAttemptEntity(id, owner, shop.name, pickupAtMillis), snapshot)
+            }
         }
 
     override suspend fun finish(owner: String, id: String, orderNumber: Int?) = database {

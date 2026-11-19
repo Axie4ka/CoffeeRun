@@ -24,6 +24,7 @@ import ru.coffeerun.data.local.CheckoutAttemptEntity
 import ru.coffeerun.data.local.CheckoutAttemptLineEntity
 import ru.coffeerun.data.local.CoffeeRunDatabase
 import ru.coffeerun.data.local.RoomCheckoutAttemptStore
+import ru.coffeerun.data.local.RoomOwnerScope
 import ru.coffeerun.data.local.TokenStore
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.DemoMenuRepository
@@ -56,6 +57,7 @@ class CheckoutDatabaseTest {
             val database = Room.databaseBuilder(context, CoffeeRunDatabase::class.java, name).build()
             try {
                 val dao = database.checkoutAttempts()
+                RoomOwnerScope(database).reconcile(sessions.currentSession().localOwner)
                 val orders = object : Orders by InMemoryOrders() {
                     override suspend fun place(
                         lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession
@@ -67,7 +69,7 @@ class CheckoutDatabaseTest {
                         return PlaceOrderResult.OutcomeUnknown
                     }
                 }
-                action(PlaceOrderUseCase(cart, orders, sessions, policy, DemoMenuRepository(), RoomCheckoutAttemptStore(dao)))
+                action(PlaceOrderUseCase(cart, orders, sessions, policy, DemoMenuRepository(), RoomCheckoutAttemptStore(database)))
             } finally {
                 database.close()
             }

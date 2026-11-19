@@ -50,6 +50,9 @@ data class StoredCheckoutAttempt(
 
 @Dao
 abstract class CheckoutAttemptDao {
+    @Query("DELETE FROM checkout_attempt WHERE owner != :owner")
+    abstract suspend fun clearOtherOwners(owner: String)
+
     @Transaction
     @Query("SELECT * FROM checkout_attempt WHERE owner = :owner AND orderNumber IS NULL AND dismissed = 0 LIMIT 1")
     abstract suspend fun active(owner: String): StoredCheckoutAttempt?

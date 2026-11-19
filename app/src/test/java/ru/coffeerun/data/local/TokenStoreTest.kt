@@ -48,6 +48,29 @@ class TokenStoreTest {
     fun tearDown() = scopes.forEach { it.cancel() }
 
     @Test
+    fun failedOwnerTransition_isReplayedFromSavedCredentialsOnRestart() = runTest {
+        val before = TokenStore(openDisk())
+        before.save("old-token")
+        val old = before.currentSession()
+        var fail = false
+        val interrupted = TokenStore(openDisk()) {
+            if (fail) throw IOException("database interrupted")
+        }
+        val interruptedSession = interrupted.currentSession()
+        fail = true
+        assertTrue(runCatching { interrupted.save("new-token") }.exceptionOrNull() is IOException)
+        assertTrue(interrupted.sessionReadFailed.value)
+        assertTrue(runCatching { interrupted.withSession(interruptedSession) {} }.isFailure)
+
+        val reconciled = mutableListOf<String?>()
+        val restarted = TokenStore(openDisk()) { reconciled += it }
+        assertEquals("new-token", restarted.token.first())
+        val restored = restarted.currentSession()
+        assertTrue(restored.localOwner != old.localOwner)
+        assertEquals(listOf(restored.localOwner), reconciled)
+    }
+
+    @Test
     fun readFailure_waitsForRetryWithoutPublishingGuest() = runTest {
         val disk = openDisk()
         disk.updateData {
