@@ -109,7 +109,7 @@ class CoffeeRunApplication : Application(), SingletonImageLoader.Factory {
         val log = if (BuildConfig.DEBUG) { line: String -> Log.d("CoffeeRunHttp", line); Unit } else null
         val api = createCoffeeRunApi(BuildConfig.BASE_URL, language, tokens, log)
         val auth = NetworkAuthRepository(api, tokens)
-        val menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language)
+        val menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language, database.menuSnapshots())
         val pickupPolicy = PickupPolicy()
         container = AppContainer(
             menu = menu,

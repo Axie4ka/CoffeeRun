@@ -27,7 +27,7 @@ import ru.coffeerun.model.Shop
 /** Состояние загрузки меню. */
 sealed interface MenuUiState {
     data object Loading : MenuUiState
-    data class Success(val products: List<Product>, val prices: OptionPrices) : MenuUiState
+    data class Success(val products: List<Product>, val prices: OptionPrices, val isCached: Boolean = false) : MenuUiState
     data object Error : MenuUiState
 }
 
@@ -64,7 +64,7 @@ class MenuViewModel(
         loadJob = viewModelScope.launch {
             try {
                 menu.observeSnapshot().collect { snapshot ->
-                    _uiState.value = MenuUiState.Success(snapshot.products, snapshot.prices)
+                    _uiState.value = MenuUiState.Success(snapshot.products, snapshot.prices, snapshot.isCached)
                 }
             } catch (e: IOException) {
                 _uiState.value = MenuUiState.Error

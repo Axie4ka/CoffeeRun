@@ -1,4 +1,5 @@
 <resources>
+    <string name="menu_cached_refresh">Showing saved menu · Refresh</string>
     <string name="profile_save_outcome_unknown">Couldn’t verify the update. Review your details before saving again.</string>
     <string name="profile_confirmed_fields">Confirmed on the server: %1$s, %2$s</string>
     <string name="profile_logout_failed">Couldn’t finish signing out. Try again.</string>
