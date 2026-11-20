@@ -104,6 +104,9 @@ fun OrdersScreen(
                 modifier = Modifier.weight(1f)
             )
         } else {
+            if (load == OrdersLoad.FAILED) {
+                Text(stringResource(R.string.orders_refresh_error), modifier = Modifier.padding(MaterialTheme.spacing.medium))
+            }
             // Свайп вниз обновляет статусы, не уходя с вкладки
             PullToRefreshBox(isRefreshing = refreshing, onRefresh = onRefresh, modifier = Modifier.weight(1f)) {
                 LazyColumn(

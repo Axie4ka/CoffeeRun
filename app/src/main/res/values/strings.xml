@@ -1,4 +1,7 @@
 <resources>
+    <string name="favorites_cached_refresh">Showing saved favorites · Refresh</string>
+    <string name="favorite_missing_product">Item unavailable (%1$s)</string>
+    <string name="status_unknown">Status unknown</string>
     <string name="menu_cached_refresh">Showing saved menu · Refresh</string>
     <string name="profile_save_outcome_unknown">Couldn’t verify the update. Review your details before saving again.</string>
     <string name="profile_confirmed_fields">Confirmed on the server: %1$s, %2$s</string>

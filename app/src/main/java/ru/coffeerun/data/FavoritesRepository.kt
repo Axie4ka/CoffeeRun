@@ -5,6 +5,7 @@ import ru.coffeerun.data.session.AuthSession
 
 /** Подтверждённые сервером ID. Последовательностью обращений управляет FavoritesCoordinator. */
 interface FavoritesRepository {
+    val hasSnapshot: Boolean get() = false
     val confirmedIds: StateFlow<Set<String>>
     suspend fun refresh(session: AuthSession)
     suspend fun setFavorite(productId: String, selected: Boolean, session: AuthSession)

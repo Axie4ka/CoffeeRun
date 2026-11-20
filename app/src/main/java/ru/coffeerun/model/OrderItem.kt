@@ -1,10 +1,13 @@
 package ru.coffeerun.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Позиция оформленного заказа: оплаченная цена и выбранные опции не зависят от текущего каталога.
  * Пока сервер возвращает только productId, название и описание берутся из доступного меню.
  * null в [name] означает, что название неизвестно; локализованную заглушку выбирает UI.
  */
+@Serializable
 data class OrderItem(
     val productId: String,
     val name: String?,

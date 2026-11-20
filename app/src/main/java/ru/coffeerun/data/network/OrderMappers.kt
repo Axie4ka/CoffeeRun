@@ -62,8 +62,7 @@ fun OrderDto.toModel(products: Map<String, Product>, knownItems: List<OrderItem>
     }
     return Order(
         number = number,
-        // Новый статус, которого приложение не знает, — заказ хотя бы «принят», а не исчез
-        status = enumOrNull<OrderStatus>(status) ?: OrderStatus.ACCEPTED,
+        status = enumOrNull<OrderStatus>(status) ?: OrderStatus.UNKNOWN,
         lines = shown,
         shop = shop,
         placedAtMillis = placed,

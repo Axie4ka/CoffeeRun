@@ -1,4 +1,7 @@
 <resources>
+    <string name="favorites_cached_refresh">Сохранённое избранное · Обновить</string>
+    <string name="favorite_missing_product">Позиция недоступна (%1$s)</string>
+    <string name="status_unknown">Статус неизвестен</string>
     <string name="menu_cached_refresh">Сохранённое меню · Обновить</string>
     <string name="profile_save_outcome_unknown">Не удалось подтвердить обновление. Проверьте данные перед повторным сохранением.</string>
     <string name="profile_confirmed_fields">Подтверждено на сервере: %1$s, %2$s</string>

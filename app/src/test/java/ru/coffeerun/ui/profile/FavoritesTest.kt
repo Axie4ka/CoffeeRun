@@ -40,12 +40,14 @@ class FavoritesTest {
     }
 
     @Test
-    fun unknownIds_areSkipped() = runTest {
+    fun unknownIds_canBeRemovedFromFavorites() = runTest {
         favorites.toggle("latte")
         favorites.toggle("gone")
         val vm = FavoritesViewModel(DemoMenuRepository(), favorites)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
-        assertEquals(FavoritesUiState.Success(listOf(DemoMenu.LATTE)), vm.uiState.value)
+        assertEquals(FavoritesUiState.Success(listOf(DemoMenu.LATTE), missingIds = setOf("gone")), vm.uiState.value)
+        vm.removeMissing("gone") { throw AssertionError("remove failed") }
+        assertEquals(setOf("latte"), favorites.ids.value)
     }
 
     @Test

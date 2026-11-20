@@ -29,6 +29,7 @@ class FavoritesCoordinator(
 ) : Favorites {
     private val _ids = MutableStateFlow<Set<String>>(emptySet())
     override val ids: StateFlow<Set<String>> = _ids.asStateFlow()
+    override val hasSnapshot: Boolean get() = repository.hasSnapshot
     private data class Intent(val version: Long, val selected: Boolean)
     // Все поля ниже, кроме самого Mutex, читаются и меняются только под withSession.
     private var owner: AuthSession? = null
@@ -54,8 +55,11 @@ class FavoritesCoordinator(
         val serial = commit(session) { requests }
         serial.withLock {
             commit(session) { }
-            repository.refresh(session)
-            commit(session) { publish() }
+            try {
+                repository.refresh(session)
+            } finally {
+                commit(session) { publish() }
+            }
         }
     }
 
@@ -77,7 +81,14 @@ class FavoritesCoordinator(
                         val success = try {
                             repository.setFavorite(productId, intent.selected, session)
                             true
-                        } catch (_: IOException) { false }
+                        } catch (_: IOException) {
+                            if (!repository.hasSnapshot) false else try {
+                                repository.refresh(session)
+                                (productId in repository.confirmedIds.value) == intent.selected
+                            } catch (_: IOException) {
+                                false
+                            }
+                        }
                         commit(session) {
                             val latest = pending[productId] == intent
                             if (latest) pending.remove(productId)

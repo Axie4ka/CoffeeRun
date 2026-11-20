@@ -35,6 +35,9 @@ class RoomOwnerScope(private val db: CoffeeRunDatabase) {
                 if (previous == GUEST_OWNER && localOwner != null) db.cart().transferGuest(target)
                 db.cart().clearOtherOwners(target)
                 db.checkoutAttempts().clearOtherOwners(target)
+                db.orderHistory().clearOtherOrders(target)
+                db.orderHistory().clearOtherSync(target)
+                db.favoritesSnapshots().clearOtherOwners(target)
                 db.localOwner().set(LocalOwnerEntity(target))
             }
         } catch (error: SQLiteException) {

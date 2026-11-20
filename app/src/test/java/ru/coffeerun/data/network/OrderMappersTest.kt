@@ -138,8 +138,10 @@ class OrderMappersTest {
     }
 
     @Test
-    fun unknownStatus_isAccepted_unknownShop_isDropped() {
-        assertEquals(OrderStatus.ACCEPTED, demo[0].copy(status = "COOKING_ON_MARS").toModel(products)!!.status)
+    fun unknownStatus_cannotBeCancelled_unknownShop_isDropped() {
+        val unknown = demo[0].copy(status = "COOKING_ON_MARS").toModel(products)!!
+        assertEquals(OrderStatus.UNKNOWN, unknown.status)
+        assertEquals(false, unknown.canCancel)
         assertNull(demo[0].copy(shop = "MARS").toModel(products))
         assertNull(demo[0].copy(placedAt = "вчера").toModel(products))
     }

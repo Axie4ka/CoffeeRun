@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 /** Избранное — id товаров. Наружу только чтение через [ids], менять можно лишь [toggle]. */
 interface Favorites {
+    val hasSnapshot: Boolean get() = false
     val ids: StateFlow<Set<String>>
 
     /** Загрузить с сервера заново. Ошибка — [IOException], как у меню. */

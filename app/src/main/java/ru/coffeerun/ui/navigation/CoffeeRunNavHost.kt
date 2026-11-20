@@ -313,7 +313,12 @@ fun CoffeeRunNavHost(
                     onProductClick = { navController.navigate(ProductRoute(it)) },
                     onBrowseMenu = { navController.jumpToTab(Tab.MENU) },
                     onBack = { navController.popBackStack() },
-                    onRetry = vm::retry
+                    onRetry = vm::retry,
+                    onRemoveMissing = { id ->
+                        vm.removeMissing(id) {
+                            appScope.launch { snackbarHostState.showSnackbar(appContext.getString(R.string.favorites_toggle_error)) }
+                        }
+                    }
                 )
             }
         }

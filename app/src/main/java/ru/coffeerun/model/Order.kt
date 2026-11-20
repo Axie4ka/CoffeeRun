@@ -1,6 +1,7 @@
 package ru.coffeerun.model
 
 import androidx.annotation.StringRes
+import kotlinx.serialization.Serializable
 import ru.coffeerun.R
 
 /** Через сколько минут после оформления заказ готов (пока фиксированно). */
@@ -14,7 +15,8 @@ enum class OrderStatus(@StringRes val labelRes: Int) {
     PREPARING(R.string.status_preparing),
     READY(R.string.status_ready),
     PICKED_UP(R.string.status_picked_up),
-    CANCELLED(R.string.status_cancelled)
+    CANCELLED(R.string.status_cancelled),
+    UNKNOWN(R.string.status_unknown)
 }
 
 enum class Shop(@StringRes val addressRes: Int) {
@@ -22,6 +24,7 @@ enum class Shop(@StringRes val addressRes: Int) {
     STROITELEY(R.string.shop_stroiteley)
 }
 
+@Serializable
 data class Order(
     val number: Int,
     val status: OrderStatus,
