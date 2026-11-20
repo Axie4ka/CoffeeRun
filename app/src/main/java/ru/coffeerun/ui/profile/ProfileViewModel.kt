@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.coffeerun.container
@@ -67,14 +69,15 @@ class ProfileViewModel(
         combine(auth.sessions, reload) { session, _ -> session }.flatMapLatest { session ->
             if (!session.isLoggedIn) flowOf<AccountState>(AccountState.Loading) // гость в сеть не ходит
             else flow {
-                emit(AccountState.Loading)
+                emit(profile.confirmed(session)?.let(AccountState::Loaded) ?: AccountState.Loading)
                 emit(
                     try {
                         AccountState.Loaded(profile.getMe())
                     } catch (e: IOException) {
-                        AccountState.Error
+                        profile.confirmed(session)?.let(AccountState::Loaded) ?: AccountState.Error
                     }
                 )
+                emitAll(profile.observeConfirmed(session).map(AccountState::Loaded))
             }
         }
 

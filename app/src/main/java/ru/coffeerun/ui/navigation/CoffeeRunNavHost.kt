@@ -224,18 +224,10 @@ fun CoffeeRunNavHost(
             )
         }
 
-        composable<ProfileRoute> { entry ->
+        composable<ProfileRoute> {
             val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
             val profileState by vm.uiState.collectAsStateWithLifecycle()
             val logoutState by vm.logoutState.collectAsStateWithLifecycle()
-            // Профиль сохранили на экране «Изменить» — показываем то, что теперь на сервере
-            val saved by entry.savedStateHandle.getStateFlow(PROFILE_SAVED, false).collectAsStateWithLifecycle()
-            LaunchedEffect(saved) {
-                if (saved) {
-                    vm.retry()
-                    entry.savedStateHandle[PROFILE_SAVED] = false
-                }
-            }
             if (logoutState == ru.coffeerun.ui.profile.LogoutState.Failed) {
                 RetryMessage(stringResource(R.string.profile_logout_failed), vm::logout, tabModifier.fillMaxSize())
             } else ProfileScreen(
@@ -245,7 +237,7 @@ fun CoffeeRunNavHost(
                 onLogin = { navController.navigate(LoginRoute()) },
                 onLogout = vm::logout,
                 onRetry = vm::retry,
-                onEdit = { navController.navigate(EditProfileRoute(it.name, it.phone)) },
+                onEdit = { navController.navigate(EditProfileRoute) },
                 modifier = tabModifier
             )
         }
@@ -256,7 +248,6 @@ fun CoffeeRunNavHost(
             val savedText = stringResource(R.string.profile_saved)
             LaunchedEffect(state.isDone) {
                 if (state.isDone) {
-                    navController.previousBackStackEntry?.savedStateHandle?.set(PROFILE_SAVED, true)
                     navController.popBackStack()
                     // Снэкбар живёт дольше экрана: показываем его уже на профиле
                     appScope.launch { snackbarHostState.showSnackbar(savedText) }
@@ -268,6 +259,7 @@ fun CoffeeRunNavHost(
                 onPhoneChange = vm::onPhoneChange,
                 onSave = vm::save,
                 onMessageShown = vm::onMessageShown,
+                onRetryLoad = vm::load,
                 onBack = dropUnlessResumed { navController.popBackStack() },
                 snackbarHostState = snackbarHostState
             )
@@ -454,7 +446,6 @@ private fun AnimatedContentScope.ProvideNavScope(content: @Composable () -> Unit
 private fun NavBackStackEntry.isTab() = Tab.entries.any { destination.hasRoute(it.route::class) }
 
 /** Ключ результата «профиль сохранён» в SavedStateHandle профиля. */
-private const val PROFILE_SAVED = "profileSaved"
 
 /** После входа или регистрации: закрыть вход (и регистрацию над ним) и, если гость шёл оформлять, открыть оформление. */
 private fun NavController.afterLogin(toCheckout: Boolean) {

@@ -72,6 +72,7 @@ class AppContainer(
     internal fun observeSession(scope: CoroutineScope): Job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
         var previous: AuthSession? = null
         auth.sessions.collect { current ->
+            profile.onSessionChanged(current)
             if (previous?.isLoggedIn == true && previous != current) cart.onSessionEnded()
             previous = current
         }

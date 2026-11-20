@@ -9,6 +9,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.async
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import ru.coffeerun.data.session.SessionStateStore
 import ru.coffeerun.data.network.CoffeeRunApi
 import org.junit.Assert.assertTrue
@@ -59,6 +60,25 @@ class NetworkProfileRepositoryTest {
     }
 
     @Test
+    fun lateSuccessfulPut_cannotReplaceProfileAfterNewLogin() = runTest {
+        val reply = CompletableDeferred<Unit>()
+        val api = object : StubApi() {
+            override suspend fun updateMe(user: UserDto) = withContext(NonCancellable) { reply.await(); user }
+            override suspend fun getMe() = denis
+        }
+        val repository = repo(api)
+        val old = sessions.currentSession()
+        val pending = async(start = CoroutineStart.UNDISPATCHED) { runCatching { repository.updateMe("Аня", "+79991112233") } }
+        sessions.replaceToken("demo-token")
+        repository.onSessionChanged(sessions.currentSession())
+        val current = repository.getMe()
+        reply.complete(Unit)
+        assertTrue(pending.await().exceptionOrNull() is CancellationException)
+        assertEquals(current, repository.confirmed(sessions.currentSession()))
+        assertEquals(null, repository.confirmed(old))
+    }
+
+    @Test
     fun guest_doesNotSendPersonalRequest() = runTest {
         sessions.replaceToken(null)
         var called = false
@@ -92,7 +112,35 @@ class NetworkProfileRepositoryTest {
     @Test
     fun updateMe_errors_mapToResults() = runTest {
         assertEquals(ProfileSaveResult.InvalidInput, repo(FakeApi(http(400))).updateMe("", "1"))
-        assertEquals(ProfileSaveResult.Unavailable, repo(FakeApi(http(500))).updateMe("Аня", "+79991112233"))
-        assertEquals(ProfileSaveResult.Unavailable, repo(FakeApi { throw IOException() }).updateMe("Аня", "+79991112233"))
+        assertEquals(ProfileSaveResult.OutcomeUnknown(null), repo(FakeApi(http(500))).updateMe("Аня", "+79991112233"))
+        assertEquals(ProfileSaveResult.OutcomeUnknown(null), repo(FakeApi { throw IOException() }).updateMe("Аня", "+79991112233"))
+    }
+
+    @Test
+    fun successfulPut_publishesCanonicalFieldsWithoutAnotherGet() = runTest {
+        val updated = User("Анна", "+79990000001")
+        val api = object : StubApi() {
+            override suspend fun updateMe(user: UserDto) = UserDto(updated.name, updated.phone)
+        }
+        val repository = repo(api)
+        assertEquals(ProfileSaveResult.Success(updated), repository.updateMe("Анна ", updated.phone))
+        assertEquals(updated, repository.observeConfirmed(sessions.currentSession()).first())
+        assertEquals(updated, repository.getForEditing())
+    }
+
+    @Test
+    fun lostPutResponse_rechecksServerBeforeConfirmingTheUpdate() = runTest {
+        val updated = User("Анна", "+79990000001")
+        var remote = denis
+        val api = object : StubApi() {
+            override suspend fun updateMe(user: UserDto): UserDto {
+                remote = user
+                throw IOException("response lost")
+            }
+            override suspend fun getMe() = remote
+        }
+        val repository = repo(api)
+        assertEquals(ProfileSaveResult.Success(updated), repository.updateMe(updated.name, updated.phone))
+        assertEquals(updated, repository.confirmed(sessions.currentSession()))
     }
 }
