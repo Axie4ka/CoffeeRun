@@ -1,4 +1,5 @@
 package ru.coffeerun.model
+import kotlinx.serialization.Serializable
 
 import androidx.annotation.StringRes
 import ru.coffeerun.R
@@ -34,6 +35,7 @@ enum class Allergen(@StringRes val labelRes: Int) {
  * [extras] — добавки, подходящие именно этой позиции (порядок сохраняется);
  * пустой набор — блока добавок нет.
  */
+@Serializable
 data class Product(
     val id: String,
     val category: ProductCategory,
@@ -68,10 +70,32 @@ data class Product(
      * Опции без цены в [prices] (её нет в кофейне) ничего не добавляют — экран их и не предлагает.
      */
     fun unitPrice(size: DrinkSize, milk: MilkType, selectedExtras: Set<Extra>, prices: OptionPrices): Int {
+        return calculatePrice(size, milk, selectedExtras, prices).coerceIn(0, Int.MAX_VALUE.toLong()).toInt()
+    }
+
+    /** Цена точного рецепта либо null, если хотя бы одна опция недоступна. */
+    fun recipePrice(options: DrinkOptions?, prices: OptionPrices): Int? {
+        if ((options != null) != hasOptions) return null
+        val size = options?.size
+        val milk = options?.milk
+        val extras = options?.extras.orEmpty()
+        val note = options?.note.orEmpty()
+        if ((Customization.SIZE in customizations) != (size != null)) return null
+        if ((Customization.MILK in customizations) != (milk != null)) return null
+        if (size != null && (prices.sizePrice(size) == null || prices.sizePrice(DrinkSize.SMALL) == null)) return null
+        if (milk != null && prices.milk(milk)?.isAvailable != true) return null
+        if (options?.isIced == true && Customization.ICE !in customizations) return null
+        if (note.length > MAX_NOTE_LENGTH || (note.isNotEmpty() && Customization.NOTE !in customizations)) return null
+        if (extras.any { it !in this.extras || it !in prices.extras }) return null
+        return calculatePrice(size ?: DEFAULT_DRINK_SIZE, milk ?: MilkType.REGULAR, extras, prices)
+            .takeIf { it in 0..(Int.MAX_VALUE / MAX_QUANTITY).toLong() }?.toInt()
+    }
+
+    private fun calculatePrice(size: DrinkSize, milk: MilkType, selectedExtras: Set<Extra>, prices: OptionPrices): Long {
         val sizeSurcharge = if (Customization.SIZE in customizations) {
-            (prices.sizePrice(size) ?: 0) - (prices.sizePrice(DrinkSize.SMALL) ?: prices.sizePrice(size) ?: 0)
-        } else 0
+            (prices.sizePrice(size) ?: 0).toLong() - (prices.sizePrice(DrinkSize.SMALL) ?: prices.sizePrice(size) ?: 0)
+        } else 0L
         val milkSurcharge = if (Customization.MILK in customizations) prices.milk(milk)?.price ?: 0 else 0
-        return price + sizeSurcharge + milkSurcharge + selectedExtras.sumOf { prices.extras[it] ?: 0 }
+        return price.toLong() + sizeSurcharge + milkSurcharge + selectedExtras.sumOf { (prices.extras[it] ?: 0).toLong() }
     }
 }

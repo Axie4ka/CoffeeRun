@@ -55,6 +55,8 @@ class MenuViewModelTest {
         val first = CompletableDeferred<List<Product>>()
         var call = 0
         val repo = object : MenuRepository {
+            override suspend fun refresh() = ru.coffeerun.model.MenuSnapshot(getMenu(), getOptionPrices())
+
             override suspend fun getMenu(): List<Product> =
                 if (call++ == 0) first.await() else DemoMenu.products
 

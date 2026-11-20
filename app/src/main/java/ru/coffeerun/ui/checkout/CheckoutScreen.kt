@@ -76,6 +76,8 @@ fun CheckoutScreen(
     onPickupTimeChosen: (hour: Int, minute: Int) -> Boolean,
     onShopSelected: (Shop) -> Unit = {},
     modifier: Modifier = Modifier,
+    onCheckOrderHistory: () -> Unit = {},
+    onAllowNewOrder: () -> Unit = {},
     onMessageShown: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
@@ -88,6 +90,7 @@ fun CheckoutScreen(
     val transparentItem = ListItemDefaults.colors(containerColor = Color.Transparent)
     var showTimePicker by rememberSaveable { mutableStateOf(false) }
     var showShopPicker by rememberSaveable { mutableStateOf(false) }
+    var confirmNewOrder by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val invalidMessage = stringResource(R.string.pickup_time_invalid)
     val context = LocalContext.current
@@ -101,8 +104,25 @@ fun CheckoutScreen(
 
     if (showShopPicker) ShopPickerSheet(uiState.shop, onShopSelected, onDismiss = { showShopPicker = false })
 
+    if (confirmNewOrder && uiState.outcomeUnknown) {
+        AlertDialog(
+            onDismissRequest = { confirmNewOrder = false },
+            title = { Text(stringResource(R.string.checkout_new_order)) },
+            text = { Text(stringResource(R.string.checkout_duplicate_warning)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmNewOrder = false
+                    onAllowNewOrder()
+                }) { Text(stringResource(R.string.checkout_allow_new_order)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmNewOrder = false }) { Text(stringResource(android.R.string.cancel)) }
+            }
+        )
+    }
+
     if (showTimePicker && earliestPickup != null) {
-        val initial = pickupAtMillis?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalTime() } ?: earliestPickup
+        val initial = pickupAtMillis?.let { Instant.ofEpochMilli(it).atZone(uiState.pickupZone).toLocalTime() } ?: earliestPickup
         val timeState = rememberTimePickerState(initial.hour, initial.minute, is24Hour = true)
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
@@ -136,8 +156,19 @@ fun CheckoutScreen(
                         .padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.medium),
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
                 ) {
-                    TotalRow(total = uiState.total)
-                    SubmitButton(R.string.checkout_confirm, isLoading = uiState.isPlacing, onClick = onConfirm)
+                    if (uiState.outcomeUnknown) {
+                        Text(stringResource(R.string.checkout_outcome_unknown))
+                        SubmitButton(R.string.checkout_check_history, isLoading = false, onClick = onCheckOrderHistory)
+                        TextButton(onClick = { confirmNewOrder = true }) { Text(stringResource(R.string.checkout_new_order)) }
+                    } else {
+                        if (uiState.quote != null) Text(stringResource(R.string.checkout_prices_changed))
+                        if (uiState.totalOverflow) Text(stringResource(R.string.checkout_invalid_total))
+                        else TotalRow(total = uiState.total)
+                        SubmitButton(
+                            if (uiState.quote != null) R.string.checkout_accept_price else R.string.checkout_confirm,
+                            isLoading = uiState.isPlacing, onClick = onConfirm
+                        )
+                    }
                 }
             }
         }
@@ -158,7 +189,9 @@ fun CheckoutScreen(
                 },
                 trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
                 colors = transparentItem,
-                modifier = Modifier.clickable(onClickLabel = stringResource(R.string.menu_choose_shop)) { showShopPicker = true }
+                modifier = Modifier.clickable(enabled = !uiState.isPlacing, onClickLabel = stringResource(R.string.menu_choose_shop)) {
+                    showShopPicker = true
+                }
             )
             HorizontalDivider(gutter)
 
@@ -168,18 +201,19 @@ fun CheckoutScreen(
                     label = stringResource(R.string.pickup_asap),
                     supporting = stringResource(R.string.pickup_asap_hint),
                     selected = pickupAtMillis == null,
-                    onClick = onPickupAsap
+                    onClick = onPickupAsap,
+                    enabled = !uiState.isPlacing
                 )
                 RadioRow(
                     label = stringResource(R.string.pickup_scheduled),
                     supporting = when {
                         earliestPickup == null -> stringResource(R.string.pickup_scheduled_closed)
-                        pickupAtMillis != null -> formatTime(pickupAtMillis)
+                        pickupAtMillis != null -> formatTime(pickupAtMillis, uiState.pickupZone)
                         else -> stringResource(R.string.pickup_scheduled_hint)
                     },
                     selected = pickupAtMillis != null,
                     onClick = { showTimePicker = true },
-                    enabled = earliestPickup != null
+                    enabled = earliestPickup != null && !uiState.isPlacing
                 )
             }
             HorizontalDivider(gutter)
@@ -194,6 +228,13 @@ fun CheckoutScreen(
             HorizontalDivider(gutter)
 
             SectionTitle(stringResource(R.string.section_order), gutter)
+            if (uiState.unavailableItems.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.checkout_unavailable_items, uiState.unavailableItems.joinToString()),
+                    modifier = gutter,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
             lines.forEach { line ->
                 Row(gutter.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text(
@@ -202,7 +243,7 @@ fun CheckoutScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = stringResource(R.string.price_rub, line.total),
+                        text = stringResource(R.string.price_rub, line.unitPrice.toLong() * line.quantity),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -231,6 +272,7 @@ private fun CheckoutScreenPreview() {
                 total = lines.sumOf { it.total },
                 shop = Shop.MOSKOVSKAYA,
                 pickupAtMillis = null,
+                pickupZone = ZoneId.of("Europe/Moscow"),
                 earliestPickup = LocalTime.NOON,
                 placedOrderNumber = null
             ),

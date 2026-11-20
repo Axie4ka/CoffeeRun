@@ -34,11 +34,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.toOrderItem
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
+import ru.coffeerun.ui.util.LocalShopZone
 import ru.coffeerun.ui.util.formatTime
 
 /**
@@ -141,7 +143,7 @@ private fun OrderInfo(order: Order) {
                         tint = MaterialTheme.colorScheme.tertiary
                     )
                 },
-                text = stringResource(R.string.placed_ready, formatTime(order.readyAtMillis))
+                text = stringResource(R.string.placed_ready, formatTime(order.readyAtMillis, LocalShopZone.current(order.shop)))
             )
             InfoRow(
                 icon = {
@@ -178,7 +180,7 @@ private fun OrderPlacedScreenPreview() {
             order = Order(
                 number = 1042,
                 status = OrderStatus.PREPARING,
-                lines = listOf(CartLine(DemoMenu.CROISSANT, unitPrice = 180, id = 1)),
+                lines = listOf(CartLine(DemoMenu.CROISSANT, unitPrice = 180).toOrderItem()),
                 shop = Shop.MOSKOVSKAYA,
                 placedAtMillis = System.currentTimeMillis()
             ),

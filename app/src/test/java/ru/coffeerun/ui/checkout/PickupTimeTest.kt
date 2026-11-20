@@ -1,5 +1,7 @@
 package ru.coffeerun.ui.checkout
 
+import ru.coffeerun.testCheckout
+
 import ru.coffeerun.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -16,7 +18,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
-import ru.coffeerun.data.InMemoryOrderRepository
+import ru.coffeerun.data.InMemoryOrders
 import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
@@ -31,22 +33,40 @@ class PickupTimeTest {
     val mainRule = MainDispatcherRule()
 
     private fun today(hour: Int, minute: Int = 0): Long =
-        LocalDate.of(2026, 10, 20).atTime(LocalTime.of(hour, minute)).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        LocalDate.of(2026, 10, 20).atTime(LocalTime.of(hour, minute)).atZone(ZoneId.of("Europe/Moscow")).toInstant().toEpochMilli()
 
     // Часы и «тики» подменяются: время в тестах не зависит от реального, бесконечного таймера нет
     private fun checkout(now: () -> Long, ticks: Flow<Unit> = flowOf(Unit)) =
-        CheckoutViewModel(cart, orders, InMemoryShopRepository(), now = now, ticks = ticks)
+        testCheckout(cart, orders, InMemoryShopRepository(), now = now, ticks = ticks)
 
     private fun vmAt(hour: Int, minute: Int = 0, second: Int = 0) = checkout({ today(hour, minute) + second * 1000L })
 
     private val cart = InMemoryCartRepository()
-    private val orders = InMemoryOrderRepository()
+    private val orders = InMemoryOrders()
     // lazy: viewModelScope нужен Dispatchers.Main, а его подменяет правило — уже после создания полей теста
     private val vm by lazy { checkout({ today(12) }) }
 
     /** uiState живёт только при подписчике (WhileSubscribed), поэтому держим коллектор. */
     private fun TestScope.keepActive(vm: CheckoutViewModel) {
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+    }
+
+    @Test
+    fun priceUpdate_requiresConfirmationFromUpdatedScreen() = runTest {
+        cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 150, quantity = 2))
+        val before = orders.orders.value
+        keepActive(vm)
+        vm.placeOrder()
+
+        val updated = checkNotNull(vm.uiState.value.quote)
+        assertEquals(360, vm.uiState.value.total)
+        vm.placeOrder()
+        assertEquals(before, orders.orders.value)
+
+        vm.placeOrder(updated)
+        assertEquals(before.size + 1, orders.orders.value.size)
+        assertEquals(360, orders.orders.value.first().total)
+        assertTrue(cart.lines.value.isEmpty())
     }
 
     @Test
@@ -77,16 +97,19 @@ class PickupTimeTest {
     }
 
     @Test
-    fun staleTime_fallsBackToAsapOnPlaceOrder() = runTest {
+    fun staleTime_keepsSelectionAndCart_withoutSendingOrder() = runTest {
         var nowMillis = today(12)
         val clocked = checkout({ nowMillis })
         keepActive(clocked)
         assertTrue(clocked.setPickupTime(12, 20))
         nowMillis = today(12, 10)
         cart.add(CartLine(DemoMenu.CROISSANT, unitPrice = 180))
+        val before = orders.orders.value
         clocked.placeOrder()
-        assertNull(orders.orders.value.first().pickupAtMillis)
-        assertNull(clocked.uiState.value.pickupAtMillis)
+        assertEquals(before, orders.orders.value)
+        assertEquals(today(12, 20), clocked.uiState.value.pickupAtMillis)
+        assertEquals(1, cart.lines.value.size)
+        assertEquals(ru.coffeerun.R.string.pickup_time_unavailable, clocked.uiState.value.message)
     }
 
     @Test

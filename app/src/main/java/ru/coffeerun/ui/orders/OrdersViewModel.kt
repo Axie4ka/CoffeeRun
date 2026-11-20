@@ -15,8 +15,8 @@ import kotlinx.coroutines.launch
 import ru.coffeerun.R
 import ru.coffeerun.container
 import ru.coffeerun.data.CancelOrderResult
-import ru.coffeerun.data.CartRepository
-import ru.coffeerun.data.OrderRepository
+import ru.coffeerun.domain.orders.Orders
+import ru.coffeerun.domain.usecase.RepeatOrderUseCase
 import ru.coffeerun.model.Order
 
 /** Текст снэкбара об итоге отмены — один и тот же в списке и на экране заказа. */
@@ -31,12 +31,12 @@ enum class OrdersLoad { LOADING, DONE, FAILED }
 
 /**
  * Заказы. Каждый раз, когда вкладку показывают, список берётся с сервера заново — статусы меняются.
- * После входа заказы загружает сам репозиторий. Ошибку загрузки экран показывает, только если показать нечего.
+ * Загрузку явно запрашивает экран. Ошибку показывает, только если показать нечего.
  */
 class OrdersViewModel(
-    private val repository: OrderRepository,
-    private val cart: CartRepository,
-    private val isLoggedIn: Flow<Boolean>
+    private val repository: Orders,
+    private val isLoggedIn: Flow<Boolean>,
+    private val repeatOrderUseCase: RepeatOrderUseCase
 ) : ViewModel() {
     val orders: StateFlow<List<Order>> = repository.orders
 
@@ -75,8 +75,11 @@ class OrdersViewModel(
         if (_cancelling.value != null) return
         _cancelling.value = order.number
         viewModelScope.launch {
-            _message.value = repository.cancel(order.number).messageRes()
-            _cancelling.value = null
+            try {
+                _message.value = repository.cancel(order.number).messageRes()
+            } finally {
+                _cancelling.value = null
+            }
         }
     }
 
@@ -105,12 +108,22 @@ class OrdersViewModel(
         }
     }
 
-    /** Кладёт позиции прошлого заказа обратно в корзину. */
-    fun repeat(order: Order) = order.lines.forEach { cart.add(it.copy(id = 0)) }
+    private var isRepeating = false
+
+    /** Не допускает параллельных повторов, пока проверяем товары по каталогу. */
+    suspend fun repeat(order: Order): OrderRepeatResult? {
+        if (isRepeating) return null
+        isRepeating = true
+        return try {
+            repeatOrderUseCase(order).toUiResult()
+        } finally {
+            isRepeating = false
+        }
+    }
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { OrdersViewModel(container.orders, container.cart, container.auth.isLoggedIn) }
+            initializer { OrdersViewModel(container.orders, container.auth.isLoggedIn, container.repeatOrder) }
         }
     }
 }

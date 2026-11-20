@@ -4,6 +4,8 @@ import ru.coffeerun.MainDispatcherRule
 import ru.coffeerun.R
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -21,7 +23,7 @@ class EditProfileViewModelTest {
     val mainRule = MainDispatcherRule()
 
     private fun vm(repo: ProfileRepository = InMemoryProfileRepository(), saved: SavedStateHandle = SavedStateHandle()) =
-        EditProfileViewModel(repo, saved, initialName = "Денис", initialPhone = "+79990000000")
+        EditProfileViewModel(repo, saved)
 
     /** Сервер отвечает на сохранение всегда одно и то же. */
     private fun answering(result: ProfileSaveResult) = object : ProfileRepository {
@@ -68,6 +70,37 @@ class EditProfileViewModelTest {
         assertFalse(offline.uiState.value.isSaving)
         offline.onMessageShown()
         assertNull(offline.uiState.value.message)
+    }
+
+    @Test
+    fun unknownSave_showsConfirmedFieldsAndKeepsDraft() {
+        val confirmed = User("Денис", "+79990000000")
+        val vm = vm(answering(ProfileSaveResult.OutcomeUnknown(confirmed)))
+        vm.onNameChange("Денис К.")
+        vm.save()
+        assertEquals("Денис К.", vm.uiState.value.name)
+        assertEquals(confirmed, vm.uiState.value.lastConfirmed)
+        assertEquals(R.string.profile_save_outcome_unknown, vm.uiState.value.message)
+        assertFalse(vm.uiState.value.isDone)
+    }
+
+    @Test
+    fun cancelledSave_clearsBusy_withoutSuccess() = runTest {
+        val reply = CompletableDeferred<Unit>()
+        val repo = object : ProfileRepository {
+            override suspend fun getMe() = User("Денис", "+79990000000")
+            override suspend fun updateMe(name: String, phone: String): ProfileSaveResult {
+                reply.await()
+                throw CancellationException("смена входа")
+            }
+        }
+        val vm = vm(repo)
+        vm.save()
+        assertTrue(vm.uiState.value.isSaving)
+        reply.complete(Unit)
+        assertFalse(vm.uiState.value.isSaving)
+        assertFalse(vm.uiState.value.isDone)
+        assertNull(vm.uiState.value.message)
     }
 
     @Test

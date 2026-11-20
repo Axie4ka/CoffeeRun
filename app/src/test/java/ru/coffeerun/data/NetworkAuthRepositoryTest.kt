@@ -1,7 +1,7 @@
 package ru.coffeerun.data
 
 import ru.coffeerun.StubApi
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import ru.coffeerun.testPreferences
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
@@ -34,7 +34,7 @@ class NetworkAuthRepositoryTest {
     val folder = TemporaryFolder()
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private val tokens by lazy { TokenStore(PreferenceDataStoreFactory.create(scope = scope) { File(folder.root, "auth.preferences_pb") }) }
+    private val tokens by lazy { TokenStore(testPreferences(scope, File(folder.root, "auth.preferences_pb"))) }
 
     @After
     fun tearDown() = scope.cancel()

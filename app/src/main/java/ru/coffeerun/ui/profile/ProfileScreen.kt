@@ -87,7 +87,7 @@ fun ProfileScreen(
                 ScreenTopBar(title = stringResource(R.string.profile_title))
                 RetryMessage(stringResource(R.string.load_error), onRetry)
             }
-            is AccountState.Loaded -> AccountProfile(account.user, uiState, onShopSelected, onFavoritesClick, onLogout, { onEdit(account.user) }, modifier)
+            is AccountState.Loaded -> AccountProfile(account.user, uiState, onShopSelected, onFavoritesClick, onLogout, { onEdit(account.user) }, modifier, onRetry)
         }
     }
 }
@@ -100,7 +100,8 @@ private fun AccountProfile(
     onFavoritesClick: () -> Unit,
     onLogout: () -> Unit,
     onEdit: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRetry: () -> Unit
 ) {
     val (shop, ordersCount, favoritesCount) = uiState
     var showShopPicker by rememberSaveable { mutableStateOf(false) }
@@ -148,6 +149,12 @@ private fun AccountProfile(
             StatCard(ordersCount, stringResource(R.string.profile_orders_label), Modifier.weight(1f))
             StatCard(favoritesCount, stringResource(R.string.profile_favorites_label), Modifier.weight(1f))
         }
+        if (uiState.ordersLoadFailed) {
+            Text(stringResource(R.string.orders_refresh_error), modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large))
+            TextButton(onClick = onRetry, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large)) {
+                Text(stringResource(R.string.action_retry))
+            }
+        }
         Column(Modifier.padding(top = MaterialTheme.spacing.large)) {
             ProfileItem(Icons.Default.Favorite, R.string.profile_favorites, if (favoritesCount == 0) stringResource(R.string.profile_favorites_none)
                 else pluralStringResource(R.plurals.profile_favorites_count, favoritesCount, favoritesCount), onFavoritesClick)
@@ -179,7 +186,7 @@ private fun AccountProfile(
 }
 
 @Composable
-private fun StatCard(value: Int, label: String, modifier: Modifier = Modifier) {
+private fun StatCard(value: Int?, label: String, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
@@ -187,7 +194,7 @@ private fun StatCard(value: Int, label: String, modifier: Modifier = Modifier) {
     ) {
         Column(Modifier.padding(horizontal = MaterialTheme.spacing.large, vertical = MaterialTheme.spacing.medium)) {
             Text(
-                text = value.toString(),
+                text = value?.toString() ?: "—",
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.tertiary
             )

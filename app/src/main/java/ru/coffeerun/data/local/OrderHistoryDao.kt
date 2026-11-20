@@ -1,0 +1,41 @@
+package ru.coffeerun.data.local
+
+import androidx.room.Dao
+import androidx.room.Entity
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.PrimaryKey
+import androidx.room.Query
+
+@Entity(tableName = "saved_order", primaryKeys = ["owner", "number"])
+data class SavedOrder(val owner: String, val number: Int, val payload: String)
+
+@Entity(tableName = "order_history_sync")
+data class OrderHistorySync(@PrimaryKey val owner: String, val fetchedAtMillis: Long)
+
+@Dao
+interface OrderHistoryDao {
+    @Query("SELECT * FROM saved_order WHERE owner = :owner")
+    suspend fun orders(owner: String): List<SavedOrder>
+
+    @Query("SELECT * FROM order_history_sync WHERE owner = :owner")
+    suspend fun sync(owner: String): OrderHistorySync?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun save(orders: List<SavedOrder>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveSync(sync: OrderHistorySync)
+
+    @Query("DELETE FROM saved_order WHERE owner = :owner AND number = :number")
+    suspend fun remove(owner: String, number: Int)
+
+    @Query("DELETE FROM saved_order WHERE owner = :owner")
+    suspend fun clear(owner: String)
+
+    @Query("DELETE FROM saved_order WHERE owner != :owner")
+    suspend fun clearOtherOrders(owner: String)
+
+    @Query("DELETE FROM order_history_sync WHERE owner != :owner")
+    suspend fun clearOtherSync(owner: String)
+}

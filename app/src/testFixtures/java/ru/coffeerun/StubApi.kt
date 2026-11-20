@@ -10,11 +10,11 @@ import ru.coffeerun.data.network.RegisterRequest
 import ru.coffeerun.data.network.UserDto
 
 /**
- * Основа для фейков API в тестах: каждый запрос по умолчанию — «не используется в этом тесте».
+ * Общая основа для unit- и UI-фейков API: неизвестный тесту запрос считается ошибкой.
  * Фейк переопределяет только свои запросы, поэтому новый метод в [CoffeeRunApi] не ломает старые тесты.
  */
 open class StubApi : CoffeeRunApi {
-    override suspend fun getMenu(): MenuDto = unused()
+    override suspend fun getMenu(language: String?): MenuDto = unused()
     override suspend fun login(request: LoginRequest): AuthResponse = unused()
     override suspend fun register(request: RegisterRequest): AuthResponse = unused()
     override suspend fun getMe(): UserDto = unused()

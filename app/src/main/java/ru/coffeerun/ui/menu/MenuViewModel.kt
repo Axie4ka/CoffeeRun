@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.coffeerun.container
+import ru.coffeerun.R
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.data.ShopRepository
@@ -26,7 +27,7 @@ import ru.coffeerun.model.Shop
 /** Состояние загрузки меню. */
 sealed interface MenuUiState {
     data object Loading : MenuUiState
-    data class Success(val products: List<Product>, val prices: OptionPrices) : MenuUiState
+    data class Success(val products: List<Product>, val prices: OptionPrices, val isCached: Boolean = false) : MenuUiState
     data object Error : MenuUiState
 }
 
@@ -38,7 +39,9 @@ class MenuViewModel(
 ) : ViewModel() {
     val shop: StateFlow<Shop> = shops.selected
 
-    fun selectShop(shop: Shop) = shops.select(shop)
+    fun selectShop(shop: Shop, onFailure: () -> Unit = {}) {
+        viewModelScope.launch { try { shops.saveSelection(shop) } catch (_: IOException) { onFailure() } }
+    }
 
 
     private val _uiState = MutableStateFlow<MenuUiState>(MenuUiState.Loading)
@@ -59,10 +62,12 @@ class MenuViewModel(
         loadJob?.cancel() // повторное «Повторить» не должно гоняться с прошлой загрузкой
         _uiState.value = MenuUiState.Loading
         loadJob = viewModelScope.launch {
-            _uiState.value = try {
-                MenuUiState.Success(menu.getMenu(), menu.getOptionPrices())
+            try {
+                menu.observeSnapshot().collect { snapshot ->
+                    _uiState.value = MenuUiState.Success(snapshot.products, snapshot.prices, snapshot.isCached)
+                }
             } catch (e: IOException) {
-                MenuUiState.Error
+                _uiState.value = MenuUiState.Error
             }
         }
     }
@@ -72,18 +77,24 @@ class MenuViewModel(
      * Если их нет в кофейне — то же, что подставит экран позиции, иначе строки корзины не сольются.
      * Кнопка видна только при загруженном меню, поэтому цены уже есть.
      */
-    fun quickAdd(product: Product) {
-        val prices = (_uiState.value as? MenuUiState.Success)?.prices ?: return
+    fun quickAdd(product: Product, onResult: (Int?) -> Unit = {}) {
+        val snapshot = _uiState.value as? MenuUiState.Success ?: return
+        val current = snapshot.products.firstOrNull { it.id == product.id } ?: return onResult(R.string.recipe_unavailable)
+        val prices = snapshot.prices
         val size = prices.fitSize(DEFAULT_DRINK_SIZE)
         val milk = prices.fitMilk(MilkType.REGULAR)
-        cart.add(
-            CartLine(
-                product = product,
-                unitPrice = product.unitPrice(size, milk, emptySet(), prices),
-                // null у опции остаётся null: у эспрессо нет выбора молока
-                options = product.defaultOptions()?.run { copy(size = this.size?.let { size }, milk = this.milk?.let { milk }) }
-            )
-        )
+        val options = current.defaultOptions()?.let {
+            it.copy(size = it.size?.let { size }, milk = it.milk?.let { milk })
+        }
+        val price = current.recipePrice(options, prices) ?: return onResult(R.string.recipe_unavailable)
+        viewModelScope.launch {
+            try {
+                cart.addLine(CartLine(current, price, options = options))
+                onResult(null)
+            } catch (_: IOException) {
+                onResult(R.string.cart_storage_unavailable)
+            }
+        }
     }
 
     companion object {

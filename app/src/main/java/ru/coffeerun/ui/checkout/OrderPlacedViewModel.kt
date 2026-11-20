@@ -6,7 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.toRoute
 import ru.coffeerun.container
-import ru.coffeerun.data.OrderRepository
+import ru.coffeerun.domain.orders.Orders
 import ru.coffeerun.model.Order
 import ru.coffeerun.ui.navigation.PlacedRoute
 
@@ -14,7 +14,7 @@ import ru.coffeerun.ui.navigation.PlacedRoute
  * Заказ берётся по номеру из маршрута. null — заказа нет: после смерти процесса стек
  * восстановился, а заказы в памяти — нет.
  */
-class OrderPlacedViewModel(orderNumber: Int, orders: OrderRepository) : ViewModel() {
+class OrderPlacedViewModel(orderNumber: Int, orders: Orders) : ViewModel() {
     val order: Order? = orders.find(orderNumber)
 
     companion object {

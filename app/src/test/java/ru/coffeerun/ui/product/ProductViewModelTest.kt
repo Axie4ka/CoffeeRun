@@ -16,7 +16,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
-import ru.coffeerun.data.InMemoryFavoritesRepository
+import ru.coffeerun.data.InMemoryFavorites
 import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.DrinkSize
@@ -36,7 +36,7 @@ class ProductViewModelTest {
     private val cart = InMemoryCartRepository()
     private var savedState = SavedStateHandle()
     private fun vm(product: Product) = vm(product.id)
-    private fun vm(id: String) = ProductViewModel(id, DemoMenuRepository(), cart, InMemoryFavoritesRepository(), savedState)
+    private fun vm(id: String) = ProductViewModel(id, DemoMenuRepository(), cart, InMemoryFavorites(), savedState)
 
     /** uiState живёт только при подписчике (WhileSubscribed), поэтому держим коллектор. */
     private fun TestScope.keepActive(vm: ProductViewModel) {
@@ -68,11 +68,13 @@ class ProductViewModelTest {
     fun form_survivesWhileProductLoads() = runTest {
         val gate = CompletableDeferred<Product?>()
         val slow = object : MenuRepository {
-            override suspend fun getMenu(): List<Product> = DemoMenu.products
-            override suspend fun getProduct(id: String): Product? = gate.await()
+            override suspend fun refresh() = ru.coffeerun.model.MenuSnapshot(getMenu(), getOptionPrices())
+
+            override suspend fun getMenu(): List<Product> = listOfNotNull(gate.await())
+            override suspend fun getProduct(id: String): Product? = getMenu().firstOrNull { it.id == id }
             override suspend fun getOptionPrices() = DemoMenu.prices
         }
-        val vm = ProductViewModel(DemoMenu.LATTE.id, slow, cart, InMemoryFavoritesRepository(), savedState)
+        val vm = ProductViewModel(DemoMenu.LATTE.id, slow, cart, InMemoryFavorites(), savedState)
         keepActive(vm)
         assertEquals(ProductUiState.Loading, vm.uiState.value)
         vm.selectSize(DrinkSize.LARGE)
@@ -131,11 +133,13 @@ class ProductViewModelTest {
             milks = DemoMenu.prices.milks.map { if (it.milk == MilkType.REGULAR) it.copy(isAvailable = false) else it }
         )
         val repo = object : MenuRepository {
+            override suspend fun refresh() = ru.coffeerun.model.MenuSnapshot(getMenu(), getOptionPrices())
+
             override suspend fun getMenu(): List<Product> = DemoMenu.products
             override suspend fun getProduct(id: String): Product? = DemoMenu.byId(id)
             override suspend fun getOptionPrices() = prices
         }
-        val vm = ProductViewModel(DemoMenu.LATTE.id, repo, cart, InMemoryFavoritesRepository(), savedState)
+        val vm = ProductViewModel(DemoMenu.LATTE.id, repo, cart, InMemoryFavorites(), savedState)
         keepActive(vm)
         val form = (vm.uiState.value as ProductUiState.Success).form
         assertEquals(DrinkSize.SMALL, form.size)

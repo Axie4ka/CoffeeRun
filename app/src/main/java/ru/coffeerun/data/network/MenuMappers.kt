@@ -24,7 +24,7 @@ fun ProductDto.toModel(baseUrl: String): Product? = Product(
     name = name,
     description = description,
     details = details,
-    imageUrl = URI(baseUrl).resolve(imageUrl).toString(), // относительный путь — к адресу сервера, полный — как есть
+    imageUrl = resolveMenuImage(baseUrl, imageUrl),
     price = price,
     calories = calories,
     allergens = allergens.map { enumOrNull<Allergen>(it) ?: Allergen.OTHER }.sortedBy { it == Allergen.OTHER }.toSet(),
@@ -32,6 +32,17 @@ fun ProductDto.toModel(baseUrl: String): Product? = Product(
     extras = extras.mapNotNull { enumOrNull<Extra>(it) }.toSet(),
     isPriceFrom = priceFrom
 )
+
+private fun resolveMenuImage(baseUrl: String, value: String): String {
+    if (value.isBlank()) return ""
+    return try {
+        URI(baseUrl).resolve(value)
+            .takeIf { it.host != null && (it.scheme.equals("https", true) || it.scheme.equals("http", true)) }
+            ?.toString().orEmpty()
+    } catch (_: IllegalArgumentException) {
+        ""
+    }
+}
 
 /** Цены опций из ответа /menu. Незнакомые коды отбрасываются: подписи для них нет, выбрать их нельзя. */
 fun MenuDto.toOptionPrices(): OptionPrices = OptionPrices(

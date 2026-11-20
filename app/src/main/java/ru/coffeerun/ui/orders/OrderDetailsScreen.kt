@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.OrderItem
+import ru.coffeerun.model.toOrderItem
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
@@ -46,6 +48,7 @@ import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.priceSmall
 import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.optionsText
+import ru.coffeerun.ui.util.nameText
 
 /**
  * Заказ целиком: статус, время, кофейня, позиции с опциями и итог.
@@ -149,14 +152,14 @@ private fun OrderContent(order: Order, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun LineRow(line: CartLine) {
+private fun LineRow(line: OrderItem) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium)
     ) {
         Column(modifier = Modifier.weight(1f)) {
             // Размер уже в строке опций ниже — здесь только название и количество
-            Text(stringResource(R.string.line_summary, line.product.name, line.quantity), style = MaterialTheme.typography.bodyLarge)
+            Text(stringResource(R.string.line_summary, line.nameText(), line.quantity), style = MaterialTheme.typography.bodyLarge)
             Text(
                 text = line.optionsText(),
                 style = MaterialTheme.typography.bodySmall,
@@ -174,7 +177,7 @@ private fun OrderDetailsScreenPreview() {
         OrderDetailsScreen(
             order = Order(
                 1045, OrderStatus.ACCEPTED,
-                listOf(CartLine(DemoMenu.CAPPUCCINO, 220, id = 1), CartLine(DemoMenu.CROISSANT, 180, 2, id = 2)),
+                listOf(CartLine(DemoMenu.CAPPUCCINO, 220), CartLine(DemoMenu.CROISSANT, 180, 2)).map { it.toOrderItem() },
                 Shop.MOSKOVSKAYA, placedAtMillis = 0L, pickupAtMillis = 3_600_000L
             ),
             load = OrdersLoad.DONE, cancelling = false, onBack = {}, onRetry = {}, onCancel = {}, onRepeat = {}

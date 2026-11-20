@@ -1,6 +1,6 @@
 package ru.coffeerun.data.network
 
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import ru.coffeerun.testPreferences
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +28,7 @@ class RequestLogInterceptorTest {
 
     private val server = MockWebServer()
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private val tokens by lazy { TokenStore(PreferenceDataStoreFactory.create(scope = scope) { File(folder.root, "auth.preferences_pb") }) }
+    private val tokens by lazy { TokenStore(testPreferences(scope, File(folder.root, "auth.preferences_pb"))) }
     private val lines = mutableListOf<String>()
     private val api by lazy { createCoffeeRunApi(server.url("/").toString(), language = { "ru" }, tokens = tokens, log = { lines += it }) }
 
@@ -57,6 +57,19 @@ class RequestLogInterceptorTest {
         assertEquals(1042, order.number)
         assertEquals(1, lines.size)
         assertTrue(lines.single(), lines.single().startsWith("POST /orders → 201 ("))
+    }
+
+    @Test
+    fun placeOrder_isNotResentWhenServerSuggestsRetry() = runTest {
+        server.start()
+        server.enqueue(MockResponse.Builder().code(503).addHeader("Retry-After", "0").build())
+        server.enqueue(MockResponse.Builder().code(409).build())
+        val request = orderRequest(listOf(CartLine(DemoMenu.CROISSANT, 180)), Shop.STROITELEY, null)
+
+        val error = runCatching { api.placeOrder(request) }.exceptionOrNull() as retrofit2.HttpException
+
+        assertEquals(503, error.code())
+        assertEquals(1, server.requestCount)
     }
 
     @Test

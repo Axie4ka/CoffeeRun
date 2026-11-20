@@ -2,9 +2,9 @@ package ru.coffeerun
 
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.InMemoryAuthRepository
-import ru.coffeerun.data.InMemoryFavoritesRepository
+import ru.coffeerun.data.InMemoryFavorites
 import ru.coffeerun.data.InMemoryProfileRepository
-import ru.coffeerun.data.InMemoryOrderRepository
+import ru.coffeerun.data.InMemoryOrders
 import ru.coffeerun.data.DemoMenuRepository
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
@@ -43,7 +43,7 @@ class NavigationTest {
     val freshData = object : ExternalResource() {
         override fun before() {
             val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
-            (app as CoffeeRunApplication).container = AppContainer(menu = DemoMenuRepository(), auth = InMemoryAuthRepository(loggedIn = true), profile = InMemoryProfileRepository(), favorites = InMemoryFavoritesRepository(), orders = InMemoryOrderRepository())
+            (app as CoffeeRunApplication).container = AppContainer(menu = DemoMenuRepository(), auth = InMemoryAuthRepository(loggedIn = true), profile = InMemoryProfileRepository(), favorites = InMemoryFavorites(), orders = InMemoryOrders(), pickupPolicy = testPickupPolicy())
         }
     }
 

@@ -1,3 +1,13 @@
+# Proposed server behavior for the local storage rollout.
+# The paths, fields and guarantees below are design dependencies, not live Mockoon routes.
+# POST /orders with Idempotency-Key would bind one exact request and its outcome
+# to the authenticated account. Replaying the same payload returns the prior result.
+# Reusing the key with a different payload is a separate conflict.
+# The server must publish the retention window and provide lookup by client request ID.
+# A purchase conflict would identify affected lines, unavailable options and current prices.
+# A stable opaque userId would allow safe account-scoped caching between logins.
+# Product images with mutable content would use a versioned URL or HTTP validators.
+
 openapi: 3.0.3
 info:
   title: CoffeeRun API

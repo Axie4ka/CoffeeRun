@@ -11,6 +11,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.stringResource
 import ru.coffeerun.ui.CoffeeRunApp
 import ru.coffeerun.ui.theme.CoffeeRunTheme
+import ru.coffeerun.ui.util.LocalShopZone
 import ru.coffeerun.ui.util.LocalPlaceholderNotifier
 import ru.coffeerun.ui.util.PlaceholderNotifier
 import ru.coffeerun.ui.util.showNotImplemented
@@ -34,7 +35,10 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                CompositionLocalProvider(LocalPlaceholderNotifier provides placeholderNotifier) {
+                CompositionLocalProvider(
+                    LocalPlaceholderNotifier provides placeholderNotifier,
+                    LocalShopZone provides ((application as CoffeeRunApplication).container.pickupPolicy::zone)
+                ) {
                     CoffeeRunApp(snackbarHostState = snackbarHostState)
                 }
             }

@@ -1,4 +1,29 @@
 <resources>
+    <string name="favorites_cached_refresh">Showing saved favorites · Refresh</string>
+    <string name="favorite_missing_product">Item unavailable (%1$s)</string>
+    <string name="status_unknown">Status unknown</string>
+    <string name="menu_cached_refresh">Showing saved menu · Refresh</string>
+    <string name="profile_save_outcome_unknown">Couldn’t verify the update. Review your details before saving again.</string>
+    <string name="profile_confirmed_fields">Confirmed on the server: %1$s, %2$s</string>
+    <string name="profile_logout_failed">Couldn’t finish signing out. Try again.</string>
+    <string name="shop_storage_unavailable">Couldn’t access the saved pickup location. Try again.</string>
+    <string name="checkout_shop_changed">The pickup location changed. Review it and confirm again.</string>
+    <string name="cart_read_unavailable">Couldn’t read your saved cart. Try again.</string>
+    <string name="cart_storage_unavailable">Couldn’t save the cart change. Try again.</string>
+    <string name="checkout_storage_unavailable">Couldn’t access the saved order attempt. Check order history and try again.</string>
+    <string name="checkout_outcome_unknown">We couldn’t confirm whether the order was accepted. Check your order history.</string>
+    <string name="checkout_check_history">Check order history</string>
+    <string name="checkout_new_order">Start a separate order</string>
+    <string name="checkout_duplicate_warning">The previous order may already have been accepted. Sending another order could create a duplicate. Check your order history first.</string>
+    <string name="checkout_allow_new_order">Allow a new order</string>
+    <string name="checkout_prices_changed">Prices changed. Review the updated order total.</string>
+    <string name="checkout_accept_price">Confirm updated total</string>
+    <string name="checkout_cart_changed">Your cart changed. Review it before confirming.</string>
+    <string name="checkout_invalid_total">The order total is too high. Reduce the quantities and try again.</string>
+    <string name="checkout_catalog_error">Couldn’t check current prices and availability. Your cart is saved.</string>
+    <string name="checkout_unavailable_items">Review the recipe or remove these items: %1$s</string>
+    <string name="recipe_unavailable">This item can’t be prepared with the available options.</string>
+    <string name="session_read_error">Couldn’t read your session. Try again.</string>
     <string name="app_name" translatable="false">CoffeeRun</string>
 
     <!-- Напиток -->

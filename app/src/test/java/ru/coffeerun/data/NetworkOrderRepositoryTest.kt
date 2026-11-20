@@ -1,211 +1,154 @@
 package ru.coffeerun.data
 
-import ru.coffeerun.StubApi
 import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.plus
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
+import kotlinx.coroutines.withContext
+import org.junit.Assert.*
 import org.junit.Test
-import retrofit2.HttpException
-import retrofit2.Response
+import ru.coffeerun.FakeMenuRepository
+import ru.coffeerun.StubApi
 import ru.coffeerun.data.network.OrderDto
 import ru.coffeerun.data.network.OrderLineDto
 import ru.coffeerun.data.network.OrderRequest
+import ru.coffeerun.data.session.SessionStateStore
 import ru.coffeerun.model.CartLine
-import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
 
-/** Заказы на сервере: история после входа, один заказ, оформление, отмена, 409 и «нет сети», очистка при выходе. */
-@OptIn(ExperimentalCoroutinesApi::class)
+/** Сеть и подтверждённый кеш; порядок операций проверяется у OrdersCoordinator. */
 class NetworkOrderRepositoryTest {
-    /** Сервер с одним заказом 1037; [fail] — следующие запросы падают с [failCode] (0 — нет сети). */
     private class FakeApi : StubApi() {
-        val server = mutableListOf(
-            OrderDto(1037, "PICKED_UP", "MOSKOVSKAYA", "2026-10-31T09:15:00+03:00", null, listOf(OrderLineDto("latte", 2, 240)))
-        )
+        val order = OrderDto(1037, "ACCEPTED", "MOSKOVSKAYA", "2026-10-31T09:15:00+03:00", null,
+            listOf(OrderLineDto("latte", 2, 240)))
+        val acceptedOrders = mutableListOf<OrderDto>()
+        var losePlacementResponse = false
+        var servedOrder = order
+        var reads = 0
         var fail = false
-        var failCode = 0
-        var nextNumber = 1042
-        var getCalls = 0
         var gate: CompletableDeferred<Unit>? = null
-
-        private fun maybeFail() {
-            if (!fail) return
-            if (failCode == 0) throw IOException("нет сети")
-            throw HttpException(Response.error<Unit>(failCode, "".toResponseBody()))
-        }
-
         override suspend fun getOrders(): List<OrderDto> {
-            getCalls++
-            gate?.await()
-            maybeFail()
-            return server.toList()
+            reads++
+            withContext(NonCancellable) { gate?.await() }
+            if (fail) throw IOException("offline")
+            return listOf(servedOrder)
         }
-
+        override suspend fun getOrder(number: Int) = servedOrder
         override suspend fun placeOrder(request: OrderRequest): OrderDto {
-            maybeFail()
-            val status = if (request.pickupAt != null) "ACCEPTED" else "PREPARING"
-            return OrderDto(nextNumber++, status, request.shop, "2026-11-03T12:00:00+03:00", request.pickupAt, request.lines)
-                .also { server.add(0, it) }
-        }
-
-        override suspend fun getOrder(number: Int): OrderDto {
-            maybeFail()
-            return server.find { it.number == number } ?: throw HttpException(Response.error<Unit>(404, "".toResponseBody()))
-        }
-
-        /** Как мок: отменить можно только ACCEPTED, иначе 409. */
-        override suspend fun cancelOrder(number: Int): OrderDto {
-            maybeFail()
-            val i = server.indexOfFirst { it.number == number }
-            if (server[i].status != "ACCEPTED") throw HttpException(Response.error<Unit>(409, "".toResponseBody()))
-            return server[i].copy(status = "CANCELLED").also { server[i] = it }
+            val accepted = order.copy(number = 1042, lines = request.lines)
+            acceptedOrders += accepted
+            if (losePlacementResponse) throw IOException("response lost after accepting order")
+            return accepted
         }
     }
+    private val sessions = SessionStateStore("token")
+    private fun repo(api: FakeApi) = NetworkOrderRepository(api, DemoMenuRepository(), sessions)
 
-    private val loggedIn = MutableStateFlow(true)
-    private val croissant = listOf(CartLine(DemoMenu.CROISSANT, unitPrice = 180, quantity = 2))
-    private val evening = 1_793_811_600_000L // 2026-11-04 20:00 МСК: заказ ко времени — ACCEPTED
-
-    private fun TestScope.repo(api: FakeApi) =
-        NetworkOrderRepository(api, DemoMenuRepository(), loggedIn, backgroundScope + UnconfinedTestDispatcher(testScheduler))
-
-    @Test
-    fun login_loadsHistory_logout_clears() = runTest {
-        loggedIn.value = false
-        val repo = repo(FakeApi())
-        assertTrue(repo.orders.value.isEmpty())
-        loggedIn.value = true
-        assertEquals(listOf(1037), repo.orders.value.map { it.number })
-        assertEquals(DemoMenu.LATTE, repo.find(1037)!!.lines.single().product)
-        loggedIn.value = false
-        assertTrue("чужие заказы на устройстве не остаются", repo.orders.value.isEmpty())
-    }
-
-    @Test
-    fun place_addsOrderOnTop() = runTest {
-        val repo = repo(FakeApi())
-        val result = repo.place(croissant, Shop.STROITELEY)
-        val order = (result as PlaceOrderResult.Placed).order
-        assertEquals(1042, order.number)
-        assertEquals(Shop.STROITELEY, order.shop)
-        assertEquals(360, order.total)
-        assertEquals(listOf(1042, 1037), repo.orders.value.map { it.number })
-        assertEquals("«Заказ принят» находит заказ по номеру", order, repo.find(1042))
-    }
-
-    @Test
-    fun place_conflict_isUnavailable_offline_isNetworkError() = runTest {
+    @Test fun constructor_doesNotLoad() = runTest {
         val api = FakeApi()
-        val repo = repo(api)
+        val repository = repo(api)
+        assertEquals(0, api.reads)
+        assertFalse(repository.isLoaded.value)
+        assertTrue(repository.orders.value.isEmpty())
+    }
+
+    @Test fun refresh_marksFullListLoaded() = runTest {
+        val repository = repo(FakeApi())
+        repository.refresh(sessions.currentSession())
+        assertTrue(repository.isLoaded.value)
+        assertEquals(listOf(1037), repository.orders.value.map { it.number })
+    }
+
+    @Test fun refreshAndDetails_keepOrdersAccessibleWhenMenuFails() = runTest {
+        val api = FakeApi()
+        val repository = NetworkOrderRepository(api, FakeMenuRepository(fail = true), sessions)
+        val session = sessions.currentSession()
+
+        repository.refresh(session)
+
+        val order = repository.load(1037, session)
+        assertTrue(repository.isLoaded.value)
+        assertEquals(listOf(1037), repository.orders.value.map { it.number })
+        assertEquals(480, order?.total)
+        assertEquals("latte", order?.lines?.single()?.productId)
+    }
+
+    @Test fun lostPlacementResponse_canLeaveAnAcceptedOrderOnServer() = runTest {
+        val api = FakeApi().apply { losePlacementResponse = true }
+        val repository = repo(api)
+
+        val result = repository.place(listOf(CartLine(DemoMenu.CROISSANT, 180)), Shop.MOSKOVSKAYA,
+            null, sessions.currentSession())
+
+        assertEquals(PlaceOrderResult.OutcomeUnknown, result)
+        assertTrue(repository.orders.value.isEmpty())
+        assertEquals(listOf(1042), api.acceptedOrders.map { it.number })
+    }
+
+    @Test fun load_doesNotClaimFullHistoryLoaded() = runTest {
+        val repository = repo(FakeApi())
+        assertEquals(1037, repository.load(1037, sessions.currentSession())!!.number)
+        assertFalse(repository.isLoaded.value)
+        assertEquals(listOf(1037), repository.orders.value.map { it.number })
+    }
+
+    @Test fun place_doesNotClaimFullHistoryLoaded() = runTest {
+        val repository = repo(FakeApi())
+        val result = repository.place(listOf(CartLine(DemoMenu.CROISSANT, 180)), Shop.MOSKOVSKAYA,
+            null, sessions.currentSession())
+        assertTrue(result is PlaceOrderResult.Placed)
+        assertFalse(repository.isLoaded.value)
+        assertEquals(listOf(1042), repository.orders.value.map { it.number })
+    }
+
+    @Test fun failedRefresh_keepsPreviouslyLoadedData() = runTest {
+        val api = FakeApi()
+        val repository = repo(api)
+        val session = sessions.currentSession()
+        repository.refresh(session)
         api.fail = true
-        api.failCode = 409
-        assertEquals(PlaceOrderResult.Unavailable, repo.place(croissant, Shop.MOSKOVSKAYA))
-        api.failCode = 500
-        assertEquals(PlaceOrderResult.NetworkError, repo.place(croissant, Shop.MOSKOVSKAYA))
-        api.failCode = 0
-        assertEquals(PlaceOrderResult.NetworkError, repo.place(croissant, Shop.MOSKOVSKAYA))
-        assertEquals("непринятые заказы в список не попадают", listOf(1037), repo.orders.value.map { it.number })
+        assertTrue(runCatching { repository.refresh(session) }.exceptionOrNull() is IOException)
+        assertTrue(repository.isLoaded.value)
+        assertEquals(listOf(1037), repository.orders.value.map { it.number })
     }
 
-    @Test
-    fun refreshDuringLoginLoad_sharesOneRequest() = runTest {
-        loggedIn.value = false
-        val api = FakeApi().apply { gate = CompletableDeferred() }
-        val repo = repo(api)
-        loggedIn.value = true // вход: репозиторий начал грузить и ждёт сервер
-        val fromTab = async(start = CoroutineStart.UNDISPATCHED) { repo.refresh() } // и тут же открыли вкладку
-        api.gate!!.complete(Unit)
-        fromTab.await()
-        assertEquals("второй запрос не ушёл", 1, api.getCalls)
-        assertEquals(listOf(1037), repo.orders.value.map { it.number })
-    }
-
-    @Test
-    fun refreshDuringFailingLoad_failsToo() = runTest {
-        loggedIn.value = false
-        val api = FakeApi().apply { gate = CompletableDeferred(); fail = true }
-        val repo = repo(api)
-        loggedIn.value = true
-        val fromTab = async(start = CoroutineStart.UNDISPATCHED) { runCatching { repo.refresh() } }
-        api.gate!!.complete(Unit)
-        assertTrue("вкладка покажет «Повторить», а не пустой список", fromTab.await().exceptionOrNull() is IOException)
-    }
-
-    @Test
-    fun refresh_offline_isIOException_keepsList() = runTest {
+    @Test fun twoAccounts_canLoadDifferentOrdersWithTheSameNumber() = runTest {
         val api = FakeApi()
-        val repo = repo(api)
-        api.fail = true
-        val error = runCatching { repo.refresh() }.exceptionOrNull()
-        assertEquals(IOException::class, error!!::class)
-        assertEquals("неудачная загрузка не стирает то, что было", listOf(1037), repo.orders.value.map { it.number })
+        val repository = repo(api)
+        repository.refresh(sessions.currentSession())
+        assertEquals(480, repository.find(1037)?.total)
+
+        sessions.replaceToken("account-b")
+        api.servedOrder = api.order.copy(lines = listOf(OrderLineDto("croissant", 1, 180)))
+        repository.refresh(sessions.currentSession())
+
+        assertEquals(180, repository.find(1037)?.total)
+        assertEquals("croissant", repository.find(1037)?.lines?.single()?.productId)
     }
 
-    @Test
-    fun cancel_accepted_marksCancelled_keepsLines() = runTest {
-        val repo = repo(FakeApi())
-        repo.place(croissant, Shop.MOSKOVSKAYA, pickupAtMillis = evening)
-        assertTrue(repo.find(1042)!!.canCancel)
-        val order = (repo.cancel(1042) as CancelOrderResult.Cancelled).order
-        assertEquals(OrderStatus.CANCELLED, order.status)
-        assertFalse("отменённый заказ уходит в историю", order.isActive)
-        assertEquals("позиции берутся из того же заказа", DemoMenu.CROISSANT, order.lines.single().product)
-        assertEquals(order, repo.find(1042))
-        assertEquals(listOf(1042, 1037), repo.orders.value.map { it.number })
+    @Test fun clear_resetsDataAndLoadedFlag() = runTest {
+        val repository = repo(FakeApi())
+        repository.refresh(sessions.currentSession())
+        sessions.replaceToken(null)
+        repository.clear(sessions.currentSession())
+        assertFalse(repository.isLoaded.value)
+        assertTrue(repository.orders.value.isEmpty())
     }
 
-    @Test
-    fun cancel_conflict_isTooLate_andShowsServerStatus() = runTest {
+    @Test fun lateRefresh_doesNotRestoreClearedData() = runTest {
         val api = FakeApi()
-        val repo = repo(api)
-        repo.place(croissant, Shop.MOSKOVSKAYA, pickupAtMillis = evening)
-        api.server[0] = api.server[0].copy(status = "PREPARING") // пока клиент думал, заказ начали готовить
-        assertEquals(CancelOrderResult.TooLate, repo.cancel(1042))
-        assertEquals(OrderStatus.PREPARING, repo.find(1042)!!.status)
-    }
-
-    @Test
-    fun cancel_offline_isNetworkError_keepsStatus() = runTest {
-        val api = FakeApi()
-        val repo = repo(api)
-        repo.place(croissant, Shop.MOSKOVSKAYA, pickupAtMillis = evening)
-        api.fail = true
-        assertEquals(CancelOrderResult.NetworkError, repo.cancel(1042))
-        assertEquals(OrderStatus.ACCEPTED, repo.find(1042)!!.status)
-    }
-
-    @Test
-    fun load_freshStatus_updatesList() = runTest {
-        val api = FakeApi()
-        val repo = repo(api)
-        repo.place(croissant, Shop.MOSKOVSKAYA, pickupAtMillis = evening)
-        api.server[0] = api.server[0].copy(status = "READY") // заказ приготовили, пока экран был открыт
-        val order = repo.load(1042)!!
-        assertEquals(OrderStatus.READY, order.status)
-        assertEquals(DemoMenu.CROISSANT, order.lines.single().product)
-        assertEquals("список «Заказы» видит тот же статус", OrderStatus.READY, repo.find(1042)!!.status)
-    }
-
-    @Test
-    fun load_unknown_isNull_offline_isIOException() = runTest {
-        val api = FakeApi()
-        val repo = repo(api)
-        assertNull(repo.load(9999))
-        api.fail = true
-        val error = runCatching { repo.load(1037) }.exceptionOrNull()
-        assertEquals(IOException::class, error!!::class)
-        assertEquals("ошибка не стирает заказ из списка", OrderStatus.PICKED_UP, repo.find(1037)!!.status)
+        val repository = repo(api)
+        val old = sessions.currentSession()
+        val reply = CompletableDeferred<Unit>().also { api.gate = it }
+        val loading = async(start = CoroutineStart.UNDISPATCHED) { runCatching { repository.refresh(old) } }
+        sessions.replaceToken(null)
+        repository.clear(sessions.currentSession())
+        reply.complete(Unit)
+        assertTrue(loading.await().exceptionOrNull() is CancellationException)
+        assertFalse(repository.isLoaded.value)
+        assertTrue(repository.orders.value.isEmpty())
     }
 }

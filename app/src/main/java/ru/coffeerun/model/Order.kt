@@ -1,6 +1,7 @@
 package ru.coffeerun.model
 
 import androidx.annotation.StringRes
+import kotlinx.serialization.Serializable
 import ru.coffeerun.R
 
 /** Через сколько минут после оформления заказ готов (пока фиксированно). */
@@ -14,7 +15,8 @@ enum class OrderStatus(@StringRes val labelRes: Int) {
     PREPARING(R.string.status_preparing),
     READY(R.string.status_ready),
     PICKED_UP(R.string.status_picked_up),
-    CANCELLED(R.string.status_cancelled)
+    CANCELLED(R.string.status_cancelled),
+    UNKNOWN(R.string.status_unknown)
 }
 
 enum class Shop(@StringRes val addressRes: Int) {
@@ -22,17 +24,17 @@ enum class Shop(@StringRes val addressRes: Int) {
     STROITELEY(R.string.shop_stroiteley)
 }
 
+@Serializable
 data class Order(
     val number: Int,
     val status: OrderStatus,
-    val lines: List<CartLine>,
+    val lines: List<OrderItem>,
     val shop: Shop,
     val placedAtMillis: Long,
     /** Время, к которому клиент просил приготовить заказ; null — как можно скорее. */
     val pickupAtMillis: Long? = null,
     /**
-     * Итог в рублях. По умолчанию — сумма строк; заказ с сервера передаёт его явно: строки с позициями,
-     * которых больше нет в меню, не показываются, но заплачено за них было.
+     * Итог в рублях. Состав включает и позиции, которых больше нет в текущем каталоге.
      */
     val total: Int = lines.sumOf { it.total }
 ) {

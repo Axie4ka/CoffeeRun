@@ -15,14 +15,18 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.coffeerun.container
-import ru.coffeerun.data.FavoritesRepository
+import ru.coffeerun.domain.favorites.Favorites
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.Product
 
 /** Состояние экрана «Избранное». */
 sealed interface FavoritesUiState {
     data object Loading : FavoritesUiState
-    data class Success(val products: List<Product>) : FavoritesUiState
+    data class Success(
+        val products: List<Product>,
+        val isCached: Boolean = false,
+        val missingIds: Set<String> = emptySet()
+    ) : FavoritesUiState
 
     /** Каталог не загрузился: нет сети или сервер ответил ошибкой. Выход — [FavoritesViewModel.retry]. */
     data object Error : FavoritesUiState
@@ -32,16 +36,20 @@ sealed interface FavoritesUiState {
  * Избранное: товары каталога, чьи id в избранном, в порядке каталога; неизвестные id пропускаются.
  * При открытии экрана избранное заново берётся с сервера — вдруг его меняли на другом устройстве.
  */
-class FavoritesViewModel(private val menu: MenuRepository, private val favorites: FavoritesRepository) : ViewModel() {
+class FavoritesViewModel(private val menu: MenuRepository, private val favorites: Favorites) : ViewModel() {
     /** null — грузится, failure — ошибка загрузки. */
     private val catalog = MutableStateFlow<Result<List<Product>>?>(null)
     private var loadJob: Job? = null
+    private val cached = MutableStateFlow(false)
 
-    val uiState: StateFlow<FavoritesUiState> = combine(catalog, favorites.ids) { catalog, ids ->
+    val uiState: StateFlow<FavoritesUiState> = combine(catalog, favorites.ids, cached) { catalog, ids, cached ->
         when {
             catalog == null -> FavoritesUiState.Loading
             catalog.isFailure -> FavoritesUiState.Error
-            else -> FavoritesUiState.Success(catalog.getOrThrow().filter { it.id in ids })
+            else -> {
+                val products = catalog.getOrThrow().filter { it.id in ids }
+                FavoritesUiState.Success(products, cached, ids - products.map { it.id }.toSet())
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), FavoritesUiState.Loading)
 
@@ -58,14 +66,22 @@ class FavoritesViewModel(private val menu: MenuRepository, private val favorites
     fun retry() {
         loadJob?.cancel()
         catalog.value = null
+        cached.value = false
         loadJob = viewModelScope.launch {
-            catalog.value = try {
-                val products = menu.getMenu()
+            val products = try { menu.getMenu() } catch (_: IOException) { null }
+            val refreshed = try {
                 favorites.refresh()
-                Result.success(products)
-            } catch (e: IOException) {
-                Result.failure(e)
-            }
+                true
+            } catch (_: IOException) { false }
+            cached.value = !refreshed || products == null
+            catalog.value = if ((refreshed && products != null) || favorites.hasSnapshot) Result.success(products.orEmpty())
+                else Result.failure(IOException("Избранное недоступно"))
+        }
+    }
+
+    fun removeMissing(id: String, onFailure: () -> Unit) {
+        viewModelScope.launch {
+            if (id in favorites.ids.value && !favorites.toggle(id)) onFailure()
         }
     }
 

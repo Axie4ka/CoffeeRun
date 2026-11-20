@@ -9,16 +9,18 @@ import ru.coffeerun.model.Shop
 interface ShopRepository {
     val selected: StateFlow<Shop>
 
-    fun select(shop: Shop)
+    suspend fun saveSelection(shop: Shop)
+    suspend fun current(): Shop = selected.value
 }
 
 /** Выбор в памяти; по умолчанию — [Shop.MOSKOVSKAYA]. */
 class InMemoryShopRepository : ShopRepository {
-    // shortcut: выбор теряется при смерти процесса, в лабе 6 — DataStore
     private val _selected = MutableStateFlow(Shop.MOSKOVSKAYA)
     override val selected: StateFlow<Shop> = _selected.asStateFlow()
 
-    override fun select(shop: Shop) {
+    override suspend fun saveSelection(shop: Shop) = select(shop)
+
+    fun select(shop: Shop) {
         _selected.value = shop
     }
 }

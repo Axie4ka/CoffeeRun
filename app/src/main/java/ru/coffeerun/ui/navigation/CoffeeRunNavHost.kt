@@ -82,6 +82,10 @@ fun CoffeeRunNavHost(
 ) {
     // Для снэкбаров, которые должны пережить закрытие экрана (например, «Профиль сохранён»)
     val appScope = rememberCoroutineScope()
+    val appContext = LocalContext.current
+    val showShopError: () -> Unit = {
+        appScope.launch { snackbarHostState.showSnackbar(appContext.getString(R.string.shop_storage_unavailable)) }
+    }
     // Сцена для общих элементов: фото позиции перелетает между меню, избранным и экраном напитка
     SharedTransitionLayout {
     CompositionLocalProvider(LocalSharedTransitionScope provides this) {
@@ -103,10 +107,14 @@ fun CoffeeRunNavHost(
                 MenuScreen(
                     uiState = menuState,
                     shop = shop,
-                    onShopSelected = vm::selectShop,
+                    onShopSelected = { vm.selectShop(it, showShopError) },
                     onRetry = vm::loadMenu,
                     onProductClick = { navController.navigate(ProductRoute(it.id)) },
-                    onAddProduct = vm::quickAdd,
+                    onAddProduct = { product ->
+                        vm.quickAdd(product) { error ->
+                            if (error != null) appScope.launch { snackbarHostState.showSnackbar(appContext.getString(error)) }
+                        }
+                    },
                     modifier = tabModifier
                 )
             }
@@ -115,6 +123,13 @@ fun CoffeeRunNavHost(
         composable<CartRoute> {
             val vm: CartViewModel = viewModel(factory = CartViewModel.Factory)
             val cartState by vm.uiState.collectAsStateWithLifecycle()
+            val storageFailed by vm.storageFailed.collectAsStateWithLifecycle()
+            LaunchedEffect(storageFailed) {
+                if (storageFailed) {
+                    snackbarHostState.showSnackbar(appContext.getString(R.string.cart_storage_unavailable))
+                    vm.onStorageErrorShown()
+                }
+            }
             CartScreen(
                 uiState = cartState,
                 onChangeQuantity = vm::changeQuantity,
@@ -122,12 +137,14 @@ fun CoffeeRunNavHost(
                 // Гостя — сначала на вход, после входа оформление откроется само
                 onCheckout = { navController.navigate(if (isLoggedIn == true) CheckoutRoute else LoginRoute(toCheckout = true)) },
                 onBrowseMenu = { navController.openTab(Tab.MENU) },
+                onRetryRead = vm::retryRead,
                 modifier = tabModifier
             )
         }
 
         composable<OrdersRoute> {
             val vm: OrdersViewModel = viewModel(factory = OrdersViewModel.Factory)
+            val screenScope = rememberCoroutineScope()
             val orders by vm.orders.collectAsStateWithLifecycle()
             val load by vm.load.collectAsStateWithLifecycle()
             val cancelling by vm.cancelling.collectAsStateWithLifecycle()
@@ -148,8 +165,14 @@ fun CoffeeRunNavHost(
                 load = load,
                 onRetry = vm::retry,
                 onRepeat = {
-                    vm.repeat(it)
-                    navController.openTab(Tab.CART)
+                    val selected = it
+                    screenScope.launch {
+                        val result = vm.repeat(selected) ?: return@launch
+                        if (result.added) navController.openTab(Tab.CART)
+                        result.message?.let { message ->
+                            appScope.launch { snackbarHostState.showSnackbar(context.getString(message)) }
+                        }
+                    }
                 },
                 onBrowseMenu = { navController.openTab(Tab.MENU) },
                 modifier = tabModifier,
@@ -165,6 +188,7 @@ fun CoffeeRunNavHost(
 
         composable<OrderDetailsRoute> {
             val vm: OrderDetailsViewModel = viewModel(factory = OrderDetailsViewModel.Factory)
+            val screenScope = rememberCoroutineScope()
             OnLocale(vm::onLocale)
             val order by vm.order.collectAsStateWithLifecycle()
             val load by vm.load.collectAsStateWithLifecycle()
@@ -188,32 +212,32 @@ fun CoffeeRunNavHost(
                 onRetry = vm::retry,
                 onCancel = vm::cancel,
                 onRepeat = {
-                    vm.repeat()
-                    navController.jumpToTab(Tab.CART)
+                    screenScope.launch {
+                        val result = vm.repeat() ?: return@launch
+                        if (result.added) navController.jumpToTab(Tab.CART)
+                        result.message?.let { message ->
+                            appScope.launch { snackbarHostState.showSnackbar(context.getString(message)) }
+                        }
+                    }
                 },
                 snackbarHostState = snackbarHostState
             )
         }
 
-        composable<ProfileRoute> { entry ->
+        composable<ProfileRoute> {
             val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
             val profileState by vm.uiState.collectAsStateWithLifecycle()
-            // Профиль сохранили на экране «Изменить» — показываем то, что теперь на сервере
-            val saved by entry.savedStateHandle.getStateFlow(PROFILE_SAVED, false).collectAsStateWithLifecycle()
-            LaunchedEffect(saved) {
-                if (saved) {
-                    vm.retry()
-                    entry.savedStateHandle[PROFILE_SAVED] = false
-                }
-            }
-            ProfileScreen(
+            val logoutState by vm.logoutState.collectAsStateWithLifecycle()
+            if (logoutState == ru.coffeerun.ui.profile.LogoutState.Failed) {
+                RetryMessage(stringResource(R.string.profile_logout_failed), vm::logout, tabModifier.fillMaxSize())
+            } else ProfileScreen(
                 uiState = profileState,
-                onShopSelected = vm::selectShop,
+                onShopSelected = { vm.selectShop(it, showShopError) },
                 onFavoritesClick = { navController.navigate(FavoritesRoute) },
                 onLogin = { navController.navigate(LoginRoute()) },
                 onLogout = vm::logout,
                 onRetry = vm::retry,
-                onEdit = { navController.navigate(EditProfileRoute(it.name, it.phone)) },
+                onEdit = { navController.navigate(EditProfileRoute) },
                 modifier = tabModifier
             )
         }
@@ -224,7 +248,6 @@ fun CoffeeRunNavHost(
             val savedText = stringResource(R.string.profile_saved)
             LaunchedEffect(state.isDone) {
                 if (state.isDone) {
-                    navController.previousBackStackEntry?.savedStateHandle?.set(PROFILE_SAVED, true)
                     navController.popBackStack()
                     // Снэкбар живёт дольше экрана: показываем его уже на профиле
                     appScope.launch { snackbarHostState.showSnackbar(savedText) }
@@ -236,6 +259,7 @@ fun CoffeeRunNavHost(
                 onPhoneChange = vm::onPhoneChange,
                 onSave = vm::save,
                 onMessageShown = vm::onMessageShown,
+                onRetryLoad = vm::load,
                 onBack = dropUnlessResumed { navController.popBackStack() },
                 snackbarHostState = snackbarHostState
             )
@@ -289,12 +313,17 @@ fun CoffeeRunNavHost(
                     onProductClick = { navController.navigate(ProductRoute(it)) },
                     onBrowseMenu = { navController.jumpToTab(Tab.MENU) },
                     onBack = { navController.popBackStack() },
-                    onRetry = vm::retry
+                    onRetry = vm::retry,
+                    onRemoveMissing = { id ->
+                        vm.removeMissing(id) {
+                            appScope.launch { snackbarHostState.showSnackbar(appContext.getString(R.string.favorites_toggle_error)) }
+                        }
+                    }
                 )
             }
         }
 
-        composable<ProductRoute> {
+        composable<ProductRoute> { entry ->
             ProvideNavScope {
                 val vm: ProductViewModel = viewModel(factory = ProductViewModel.Factory)
                 OnLocale(vm::onLocale)
@@ -342,8 +371,13 @@ fun CoffeeRunNavHost(
                             // Добавили — назад, откуда пришли (меню или избранное). dropUnlessResumed не даст
                             // второму нажатию во время перехода добавить ещё раз и снять со стека само меню
                             onAddToCart = dropUnlessResumed {
-                                vm.addToCart()
-                                navController.popBackStack()
+                                vm.addToCart { error ->
+                                    if (error == null) {
+                                        if (navController.currentBackStackEntry === entry) navController.popBackStack()
+                                    } else appScope.launch {
+                                        snackbarHostState.showSnackbar(appContext.getString(error))
+                                    }
+                                }
                             },
                             onBack = { navController.popBackStack() },
                             isFavorite = state.isFavorite,
@@ -375,7 +409,9 @@ fun CoffeeRunNavHost(
             CheckoutScreen(
                 uiState = checkoutState,
                 onBack = { navController.popBackStack() },
-                onConfirm = vm::placeOrder,
+                onConfirm = { vm.placeOrder(checkoutState.quote) },
+                onCheckOrderHistory = { navController.jumpToTab(Tab.ORDERS) },
+                onAllowNewOrder = vm::allowNewOrder,
                 onPickupAsap = vm::pickupAsap,
                 onPickupTimeChosen = vm::setPickupTime,
                 onShopSelected = vm::selectShop,
@@ -415,7 +451,6 @@ private fun AnimatedContentScope.ProvideNavScope(content: @Composable () -> Unit
 private fun NavBackStackEntry.isTab() = Tab.entries.any { destination.hasRoute(it.route::class) }
 
 /** Ключ результата «профиль сохранён» в SavedStateHandle профиля. */
-private const val PROFILE_SAVED = "profileSaved"
 
 /** После входа или регистрации: закрыть вход (и регистрацию над ним) и, если гость шёл оформлять, открыть оформление. */
 private fun NavController.afterLogin(toCheckout: Boolean) {

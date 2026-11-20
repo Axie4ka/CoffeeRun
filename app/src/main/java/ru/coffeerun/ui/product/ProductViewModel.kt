@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import ru.coffeerun.R
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
-import ru.coffeerun.data.FavoritesRepository
+import ru.coffeerun.domain.favorites.Favorites
 import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.MAX_NOTE_LENGTH
 import ru.coffeerun.model.MAX_QUANTITY
@@ -77,10 +77,12 @@ sealed interface ProductUiState {
  * Форма, в которой выбрано только то, что сейчас есть в кофейне: размер по умолчанию или
  * сохранённый выбор мог пропасть из меню, молоко — закончиться, добавка — исчезнуть.
  */
-private fun ProductForm.fitTo(prices: OptionPrices) = copy(
+private fun ProductForm.fitTo(product: Product, prices: OptionPrices) = copy(
     size = prices.fitSize(size),
     milk = prices.fitMilk(milk),
-    extras = extras.filterTo(mutableSetOf()) { it in prices.extras }
+    extras = extras.filterTo(mutableSetOf()) { it in product.extras && it in prices.extras },
+    isIced = isIced && Customization.ICE in product.customizations,
+    note = note.takeIf { Customization.NOTE in product.customizations }.orEmpty()
 )
 
 /** Результат загрузки товара; вместе с формой собирается в [ProductUiState]. */
@@ -96,7 +98,7 @@ class ProductViewModel(
     private val productId: String,
     private val menu: MenuRepository,
     private val cart: CartRepository,
-    private val favorites: FavoritesRepository,
+    private val favorites: Favorites,
     private val savedState: SavedStateHandle
 ) : ViewModel() {
     val form: StateFlow<ProductForm> = savedState.getStateFlow(FORM_KEY, ProductForm())
@@ -108,7 +110,7 @@ class ProductViewModel(
             Loaded.Missing -> ProductUiState.NotFound
             Loaded.Failed -> ProductUiState.Error
             is Loaded.Found -> {
-                val fitted = form.fitTo(loaded.prices)
+                val fitted = form.fitTo(loaded.product, loaded.prices)
                 ProductUiState.Success(
                     loaded.product, fitted, loaded.product.unitPrice(fitted.size, fitted.milk, fitted.extras, loaded.prices),
                     prices = loaded.prices,
@@ -135,11 +137,13 @@ class ProductViewModel(
         loadJob?.cancel() // повторное «Повторить» не должно гоняться с прошлой загрузкой
         loaded.value = Loaded.Loading
         loadJob = viewModelScope.launch {
-            loaded.value = try {
-                val product = menu.getProduct(productId)
-                if (product == null) Loaded.Missing else Loaded.Found(product, menu.getOptionPrices())
+            try {
+                menu.observeSnapshot().collect { snapshot ->
+                    val product = snapshot.products.firstOrNull { it.id == productId }
+                    loaded.value = if (product == null) Loaded.Missing else Loaded.Found(product, snapshot.prices)
+                }
             } catch (e: IOException) {
-                Loaded.Failed
+                loaded.value = Loaded.Failed
             }
         }
     }
@@ -170,25 +174,32 @@ class ProductViewModel(
         _message.value = null
     }
 
-    fun addToCart() {
+    private var addingToCart = false
+
+    fun addToCart(onResult: (Int?) -> Unit = {}) {
+        if (addingToCart) return
         val (product, prices) = loaded.value as? Loaded.Found ?: return
-        val form = form.value.fitTo(prices)
+        val form = form.value.fitTo(product, prices)
         val features = product.customizations
-        cart.add(
-            CartLine(
-                product = product,
-                unitPrice = product.unitPrice(form.size, form.milk, form.extras, prices),
-                quantity = form.quantity,
-                // Те же опции по умолчанию, что у «+» в меню, — иначе одинаковые строки не сольются
-                options = product.defaultOptions()?.copy(
-                    size = form.size.takeIf { Customization.SIZE in features },
-                    milk = form.milk.takeIf { Customization.MILK in features },
-                    isIced = form.isIced,
-                    extras = form.extras,
-                    note = form.note.trim()
-                )
-            )
+        val options = product.defaultOptions()?.copy(
+            size = form.size.takeIf { Customization.SIZE in features },
+            milk = form.milk.takeIf { Customization.MILK in features },
+            isIced = form.isIced,
+            extras = form.extras,
+            note = form.note.trim()
         )
+        val price = product.recipePrice(options, prices) ?: return onResult(R.string.recipe_unavailable)
+        addingToCart = true
+        viewModelScope.launch {
+            try {
+                cart.addLine(CartLine(product, price, form.quantity, options))
+                onResult(null)
+            } catch (_: IOException) {
+                onResult(R.string.cart_storage_unavailable)
+            } finally {
+                addingToCart = false
+            }
+        }
     }
 
     private fun update(transform: ProductForm.() -> ProductForm) {

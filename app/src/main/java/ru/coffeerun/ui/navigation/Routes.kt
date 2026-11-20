@@ -15,4 +15,4 @@ data object MenuRoute
 @Serializable data class LoginRoute(val toCheckout: Boolean = false)
 @Serializable data class RegisterRoute(val toCheckout: Boolean = false)
 /** Редактирование профиля: текущие имя и телефон (+7XXXXXXXXXX) приходят из профиля — повторно /me не запрашиваем. */
-@Serializable data class EditProfileRoute(val name: String, val phone: String)
+@Serializable data object EditProfileRoute

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.TextButton
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -96,6 +97,11 @@ fun MenuScreen(
                 MenuHeader(shop = shop, onShopClick = { showShopPicker = true }, onSearch = { query = "" })
             } else {
                 MenuSearchField(query.orEmpty(), onChange = { query = it }, onClose = { query = null })
+            }
+        }
+        if (uiState is MenuUiState.Success && uiState.isCached) {
+            TextButton(onClick = onRetry, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium)) {
+                Text(stringResource(R.string.menu_cached_refresh))
             }
         }
         when (uiState) {

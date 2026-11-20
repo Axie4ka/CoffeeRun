@@ -9,6 +9,8 @@ import ru.coffeerun.model.Product
 class FakeMenuRepository(var fail: Boolean = false) : MenuRepository {
     var calls = 0
 
+    override suspend fun refresh() = ru.coffeerun.model.MenuSnapshot(getMenu(), getOptionPrices())
+
     override suspend fun getMenu(): List<Product> {
         calls++
         if (fail) throw IOException("нет сети")

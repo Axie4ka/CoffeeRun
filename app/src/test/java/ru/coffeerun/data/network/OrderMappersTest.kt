@@ -16,6 +16,7 @@ import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
+import ru.coffeerun.model.toOrderItem
 
 /** Заказы: тело POST /orders из корзины и ответ сервера в [ru.coffeerun.model.Order]. */
 class OrderMappersTest {
@@ -34,13 +35,14 @@ class OrderMappersTest {
         assertEquals(1037, o1037.number)
         assertEquals(OrderStatus.PICKED_UP, o1037.status)
         assertEquals(Shop.MOSKOVSKAYA, o1037.shop)
-        assertEquals(DemoMenu.LATTE, o1037.lines.single().product)
+        assertEquals("latte", o1037.lines.single().productId)
+        assertEquals("Латте", o1037.lines.single().name)
         assertEquals(480, o1037.total)
         // 2026-10-31T09:15:00+03:00
         assertEquals(java.time.OffsetDateTime.of(2026, 10, 31, 9, 15, 0, 0, ZoneOffset.ofHours(3)).toInstant().toEpochMilli(), o1037.placedAtMillis)
         assertNull(o1037.pickupAtMillis)
 
-        assertEquals(listOf(DemoMenu.RAF, DemoMenu.ESPRESSO), o1029.lines.map { it.product })
+        assertEquals(listOf("raf", "espresso"), o1029.lines.map { it.productId })
         assertEquals(DrinkSize.LARGE, o1029.lines[0].options?.size)
         assertNull("эспрессо из меню «+» — без опций", o1029.lines[1].options)
         assertEquals(450, o1029.total)
@@ -69,16 +71,77 @@ class OrderMappersTest {
     }
 
     @Test
-    fun goneProduct_lineHidden_totalKept() {
-        val dto = demo[1].copy(lines = demo[1].lines + OrderLineDto("pumpkin_latte", 1, 320))
+    fun goneProduct_lineKeptWithPaidPriceAndOptions() {
+        val options = DrinkOptionsDto("LARGE", "OAT", iced = true, extras = listOf("VANILLA"), note = "без пенки")
+        val dto = OrderDto(
+            1046, "PICKED_UP", "MOSKOVSKAYA", "2026-11-03T12:00:00+03:00",
+            lines = listOf(OrderLineDto("pumpkin_latte", 2, 320, options))
+        )
         val order = dto.toModel(products)!!
-        assertEquals(2, order.lines.size)
-        assertEquals("за снятую с меню позицию заплачено — итог полный", 450 + 320, order.total)
+        assertEquals("снятая с меню позиция остаётся в истории", 1, order.lines.size)
+        val line = order.lines.single()
+        assertEquals("pumpkin_latte", line.productId)
+        assertNull("заглушку выбирает UI, а не модель данных", line.name)
+        assertEquals(2, line.quantity)
+        assertEquals(320, line.unitPrice)
+        assertEquals(640, line.total)
+        assertEquals(DrinkSize.LARGE, line.options?.size)
+        assertEquals(MilkType.OAT, line.options?.milk)
+        assertEquals(true, line.options?.isIced)
+        assertEquals(setOf(Extra.VANILLA), line.options?.extras)
+        assertEquals("без пенки", line.options?.note)
+        assertEquals(640, order.total)
     }
 
     @Test
-    fun unknownStatus_isAccepted_unknownShop_isDropped() {
-        assertEquals(OrderStatus.ACCEPTED, demo[0].copy(status = "COOKING_ON_MARS").toModel(products)!!.status)
+    fun knownProduct_keepsPaidPriceAndSeparateConfigurations() {
+        val dto = OrderDto(
+            1047, "PICKED_UP", "MOSKOVSKAYA", "2026-11-03T12:00:00+03:00",
+            lines = listOf(
+                OrderLineDto("latte", 2, 100, DrinkOptionsDto("SMALL", "REGULAR", false, emptyList(), "")),
+                OrderLineDto("latte", 1, 170, DrinkOptionsDto("LARGE", "OAT", true, emptyList(), ""))
+            )
+        )
+        val order = dto.toModel(products)!!
+        assertEquals(2, order.lines.size)
+        assertEquals(listOf(100, 170), order.lines.map { it.unitPrice })
+        assertEquals(listOf(DrinkSize.SMALL, DrinkSize.LARGE), order.lines.map { it.options?.size })
+        assertEquals(370, order.total)
+    }
+
+    @Test
+    fun statusUpdate_withoutMenu_keepsKnownNameAndUnknownLines() {
+        val known = CartLine(DemoMenu.CROISSANT, 150, quantity = 2).toOrderItem()
+        val dto = OrderDto(
+            1048, "CANCELLED", "MOSKOVSKAYA", "2026-11-03T12:00:00+03:00",
+            lines = listOf(OrderLineDto("croissant", 2, 150), OrderLineDto("retired", 1, 100))
+        )
+        val order = dto.toModel(emptyMap(), knownItems = listOf(known))!!
+        assertEquals(OrderStatus.CANCELLED, order.status)
+        assertEquals("Круассан", order.lines.first().name)
+        assertEquals(DemoMenu.CROISSANT.description, order.lines.first().description)
+        assertEquals(listOf("croissant", "retired"), order.lines.map { it.productId })
+        assertNull(order.lines.last().name)
+        assertEquals(400, order.total)
+    }
+
+    @Test
+    fun invalidOrderLines_cannotProduceNegativeOrWrappedTotals() {
+        val cases = listOf(
+            listOf(OrderLineDto("latte", 0, 240)),
+            listOf(OrderLineDto("latte", 11, 240)),
+            listOf(OrderLineDto("latte", 1, -1)),
+            listOf(OrderLineDto("latte", 2, Int.MAX_VALUE)),
+            listOf(OrderLineDto("latte", 1, Int.MAX_VALUE), OrderLineDto("croissant", 1, 180))
+        )
+        cases.forEach { assertNull(demo[0].copy(lines = it).toModel(products)) }
+    }
+
+    @Test
+    fun unknownStatus_cannotBeCancelled_unknownShop_isDropped() {
+        val unknown = demo[0].copy(status = "COOKING_ON_MARS").toModel(products)!!
+        assertEquals(OrderStatus.UNKNOWN, unknown.status)
+        assertEquals(false, unknown.canCancel)
         assertNull(demo[0].copy(shop = "MARS").toModel(products))
         assertNull(demo[0].copy(placedAt = "вчера").toModel(products))
     }

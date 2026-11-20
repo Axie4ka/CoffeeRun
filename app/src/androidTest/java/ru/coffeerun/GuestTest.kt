@@ -18,9 +18,9 @@ import org.junit.Test
 import org.junit.rules.ExternalResource
 import org.junit.runner.RunWith
 import ru.coffeerun.data.InMemoryAuthRepository
-import ru.coffeerun.data.InMemoryFavoritesRepository
+import ru.coffeerun.data.InMemoryFavorites
 import ru.coffeerun.data.InMemoryProfileRepository
-import ru.coffeerun.data.InMemoryOrderRepository
+import ru.coffeerun.data.InMemoryOrders
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.DemoMenuRepository
 
@@ -31,7 +31,7 @@ class GuestTest {
     val guest = object : ExternalResource() {
         override fun before() {
             val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext
-            (app as CoffeeRunApplication).container = AppContainer(menu = DemoMenuRepository(), auth = InMemoryAuthRepository(loggedIn = false), profile = InMemoryProfileRepository(), favorites = InMemoryFavoritesRepository(), orders = InMemoryOrderRepository())
+            (app as CoffeeRunApplication).container = AppContainer(menu = DemoMenuRepository(), auth = InMemoryAuthRepository(loggedIn = false), profile = InMemoryProfileRepository(), favorites = InMemoryFavorites(), orders = InMemoryOrders(), pickupPolicy = testPickupPolicy())
         }
     }
 

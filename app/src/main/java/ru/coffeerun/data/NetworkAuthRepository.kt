@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
+import ru.coffeerun.data.session.SessionProvider
 import ru.coffeerun.data.local.TokenStore
 import ru.coffeerun.data.network.AuthResponse
 import ru.coffeerun.data.network.CoffeeRunApi
@@ -13,8 +14,11 @@ import ru.coffeerun.data.network.RegisterRequest
 import ru.coffeerun.model.User
 
 /** POST /auth/login и /auth/register; токен из ответа — в [TokenStore]. */
-class NetworkAuthRepository(private val api: CoffeeRunApi, private val tokens: TokenStore) : AuthRepository {
+class NetworkAuthRepository(private val api: CoffeeRunApi, private val tokens: TokenStore) : AuthRepository, SessionProvider by tokens {
     override val isLoggedIn: Flow<Boolean> = tokens.token.map { it != null }
+    override val sessions = tokens.sessions
+    override val sessionReadFailed = tokens.sessionReadFailed
+    override fun retrySessionRead() = tokens.retrySessionRead()
 
     override suspend fun login(phone: String, password: String) = auth { api.login(LoginRequest(phone, password)) }
 

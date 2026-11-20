@@ -4,10 +4,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import ru.coffeerun.ui.components.RetryMessage
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,7 +32,8 @@ fun EditProfileScreen(
     onSave: () -> Unit,
     onMessageShown: () -> Unit,
     onBack: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onRetryLoad: () -> Unit = {}
 ) {
     AuthScaffold(
         title = R.string.profile_edit_title,
@@ -39,6 +44,17 @@ fun EditProfileScreen(
         onBack = onBack,
         snackbarHostState = snackbarHostState
     ) {
+        if (uiState.isLoading) {
+            CircularProgressIndicator()
+            return@AuthScaffold
+        }
+        if (uiState.loadFailed) {
+            RetryMessage(stringResource(R.string.load_error), onRetryLoad)
+            return@AuthScaffold
+        }
+        uiState.lastConfirmed?.let {
+            Text(stringResource(R.string.profile_confirmed_fields, it.name, it.phone))
+        }
         AuthField(
             value = uiState.name,
             onValueChange = onNameChange,

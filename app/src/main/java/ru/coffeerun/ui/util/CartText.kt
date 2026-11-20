@@ -4,11 +4,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import ru.coffeerun.R
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.DrinkOptions
+import ru.coffeerun.model.OrderItem
 
 /** «Капучино L × 1» — короткая строка позиции для заказа. */
 @Composable
-fun CartLine.summaryText(): String {
-    val name = product.name
+fun OrderItem.summaryText(): String = summaryText(nameText(), quantity, options)
+
+@Composable
+fun CartLine.summaryText(): String = summaryText(product.name, quantity, options)
+
+@Composable
+private fun summaryText(name: String, quantity: Int, options: DrinkOptions?): String {
     val size = options?.size?.let { stringResource(it.labelRes).substringBefore(' ') }
     return if (size != null) {
         stringResource(R.string.line_summary_sized, name, size, quantity)
@@ -20,7 +27,18 @@ fun CartLine.summaryText(): String {
 /** «L · Овсяное · Ваниль» для напитка с опциями, иначе описание позиции. */
 @Composable
 fun CartLine.optionsText(): String {
-    val o = options ?: return product.description
+    return optionsText(options, product.description)
+}
+
+@Composable
+fun OrderItem.nameText(): String = name ?: stringResource(R.string.order_item_unavailable)
+
+@Composable
+fun OrderItem.optionsText(): String = optionsText(options, description)
+
+@Composable
+private fun optionsText(options: DrinkOptions?, description: String): String {
+    val o = options ?: return description
     val parts = buildList {
         // Метка размера выглядит как «M · 350 мл» — в корзине нужна только буква
         o.size?.let { add(stringResource(it.labelRes).substringBefore(' ')) }
@@ -30,5 +48,5 @@ fun CartLine.optionsText(): String {
         if (o.note.isNotEmpty()) add("«${o.note}»")
     }
     // Ничего не выбрано (например, эспрессо без добавок) — показываем описание
-    return if (parts.isEmpty()) product.description else parts.joinToString(" · ")
+    return if (parts.isEmpty()) description else parts.joinToString(" · ")
 }

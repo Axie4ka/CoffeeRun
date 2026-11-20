@@ -12,10 +12,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExternalResource
 import org.junit.runner.RunWith
-import ru.coffeerun.data.FavoritesRepository
+import ru.coffeerun.domain.favorites.Favorites
 import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.InMemoryProfileRepository
-import ru.coffeerun.data.InMemoryOrderRepository
+import ru.coffeerun.data.InMemoryOrders
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.DemoMenuRepository
 
@@ -23,7 +23,7 @@ import ru.coffeerun.data.DemoMenuRepository
 @RunWith(AndroidJUnit4::class)
 class FavoritesErrorTest {
     /** Сервер избранного, который не принимает изменения — как при выключенном Mockoon. */
-    private class RejectingFavorites : FavoritesRepository {
+    private class RejectingFavorites : Favorites {
         override val ids = MutableStateFlow(emptySet<String>())
         override suspend fun refresh() = Unit
         override suspend fun toggle(productId: String) = false
@@ -38,7 +38,7 @@ class FavoritesErrorTest {
                 auth = InMemoryAuthRepository(loggedIn = true),
                 profile = InMemoryProfileRepository(),
                 favorites = RejectingFavorites(),
-                orders = InMemoryOrderRepository()
+                orders = InMemoryOrders(), pickupPolicy = testPickupPolicy()
             )
         }
     }

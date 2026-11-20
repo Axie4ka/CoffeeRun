@@ -1,6 +1,7 @@
 package ru.coffeerun.ui.checkout
 
 import androidx.annotation.StringRes
+import java.io.IOException
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -18,14 +19,14 @@ import kotlinx.coroutines.launch
 import ru.coffeerun.R
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
-import ru.coffeerun.data.OrderRepository
-import ru.coffeerun.data.PlaceOrderResult
+import ru.coffeerun.domain.usecase.PlaceOrderUseCase
+import ru.coffeerun.domain.checkout.PickupPolicy
+import ru.coffeerun.domain.checkout.CheckoutResult
+import ru.coffeerun.domain.checkout.CheckoutQuote
+import ru.coffeerun.domain.checkout.CheckoutAttemptStatus
 import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.CartLine
-import ru.coffeerun.model.CLOSING_HOUR
-import ru.coffeerun.model.READY_IN_MINUTES
 import ru.coffeerun.model.Shop
-import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
 
@@ -41,13 +42,24 @@ data class CheckoutUiState(
     val shop: Shop,
     val pickupAtMillis: Long?,
     val earliestPickup: LocalTime?,
+    val pickupZone: ZoneId,
     val placedOrderNumber: Int?,
     val isPlacing: Boolean = false,
-    @StringRes val message: Int? = null
+    @StringRes val message: Int? = null,
+    val quote: CheckoutQuote? = null,
+    val unavailableItems: List<String> = emptyList(),
+    val totalOverflow: Boolean = false,
+    val outcomeUnknown: Boolean = false
 )
 
 /** Ход отправки заказа — одним потоком, чтобы три поля менялись вместе. */
-private data class Submit(val isPlacing: Boolean = false, val placedOrderNumber: Int? = null, @StringRes val message: Int? = null)
+private data class Submit(
+    val isPlacing: Boolean = false,
+    val placedOrderNumber: Int? = null,
+    @StringRes val message: Int? = null,
+    val quote: CheckoutQuote? = null,
+    val unavailableItems: List<String> = emptyList()
+)
 
 /** «Прошла минута»: пока экран открыт, по нему пересчитывается самое раннее время самовывоза. */
 private fun everyMinute(): Flow<Unit> = flow {
@@ -59,17 +71,19 @@ private fun everyMinute(): Flow<Unit> = flow {
 
 class CheckoutViewModel(
     private val cart: CartRepository,
-    private val orders: OrderRepository,
+    private val placeOrderUseCase: PlaceOrderUseCase,
     private val shops: ShopRepository,
-    private val now: () -> Long = System::currentTimeMillis,
+    private val pickupPolicy: PickupPolicy,
     ticks: Flow<Unit> = everyMinute()
 ) : ViewModel() {
     private val _pickupAtMillis = MutableStateFlow<Long?>(null)
     private val submit = MutableStateFlow(Submit())
 
     val uiState: StateFlow<CheckoutUiState> =
-        combine(cart.lines, shops.selected, _pickupAtMillis, submit, ticks) { lines, shop, pickupAt, submit, _ ->
-            stateOf(lines, shop, pickupAt, submit)
+        combine(cart.lines, shops.selected, _pickupAtMillis, submit,
+            combine(ticks, placeOrderUseCase.attemptStatus) { _, status -> status }
+        ) { lines, shop, pickupAt, submit, attempt ->
+            stateOf(lines, shop, pickupAt, submit, attempt)
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
@@ -77,77 +91,88 @@ class CheckoutViewModel(
             stateOf(cart.lines.value, shops.selected.value, _pickupAtMillis.value, submit.value)
         )
 
-    private fun stateOf(lines: List<CartLine>, shop: Shop, pickupAt: Long?, submit: Submit) = CheckoutUiState(
-        lines = lines,
-        total = lines.sumOf { it.total },
-        shop = shop,
-        pickupAtMillis = pickupAt,
-        earliestPickup = earliestPickupTime(),
-        placedOrderNumber = submit.placedOrderNumber,
-        isPlacing = submit.isPlacing,
-        message = submit.message
-    )
+    private fun stateOf(
+        lines: List<CartLine>, shop: Shop, pickupAt: Long?, submit: Submit,
+        attempt: CheckoutAttemptStatus = CheckoutAttemptStatus.Idle
+    ): CheckoutUiState {
+        val quote = submit.quote?.takeIf { it.matches(lines, shop, pickupAt) }
+        val shown = quote?.updatedLines ?: lines
+        val total = shown.sumOf { it.unitPrice.toLong() * it.quantity }
+        return CheckoutUiState(
+            lines = shown,
+            total = total.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+            shop = shop,
+            pickupAtMillis = pickupAt,
+            earliestPickup = earliestPickupTime(),
+            pickupZone = pickupPolicy.zone(shop),
+            placedOrderNumber = submit.placedOrderNumber,
+            isPlacing = submit.isPlacing || attempt == CheckoutAttemptStatus.Sending,
+            message = submit.message,
+            quote = quote,
+            unavailableItems = submit.unavailableItems,
+            totalOverflow = total > Int.MAX_VALUE,
+            outcomeUnknown = attempt == CheckoutAttemptStatus.OutcomeUnknown
+        )
+    }
 
     /** Кофейня общая с меню и профилем: выбор здесь меняет её и там. */
-    fun selectShop(shop: Shop) = shops.select(shop)
+    fun selectShop(shop: Shop) {
+        if (submit.value.isPlacing) return
+        viewModelScope.launch {
+            try { shops.saveSelection(shop) }
+            catch (_: IOException) { submit.update { it.copy(message = R.string.shop_storage_unavailable) } }
+        }
+    }
 
-    /**
-     * Выбирает время самовывоза сегодня. false (состояние не меняется), если оно
-     * раньше чем через [READY_IN_MINUTES] минут или позже закрытия.
-     */
+    /** Выбирает допустимое время в часовом поясе выбранной кофейни. */
     fun setPickupTime(hour: Int, minute: Int): Boolean {
-        val zone = ZoneId.systemDefault()
-        val today = Instant.ofEpochMilli(now()).atZone(zone).toLocalDate()
-        val millis = today.atTime(hour, minute).atZone(zone).toInstant().toEpochMilli()
-        if (!isPickupValid(millis)) return false
-        _pickupAtMillis.value = millis
+        val selected = pickupPolicy.selectTime(shops.selected.value, hour, minute) ?: return false
+        _pickupAtMillis.value = selected
         return true
     }
 
-    /** Время допустимо: не раньше now + [READY_IN_MINUTES] и не позже закрытия сегодня. */
-    private fun isPickupValid(millis: Long): Boolean {
-        val zone = ZoneId.systemDefault()
-        val today = Instant.ofEpochMilli(now()).atZone(zone).toLocalDate()
-        val closing = today.atTime(CLOSING_HOUR, 0).atZone(zone).toInstant().toEpochMilli()
-        return millis >= now() + READY_IN_MINUTES * 60_000L && millis <= closing
-    }
-
-    /**
-     * Самое раннее время самовывоза: now + [READY_IN_MINUTES], округлённое вверх до 5 минут.
-     * null — сегодня уже нельзя (позже закрытия или за полночь).
-     */
-    fun earliestPickupTime(): LocalTime? {
-        val step = 5 * 60_000L
-        val millis = (now() + READY_IN_MINUTES * 60_000L + step - 1) / step * step
-        val zone = ZoneId.systemDefault()
-        val at = Instant.ofEpochMilli(millis).atZone(zone)
-        val today = Instant.ofEpochMilli(now()).atZone(zone).toLocalDate()
-        val closing = today.atTime(CLOSING_HOUR, 0)
-        return at.toLocalDateTime().takeIf { it.toLocalDate() == today && !it.isAfter(closing) }?.toLocalTime()
-    }
+    fun earliestPickupTime(): LocalTime? = pickupPolicy.earliestTime(shops.selected.value)
 
     fun pickupAsap() {
         _pickupAtMillis.value = null
     }
 
     /**
-     * Оформляет заказ из корзины и очищает её. Пустая корзина или заказ уже отправлен — ничего не происходит.
+     * Запускает сценарий покупки; удалением отправленных количеств занимается use case.
+     * Пустая корзина или заказ уже отправлен — нового заказа не будет.
      * Сервер не принял заказ — корзина остаётся как была, а в [CheckoutUiState.message] — почему.
      */
-    fun placeOrder() {
-        val lines = cart.lines.value
-        if (lines.isEmpty() || submit.value.isPlacing) return
-        // Выбранное время могло устареть, пока открыт экран: тогда — «как можно скорее».
-        if (_pickupAtMillis.value?.let(::isPickupValid) == false) _pickupAtMillis.value = null
-        submit.value = Submit(isPlacing = true)
+    fun placeOrder(confirmed: CheckoutQuote? = null) {
+        if (submit.value.isPlacing) return
+        val shop = shops.selected.value
+        val pickupAt = _pickupAtMillis.value
+        val visibleQuote = submit.value.quote?.takeIf { it.matches(cart.lines.value, shop, pickupAt) }
+        if (confirmed != visibleQuote) return
+        submit.value = Submit(isPlacing = true, quote = confirmed)
         viewModelScope.launch {
-            submit.value = when (val result = orders.place(lines, shops.selected.value, _pickupAtMillis.value)) {
-                is PlaceOrderResult.Placed -> {
-                    cart.clear()
-                    Submit(placedOrderNumber = result.order.number)
+            try {
+                if (shops.current() != shop) {
+                    submit.value = Submit(message = R.string.checkout_shop_changed)
+                    return@launch
                 }
-                PlaceOrderResult.Unavailable -> Submit(message = R.string.order_unavailable)
-                PlaceOrderResult.NetworkError -> Submit(message = R.string.order_network_error)
+                submit.value = when (val result = placeOrderUseCase(shop, pickupAt, confirmed)) {
+                    is CheckoutResult.Placed -> Submit(placedOrderNumber = result.order.number)
+                    is CheckoutResult.PricesChanged -> Submit(quote = result.quote)
+                    is CheckoutResult.UnavailableLines -> Submit(unavailableItems = result.names)
+                    CheckoutResult.CartChanged -> Submit(message = R.string.checkout_cart_changed)
+                    CheckoutResult.InvalidTotal -> Submit(message = R.string.checkout_invalid_total)
+                    CheckoutResult.CatalogUnavailable -> Submit(message = R.string.checkout_catalog_error, quote = confirmed)
+                    CheckoutResult.EmptyCart -> Submit()
+                    CheckoutResult.InvalidPickupTime -> Submit(message = R.string.pickup_time_unavailable)
+                    CheckoutResult.Unavailable -> Submit(message = R.string.order_unavailable)
+                    CheckoutResult.NetworkError -> Submit(message = R.string.order_network_error, quote = confirmed)
+                    CheckoutResult.AttemptPending -> Submit()
+                    CheckoutResult.LocalStorageUnavailable -> Submit(message = R.string.checkout_storage_unavailable)
+                }
+            } catch (_: IOException) {
+                submit.value = Submit(message = R.string.shop_storage_unavailable, quote = confirmed)
+            } finally {
+                submit.update { it.copy(isPlacing = false) }
             }
         }
     }
@@ -158,9 +183,19 @@ class CheckoutViewModel(
     /** Снэкбар показан — второй раз его не будет. */
     fun onMessageShown() = submit.update { it.copy(message = null) }
 
+    fun allowNewOrder() {
+        viewModelScope.launch {
+            try {
+                placeOrderUseCase.dismissUnknownAttempt()
+            } catch (_: IOException) {
+                submit.update { it.copy(message = R.string.checkout_storage_unavailable) }
+            }
+        }
+    }
+
     companion object {
         val Factory = viewModelFactory {
-            initializer { CheckoutViewModel(container.cart, container.orders, container.shops) }
+            initializer { CheckoutViewModel(container.cart, container.placeOrder, container.shops, container.pickupPolicy) }
         }
     }
 }

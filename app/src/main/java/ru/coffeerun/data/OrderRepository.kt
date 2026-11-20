@@ -1,6 +1,7 @@
 package ru.coffeerun.data
 
 import kotlinx.coroutines.flow.StateFlow
+import ru.coffeerun.data.session.AuthSession
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.Shop
@@ -12,8 +13,12 @@ sealed interface PlaceOrderResult {
     /** 409: чего-то из заказа сейчас нет в наличии. */
     data object Unavailable : PlaceOrderResult
 
+    /** Время стало недопустимым до отправки из очереди координатора. */
+    data object InvalidPickupTime : PlaceOrderResult
+
     /** Нет сети или сервер ответил не так. */
     data object NetworkError : PlaceOrderResult
+    data object OutcomeUnknown : PlaceOrderResult
 }
 
 /** Чем закончилась отмена заказа. */
@@ -27,25 +32,14 @@ sealed interface CancelOrderResult {
     data object NetworkError : CancelOrderResult
 }
 
-/** Заказы пользователя, от новых к старым. */
+/** Подтверждённые заказы с сервера. Последовательность операций задаёт OrdersCoordinator. */
 interface OrderRepository {
     val orders: StateFlow<List<Order>>
-
-    /** Загрузить с сервера заново. Ошибка — [java.io.IOException], как у меню. */
-    suspend fun refresh()
-
-    /** Оформляет заказ из [lines]; [lines] не должен быть пустым. Принятый заказ сразу попадает в [orders]. */
-    suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long? = null): PlaceOrderResult
-
-    /** Отменяет заказ [number]; отменённый заказ сразу меняется в [orders]. */
-    suspend fun cancel(number: Int): CancelOrderResult
-
-    /**
-     * Свежий заказ с сервера; в [orders] он тоже обновляется. null — такого заказа нет.
-     * Ошибка загрузки — [java.io.IOException], как у меню.
-     */
-    suspend fun load(number: Int): Order?
-
-    /** Ищет среди загруженных [orders]. */
+    val isLoaded: StateFlow<Boolean>
+    suspend fun refresh(session: AuthSession)
+    suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession): PlaceOrderResult
+    suspend fun cancel(number: Int, session: AuthSession): CancelOrderResult
+    suspend fun load(number: Int, session: AuthSession): Order?
     fun find(number: Int): Order?
+    fun clear(session: AuthSession)
 }

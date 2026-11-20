@@ -7,7 +7,7 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import androidx.navigation.toRoute
+import java.io.IOException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +20,7 @@ import ru.coffeerun.data.ProfileSaveResult
 import ru.coffeerun.ui.auth.fullPhone
 import ru.coffeerun.ui.auth.isValidPhone
 import ru.coffeerun.ui.auth.phoneDigits
-import ru.coffeerun.ui.navigation.EditProfileRoute
+import ru.coffeerun.model.User
 
 /** Экран «Изменить профиль»: [phone] — 10 цифр без +7; [isDone] — сохранено, экран закрывается. */
 data class EditProfileUiState(
@@ -30,30 +30,49 @@ data class EditProfileUiState(
     @StringRes val phoneError: Int? = null,
     val isSaving: Boolean = false,
     @StringRes val message: Int? = null,
-    val isDone: Boolean = false
+    val isDone: Boolean = false,
+    val isLoading: Boolean = false,
+    val loadFailed: Boolean = false,
+    val lastConfirmed: User? = null
 )
 
 private const val NAME_KEY = "editName"
 private const val PHONE_KEY = "editPhone"
 
 /**
- * Изменение имени и телефона (PUT /me). Начальные значения — из профиля ([initialName], [initialPhone]);
+ * Изменение имени и телефона (PUT /me). Начальные значения берутся из подтверждённого профиля;
  * правки переживают смерть процесса. Проверки — те же, что при регистрации.
  */
 class EditProfileViewModel(
     private val profile: ProfileRepository,
-    private val savedState: SavedStateHandle,
-    initialName: String,
-    initialPhone: String
+    private val savedState: SavedStateHandle
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(
         EditProfileUiState(
-            name = savedState[NAME_KEY] ?: initialName,
-            phone = savedState[PHONE_KEY] ?: initialPhone.removePrefix("+7")
+            name = savedState[NAME_KEY] ?: "",
+            phone = savedState[PHONE_KEY] ?: "",
+            isLoading = true
         )
     )
     val uiState: StateFlow<EditProfileUiState> = _uiState.asStateFlow()
     private var submitted = false
+
+    init { load() }
+
+    fun load() {
+        _uiState.update { it.copy(isLoading = true, loadFailed = false) }
+        viewModelScope.launch {
+            try {
+                val user = profile.getForEditing()
+                _uiState.update {
+                    it.copy(name = savedState[NAME_KEY] ?: user.name,
+                        phone = savedState[PHONE_KEY] ?: user.phone.removePrefix("+7"), isLoading = false)
+                }
+            } catch (_: IOException) {
+                _uiState.update { it.copy(isLoading = false, loadFailed = true) }
+            }
+        }
+    }
 
     fun onNameChange(name: String) {
         savedState[NAME_KEY] = name
@@ -67,20 +86,27 @@ class EditProfileViewModel(
     }
 
     fun save() {
-        if (_uiState.value.isSaving) return
+        if (_uiState.value.isSaving || _uiState.value.isLoading || _uiState.value.loadFailed) return
         submitted = true
         edit { this }
         val form = _uiState.value
         if (form.nameError != null || form.phoneError != null) return
-        _uiState.update { it.copy(isSaving = true) }
+        _uiState.update { it.copy(isSaving = true, lastConfirmed = null) }
         viewModelScope.launch {
-            val result = profile.updateMe(form.name.trim(), fullPhone(form.phone))
-            _uiState.update {
-                when (result) {
-                    is ProfileSaveResult.Success -> it.copy(isSaving = false, isDone = true)
-                    ProfileSaveResult.InvalidInput -> it.copy(isSaving = false, message = R.string.auth_invalid)
-                    ProfileSaveResult.Unavailable -> it.copy(isSaving = false, message = R.string.auth_unavailable)
+            try {
+                val result = profile.updateMe(form.name.trim(), fullPhone(form.phone))
+                _uiState.update {
+                    when (result) {
+                        is ProfileSaveResult.Success -> it.copy(isDone = true)
+                        ProfileSaveResult.InvalidInput -> it.copy(message = R.string.auth_invalid)
+                        ProfileSaveResult.Unavailable -> it.copy(message = R.string.auth_unavailable)
+                        is ProfileSaveResult.OutcomeUnknown -> it.copy(
+                            message = R.string.profile_save_outcome_unknown, lastConfirmed = result.confirmed
+                        )
+                    }
                 }
+            } finally {
+                _uiState.update { it.copy(isSaving = false) }
             }
         }
     }
@@ -98,9 +124,7 @@ class EditProfileViewModel(
     companion object {
         val Factory = viewModelFactory {
             initializer {
-                val savedState = createSavedStateHandle()
-                val route = savedState.toRoute<EditProfileRoute>()
-                EditProfileViewModel(container.profile, savedState, route.name, route.phone)
+                EditProfileViewModel(container.profile, createSavedStateHandle())
             }
         }
     }

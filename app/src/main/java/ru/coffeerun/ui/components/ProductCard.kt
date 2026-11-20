@@ -32,7 +32,7 @@ import ru.coffeerun.ui.theme.spacing
 @Composable
 fun ProductImage(product: Product, size: Dp, modifier: Modifier = Modifier) {
     AsyncImage(
-        model = product.imageUrl,
+        model = product.imageUrl.takeIf { it.isNotBlank() },
         // Декоративное: название позиции рядом идёт текстом
         contentDescription = null,
         contentScale = ContentScale.Crop,
