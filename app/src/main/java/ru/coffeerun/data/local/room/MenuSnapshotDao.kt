@@ -1,4 +1,4 @@
-package ru.coffeerun.data.local
+package ru.coffeerun.data.local.room
 
 import androidx.room.Dao
 import androidx.room.Entity

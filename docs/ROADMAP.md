@@ -122,6 +122,11 @@
 
 ### B05. Неопределённый результат оформления и риск дубля — P1
 
+**Android / Mockoon.** Room v6 tracks checkout attempts and applies a confirmed order, cart consumption, and attempt cleanup in one transaction. The client and demonstration server support keyed submission and resolution as described in [OpenAPI](openapi.yaml).
+
+**Server acceptance.** Verify concurrent submission with one account and key, conflict on a changed payload, resolution racing with a late submission, isolation between two accounts, and recovery after restarting the server. Preserve accepted and closed keys for the lifetime of the account in the current contract. The server must validate the current price and availability at acceptance.
+
+
 - [ ] Добавить идентичность операции оформления и восстановление её результата совместно с сервером.
 
 **Проблема.** Сервер мог создать заказ, а приложение не получить ответ. Повторное оформление может создать второй заказ. `isPlacing` защищает только от части повторных действий в одной ViewModel.

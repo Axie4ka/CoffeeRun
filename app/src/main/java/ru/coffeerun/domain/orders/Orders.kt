@@ -27,9 +27,16 @@ interface Orders {
     suspend fun refresh()
 
     /** Оформляет заказ из [lines]; [lines] не должен быть пустым. Принятый заказ сразу попадает в [orders]. */
-    suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long? = null, session: AuthSession): PlaceOrderResult
+    suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long? = null, session: AuthSession, attemptId: String = java.util.UUID.randomUUID().toString(),
+        beforeSend: suspend () -> Boolean = { true }
+    ): PlaceOrderResult
 
-    /** Отменяет заказ [number]; отменённый заказ сразу меняется в [orders]. */
+    /** Проверяет результат сохранённой попытки. */
+    suspend fun resolveAttempt(attemptId: String, session: AuthSession): Order?
+
+    /** Публикует подтверждение после атомарной записи покупки. */
+    suspend fun publishConfirmed(order: Order, session: AuthSession) {}
+
     suspend fun cancel(number: Int): CancelOrderResult
 
     /**

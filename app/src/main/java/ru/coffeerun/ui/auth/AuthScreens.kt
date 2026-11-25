@@ -39,7 +39,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -141,11 +141,11 @@ internal fun AuthScaffold(
     snackbarHostState: SnackbarHostState,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    val context = LocalContext.current
+    val resources = LocalResources.current
     LaunchedEffect(message) {
         if (message == null) return@LaunchedEffect
-        val retry = if (message == R.string.auth_unavailable) context.getString(R.string.action_retry) else null
-        val result = snackbarHostState.showSnackbar(context.getString(message), actionLabel = retry)
+        val retry = if (message == R.string.auth_unavailable) resources.getString(R.string.action_retry) else null
+        val result = snackbarHostState.showSnackbar(resources.getString(message), actionLabel = retry)
         onMessageShown()
         if (result == SnackbarResult.ActionPerformed) onRetry()
     }
@@ -264,8 +264,8 @@ private fun PasswordField(
 
 /** M3 Filled button во всю ширину; во время запроса — индикатор вместо текста и без повторного нажатия. */
 @Composable
-internal fun SubmitButton(@StringRes label: Int, isLoading: Boolean, onClick: () -> Unit) {
-    Button(onClick = onClick, enabled = !isLoading, modifier = Modifier.fillMaxWidth()) {
+internal fun SubmitButton(@StringRes label: Int, isLoading: Boolean, onClick: () -> Unit, enabled: Boolean = true) {
+    Button(onClick = onClick, enabled = enabled && !isLoading, modifier = Modifier.fillMaxWidth()) {
         if (isLoading) {
             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
         } else {

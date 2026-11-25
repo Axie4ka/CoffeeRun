@@ -31,12 +31,12 @@ import org.junit.runner.RunWith
 import ru.coffeerun.data.DemoMenuRepository
 import ru.coffeerun.data.InMemoryFavorites
 import ru.coffeerun.data.InMemoryProfileRepository
-import ru.coffeerun.data.NetworkAuthRepository
-import ru.coffeerun.data.NetworkOrderRepository
+import ru.coffeerun.data.repository.NetworkAuthRepository
+import ru.coffeerun.data.repository.NetworkOrderRepository
 import ru.coffeerun.domain.orders.OrdersCoordinator
-import ru.coffeerun.data.local.TokenStore
-import ru.coffeerun.data.network.OrderDto
-import ru.coffeerun.data.network.OrderLineDto
+import ru.coffeerun.data.local.datastore.TokenStore
+import ru.coffeerun.data.network.dto.OrderDto
+import ru.coffeerun.data.network.dto.OrderLineDto
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.data.DemoMenu

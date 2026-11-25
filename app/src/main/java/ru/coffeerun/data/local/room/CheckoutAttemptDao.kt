@@ -1,4 +1,4 @@
-package ru.coffeerun.data.local
+package ru.coffeerun.data.local.room
 
 import androidx.room.Dao
 import androidx.room.Embedded
@@ -19,7 +19,8 @@ data class CheckoutAttemptEntity(
     val shop: String,
     val pickupAtMillis: Long?,
     val orderNumber: Int? = null,
-    val dismissed: Boolean = false
+    val dismissed: Boolean = false,
+    @androidx.room.ColumnInfo(defaultValue = "0") val keyed: Boolean = false
 )
 
 @Entity(
@@ -50,15 +51,22 @@ data class StoredCheckoutAttempt(
 
 @Dao
 abstract class CheckoutAttemptDao {
-    @Query("DELETE FROM checkout_attempt WHERE owner != :owner")
+    @Query("""
+        DELETE FROM checkout_attempt
+        WHERE owner != :owner
+          AND NOT (owner LIKE 'account:%' AND keyed = 1 AND orderNumber IS NULL AND dismissed = 0)
+    """)
     abstract suspend fun clearOtherOwners(owner: String)
 
     @Transaction
     @Query("SELECT * FROM checkout_attempt WHERE owner = :owner AND orderNumber IS NULL AND dismissed = 0 LIMIT 1")
     abstract suspend fun active(owner: String): StoredCheckoutAttempt?
 
-    @Query("SELECT id FROM checkout_attempt WHERE owner = :owner AND orderNumber IS NULL AND dismissed = 0 LIMIT 1")
-    abstract fun observeActiveId(owner: String): Flow<String?>
+    @Query("SELECT keyed FROM checkout_attempt WHERE owner = :owner AND orderNumber IS NULL AND dismissed = 0 LIMIT 1")
+    abstract fun observeKeyedAttempt(owner: String): Flow<Boolean?>
+
+    @Query("DELETE FROM checkout_attempt WHERE owner = :owner AND (orderNumber IS NOT NULL OR dismissed = 1)")
+    abstract suspend fun clearClosed(owner: String)
 
     @Insert
     protected abstract suspend fun insertAttempt(attempt: CheckoutAttemptEntity)
@@ -71,6 +79,7 @@ abstract class CheckoutAttemptDao {
         require(attempt.orderNumber == null && !attempt.dismissed)
         require(lines.isNotEmpty() && lines.all { it.attemptId == attempt.id })
         if (active(attempt.owner) != null) return false
+        clearClosed(attempt.owner)
         insertAttempt(attempt)
         insertLines(lines)
         return true
@@ -85,6 +94,4 @@ abstract class CheckoutAttemptDao {
     @Query("DELETE FROM checkout_attempt WHERE owner = :owner AND id = :attemptId AND orderNumber IS NULL AND dismissed = 0")
     abstract suspend fun reject(owner: String, attemptId: String): Int
 
-    @Query("UPDATE checkout_attempt SET dismissed = 1 WHERE owner = :owner AND id = :attemptId AND orderNumber IS NULL AND dismissed = 0")
-    abstract suspend fun dismiss(owner: String, attemptId: String): Int
 }

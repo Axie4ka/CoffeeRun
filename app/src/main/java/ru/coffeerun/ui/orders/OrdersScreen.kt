@@ -69,7 +69,8 @@ fun OrdersScreen(
     onCancel: (Order) -> Unit = {},
     refreshing: Boolean = false,
     onRefresh: () -> Unit = {},
-    onOrderClick: (Order) -> Unit = {}
+    onOrderClick: (Order) -> Unit = {},
+    hasSnapshot: Boolean = false
 ) {
     // Заказы — данные аккаунта: гостю приглашение войти; пока токен не прочитан — пусто, без мигания
     when (isLoggedIn) {
@@ -93,9 +94,12 @@ fun OrdersScreen(
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.orders_title))
         // Список уже есть — показываем его, даже если обновить не удалось
-        if (orders.isEmpty() && load == OrdersLoad.LOADING) {
+        if (load == OrdersLoad.FAILED && (hasSnapshot || orders.isNotEmpty())) {
+            TextButton(onClick = onRetry) { Text(stringResource(R.string.orders_cached_refresh)) }
+        }
+        if (orders.isEmpty() && !hasSnapshot && load == OrdersLoad.LOADING) {
             Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        } else if (orders.isEmpty() && load == OrdersLoad.FAILED) {
+        } else if (orders.isEmpty() && !hasSnapshot && load == OrdersLoad.FAILED) {
             RetryMessage(stringResource(R.string.load_error), onRetry, Modifier.weight(1f))
         } else if (orders.isEmpty()) {
             EmptyState(
@@ -104,9 +108,6 @@ fun OrdersScreen(
                 modifier = Modifier.weight(1f)
             )
         } else {
-            if (load == OrdersLoad.FAILED) {
-                Text(stringResource(R.string.orders_refresh_error), modifier = Modifier.padding(MaterialTheme.spacing.medium))
-            }
             // Свайп вниз обновляет статусы, не уходя с вкладки
             PullToRefreshBox(isRefreshing = refreshing, onRefresh = onRefresh, modifier = Modifier.weight(1f)) {
                 LazyColumn(
@@ -161,6 +162,12 @@ internal fun Order.timeText(): String =
     if (isActive) stringResource(R.string.order_time_active, formatTime(readyAtMillis, LocalShopZone.current(shop))) else formatDateTime(placedAtMillis, LocalShopZone.current(shop))
 
 @Composable
+internal fun Order.statusUpdateText(): String {
+    val confirmed = confirmedAtMillis ?: return stringResource(R.string.order_status_update_unknown)
+    return stringResource(R.string.order_status_updated, formatDateTime(confirmed, LocalShopZone.current(shop)))
+}
+
+@Composable
 private fun GroupTitle(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
@@ -211,6 +218,9 @@ private fun OrderCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (order.isActive) {
+                Text(order.statusUpdateText(), style = MaterialTheme.typography.bodySmall)
+            }
             Text(
                 text = order.lines.map { it.summaryText() }.joinToString(", "),
                 style = MaterialTheme.typography.bodyMedium

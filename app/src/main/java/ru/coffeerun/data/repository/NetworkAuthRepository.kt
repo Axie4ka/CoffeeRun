@@ -1,4 +1,7 @@
-package ru.coffeerun.data
+package ru.coffeerun.data.repository
+
+import ru.coffeerun.data.AuthRepository
+import ru.coffeerun.data.AuthResult
 
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
@@ -6,11 +9,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
 import ru.coffeerun.data.session.SessionProvider
-import ru.coffeerun.data.local.TokenStore
-import ru.coffeerun.data.network.AuthResponse
+import ru.coffeerun.data.local.datastore.TokenStore
+import ru.coffeerun.data.network.dto.AuthResponse
 import ru.coffeerun.data.network.CoffeeRunApi
-import ru.coffeerun.data.network.LoginRequest
-import ru.coffeerun.data.network.RegisterRequest
+import ru.coffeerun.data.network.dto.LoginRequest
+import ru.coffeerun.data.network.dto.RegisterRequest
 import ru.coffeerun.model.User
 
 /** POST /auth/login и /auth/register; токен из ответа — в [TokenStore]. */
@@ -30,7 +33,7 @@ class NetworkAuthRepository(private val api: CoffeeRunApi, private val tokens: T
     /** Коды HTTP переводятся в [AuthResult] только здесь: ViewModel не знают о Retrofit. */
     private suspend fun auth(request: suspend () -> AuthResponse): AuthResult = try {
         val response = request()
-        tokens.save(response.token)
+        tokens.save(response.token, response.accountId)
         AuthResult.Success(User(response.user.name, response.user.phone))
     } catch (e: HttpException) {
         when (e.code()) {

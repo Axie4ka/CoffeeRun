@@ -1,5 +1,6 @@
 package ru.coffeerun.data
 
+import ru.coffeerun.data.repository.NetworkAuthRepository
 import ru.coffeerun.StubApi
 import ru.coffeerun.testPreferences
 import java.io.File
@@ -21,11 +22,11 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import retrofit2.HttpException
 import retrofit2.Response
-import ru.coffeerun.data.local.TokenStore
-import ru.coffeerun.data.network.AuthResponse
-import ru.coffeerun.data.network.LoginRequest
-import ru.coffeerun.data.network.RegisterRequest
-import ru.coffeerun.data.network.UserDto
+import ru.coffeerun.data.local.datastore.TokenStore
+import ru.coffeerun.data.network.dto.AuthResponse
+import ru.coffeerun.data.network.dto.LoginRequest
+import ru.coffeerun.data.network.dto.RegisterRequest
+import ru.coffeerun.data.network.dto.UserDto
 import ru.coffeerun.model.User
 
 /** Вход и регистрация: ответ сервера → [AuthResult], токен сохраняется только при успехе. */

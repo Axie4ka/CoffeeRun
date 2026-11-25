@@ -1,5 +1,6 @@
 package ru.coffeerun.data
 
+import ru.coffeerun.data.repository.NetworkProfileRepository
 import ru.coffeerun.StubApi
 import java.io.IOException
 import kotlinx.coroutines.test.runTest
@@ -19,7 +20,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Response
-import ru.coffeerun.data.network.UserDto
+import ru.coffeerun.data.network.dto.UserDto
 import ru.coffeerun.model.User
 
 /** Профиль: загрузка — IOException при любой ошибке, сохранение — значение [ProfileSaveResult]. */

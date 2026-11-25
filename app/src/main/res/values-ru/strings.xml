@@ -1,4 +1,8 @@
 <resources>
+    <string name="favorites_catalog_error">Не удалось загрузить каталог для избранного</string>
+    <string name="orders_cached_refresh">Сохранённые заказы · Обновить</string>
+    <string name="order_status_updated">Статус обновлён %1$s</string>
+    <string name="order_status_update_unknown">Время обновления статуса неизвестно</string>
     <string name="favorites_cached_refresh">Сохранённое избранное · Обновить</string>
     <string name="favorite_missing_product">Позиция недоступна (%1$s)</string>
     <string name="status_unknown">Статус неизвестен</string>
@@ -10,9 +14,12 @@
     <string name="checkout_shop_changed">Кофейня изменилась. Проверьте адрес и подтвердите ещё раз.</string>
     <string name="cart_read_unavailable">Не удалось прочитать сохранённую корзину. Попробуйте ещё раз.</string>
     <string name="cart_storage_unavailable">Не удалось сохранить изменение корзины. Попробуйте ещё раз.</string>
-    <string name="checkout_storage_unavailable">Не удалось обратиться к сохранённой попытке. Проверьте историю заказов и попробуйте снова.</string>
+    <string name="checkout_storage_unavailable">Не удалось сохранить попытку оформления. Повторите попытку.</string>
     <string name="checkout_outcome_unknown">Не удалось узнать, принят ли заказ. Проверьте историю заказов.</string>
     <string name="checkout_check_history">Проверить историю заказов</string>
+    <string name="checkout_recover_order">Проверить статус заказа</string>
+    <string name="checkout_attempt_closed">Заказ не был принят. Можно оформить корзину ещё раз.</string>
+    <string name="checkout_resolution_unavailable">Не удалось подтвердить статус заказа. Повторите проверку.</string>
     <string name="checkout_new_order">Начать новый заказ</string>
     <string name="checkout_duplicate_warning">Предыдущий заказ мог быть принят. Если отправить ещё один, заказы могут продублироваться. Сначала проверьте историю.</string>
     <string name="checkout_allow_new_order">Разрешить новый заказ</string>
@@ -88,4 +95,5 @@
     </plurals>
 
     <string name="notice_not_implemented">Эта функция пока недоступна</string>
+    <string name="order_repeat_storage_unavailable">Не удалось обновить корзину. Повторите попытку.</string>
 </resources>

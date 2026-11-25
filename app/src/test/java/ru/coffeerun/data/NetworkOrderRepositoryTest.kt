@@ -1,5 +1,7 @@
 package ru.coffeerun.data
 
+import ru.coffeerun.data.repository.NetworkOrderRepository
+
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -12,9 +14,9 @@ import org.junit.Assert.*
 import org.junit.Test
 import ru.coffeerun.FakeMenuRepository
 import ru.coffeerun.StubApi
-import ru.coffeerun.data.network.OrderDto
-import ru.coffeerun.data.network.OrderLineDto
-import ru.coffeerun.data.network.OrderRequest
+import ru.coffeerun.data.network.dto.OrderDto
+import ru.coffeerun.data.network.dto.OrderLineDto
+import ru.coffeerun.data.network.dto.OrderRequest
 import ru.coffeerun.data.session.SessionStateStore
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
@@ -37,7 +39,7 @@ class NetworkOrderRepositoryTest {
             return listOf(servedOrder)
         }
         override suspend fun getOrder(number: Int) = servedOrder
-        override suspend fun placeOrder(request: OrderRequest): OrderDto {
+        override suspend fun placeOrder(attemptId: String, request: OrderRequest): OrderDto {
             val accepted = order.copy(number = 1042, lines = request.lines)
             acceptedOrders += accepted
             if (losePlacementResponse) throw IOException("response lost after accepting order")

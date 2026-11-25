@@ -1,5 +1,6 @@
 package ru.coffeerun.data.local
 
+import ru.coffeerun.data.local.datastore.DataStoreShopRepository
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

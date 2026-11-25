@@ -7,10 +7,10 @@ import org.junit.Assert.*
 import org.junit.Test
 import ru.coffeerun.data.*
 import ru.coffeerun.data.session.SessionStateStore
-import ru.coffeerun.data.network.DrinkOptionsDto
-import ru.coffeerun.data.network.OrderDto
-import ru.coffeerun.data.network.OrderLineDto
-import ru.coffeerun.data.network.toModel
+import ru.coffeerun.data.network.dto.DrinkOptionsDto
+import ru.coffeerun.data.network.dto.OrderDto
+import ru.coffeerun.data.network.dto.OrderLineDto
+import ru.coffeerun.data.network.mapper.toModel
 import ru.coffeerun.domain.orders.*
 import ru.coffeerun.model.*
 

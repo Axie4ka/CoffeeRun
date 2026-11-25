@@ -26,7 +26,7 @@ import ru.coffeerun.data.DemoMenuRepository
 import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.InMemoryOrders
 import ru.coffeerun.data.InMemoryProfileRepository
-import ru.coffeerun.data.NetworkFavoritesRepository
+import ru.coffeerun.data.repository.NetworkFavoritesRepository
 import ru.coffeerun.data.session.AuthSession
 import ru.coffeerun.data.session.SessionChangedException
 import ru.coffeerun.data.session.SessionProvider

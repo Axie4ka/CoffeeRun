@@ -4,7 +4,7 @@ import java.io.IOException
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
-import ru.coffeerun.data.local.TokenStore
+import ru.coffeerun.data.local.datastore.TokenStore
 import ru.coffeerun.data.session.AuthSession
 
 /**

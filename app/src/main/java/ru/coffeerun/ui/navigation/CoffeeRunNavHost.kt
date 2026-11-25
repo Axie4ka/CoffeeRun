@@ -21,12 +21,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
@@ -36,13 +37,8 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.toRoute
 import kotlinx.coroutines.launch
 import ru.coffeerun.R
-import ru.coffeerun.ui.auth.LoginScreen
-import ru.coffeerun.ui.auth.LoginViewModel
-import ru.coffeerun.ui.auth.RegisterScreen
-import ru.coffeerun.ui.auth.RegisterViewModel
 import ru.coffeerun.ui.cart.CartScreen
 import ru.coffeerun.ui.cart.CartViewModel
 import ru.coffeerun.ui.checkout.CheckoutScreen
@@ -54,10 +50,6 @@ import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.menu.MenuScreen
 import ru.coffeerun.ui.menu.MenuViewModel
-import ru.coffeerun.ui.orders.OrderDetailsScreen
-import ru.coffeerun.ui.orders.OrderDetailsViewModel
-import ru.coffeerun.ui.orders.OrdersScreen
-import ru.coffeerun.ui.orders.OrdersViewModel
 import ru.coffeerun.ui.product.ProductScreen
 import ru.coffeerun.ui.product.ProductUiState
 import ru.coffeerun.ui.product.ProductViewModel
@@ -82,9 +74,9 @@ fun CoffeeRunNavHost(
 ) {
     // Для снэкбаров, которые должны пережить закрытие экрана (например, «Профиль сохранён»)
     val appScope = rememberCoroutineScope()
-    val appContext = LocalContext.current
+    val resources = LocalResources.current
     val showShopError: () -> Unit = {
-        appScope.launch { snackbarHostState.showSnackbar(appContext.getString(R.string.shop_storage_unavailable)) }
+        appScope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.shop_storage_unavailable)) }
     }
     // Сцена для общих элементов: фото позиции перелетает между меню, избранным и экраном напитка
     SharedTransitionLayout {
@@ -112,7 +104,7 @@ fun CoffeeRunNavHost(
                     onProductClick = { navController.navigate(ProductRoute(it.id)) },
                     onAddProduct = { product ->
                         vm.quickAdd(product) { error ->
-                            if (error != null) appScope.launch { snackbarHostState.showSnackbar(appContext.getString(error)) }
+                            if (error != null) appScope.launch { snackbarHostState.showSnackbar(resources.getString(error)) }
                         }
                     },
                     modifier = tabModifier
@@ -126,7 +118,7 @@ fun CoffeeRunNavHost(
             val storageFailed by vm.storageFailed.collectAsStateWithLifecycle()
             LaunchedEffect(storageFailed) {
                 if (storageFailed) {
-                    snackbarHostState.showSnackbar(appContext.getString(R.string.cart_storage_unavailable))
+                    snackbarHostState.showSnackbar(resources.getString(R.string.cart_storage_unavailable))
                     vm.onStorageErrorShown()
                 }
             }
@@ -142,87 +134,7 @@ fun CoffeeRunNavHost(
             )
         }
 
-        composable<OrdersRoute> {
-            val vm: OrdersViewModel = viewModel(factory = OrdersViewModel.Factory)
-            val screenScope = rememberCoroutineScope()
-            val orders by vm.orders.collectAsStateWithLifecycle()
-            val load by vm.load.collectAsStateWithLifecycle()
-            val cancelling by vm.cancelling.collectAsStateWithLifecycle()
-            val refreshing by vm.refreshing.collectAsStateWithLifecycle()
-            val message by vm.message.collectAsStateWithLifecycle()
-            val context = LocalContext.current
-            // Каждый показ вкладки: переход с другой вкладки, возврат со входа или с «Заказ принят»
-            LaunchedEffect(Unit) { vm.onShown() }
-            LaunchedEffect(message) {
-                message?.let {
-                    // Сначала показать, потом сбросить: сброс меняет ключ эффекта и отменил бы снэкбар
-                    snackbarHostState.showSnackbar(context.getString(it))
-                    vm.onMessageShown()
-                }
-            }
-            OrdersScreen(
-                orders = orders,
-                load = load,
-                onRetry = vm::retry,
-                onRepeat = {
-                    val selected = it
-                    screenScope.launch {
-                        val result = vm.repeat(selected) ?: return@launch
-                        if (result.added) navController.openTab(Tab.CART)
-                        result.message?.let { message ->
-                            appScope.launch { snackbarHostState.showSnackbar(context.getString(message)) }
-                        }
-                    }
-                },
-                onBrowseMenu = { navController.openTab(Tab.MENU) },
-                modifier = tabModifier,
-                isLoggedIn = isLoggedIn,
-                onLogin = { navController.navigate(LoginRoute()) },
-                cancelling = cancelling,
-                onCancel = vm::cancel,
-                refreshing = refreshing,
-                onRefresh = vm::refresh,
-                onOrderClick = { navController.navigate(OrderDetailsRoute(it.number)) }
-            )
-        }
-
-        composable<OrderDetailsRoute> {
-            val vm: OrderDetailsViewModel = viewModel(factory = OrderDetailsViewModel.Factory)
-            val screenScope = rememberCoroutineScope()
-            OnLocale(vm::onLocale)
-            val order by vm.order.collectAsStateWithLifecycle()
-            val load by vm.load.collectAsStateWithLifecycle()
-            val cancelling by vm.cancelling.collectAsStateWithLifecycle()
-            val notFound by vm.notFound.collectAsStateWithLifecycle()
-            val message by vm.message.collectAsStateWithLifecycle()
-            val context = LocalContext.current
-            // Такого заказа на сервере нет — смотреть нечего
-            LaunchedEffect(notFound) { if (notFound) navController.popBackStack<OrderDetailsRoute>(inclusive = true) }
-            LaunchedEffect(message) {
-                message?.let {
-                    snackbarHostState.showSnackbar(context.getString(it))
-                    vm.onMessageShown()
-                }
-            }
-            OrderDetailsScreen(
-                order = order,
-                load = load,
-                cancelling = cancelling,
-                onBack = { navController.popBackStack() },
-                onRetry = vm::retry,
-                onCancel = vm::cancel,
-                onRepeat = {
-                    screenScope.launch {
-                        val result = vm.repeat() ?: return@launch
-                        if (result.added) navController.jumpToTab(Tab.CART)
-                        result.message?.let { message ->
-                            appScope.launch { snackbarHostState.showSnackbar(context.getString(message)) }
-                        }
-                    }
-                },
-                snackbarHostState = snackbarHostState
-            )
-        }
+        ordersGraph(navController, snackbarHostState, isLoggedIn, tabModifier, appScope)
 
         composable<ProfileRoute> {
             val vm: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory)
@@ -265,43 +177,7 @@ fun CoffeeRunNavHost(
             )
         }
 
-        composable<LoginRoute> { entry ->
-            val toCheckout = entry.toRoute<LoginRoute>().toCheckout
-            val vm: LoginViewModel = viewModel(factory = LoginViewModel.Factory)
-            val state by vm.uiState.collectAsStateWithLifecycle()
-            // Вошли — туда, куда шли: на оформление или назад
-            LaunchedEffect(state.isDone) { if (state.isDone) navController.afterLogin(toCheckout) }
-            LoginScreen(
-                uiState = state,
-                onPhoneChange = vm::onPhoneChange,
-                onPasswordChange = vm::onPasswordChange,
-                onSubmit = vm::submit,
-                onMessageShown = vm::onMessageShown,
-                onRegister = dropUnlessResumed { navController.navigate(RegisterRoute(toCheckout)) },
-                onBack = dropUnlessResumed { navController.popBackStack() },
-                snackbarHostState = snackbarHostState
-            )
-        }
-
-        composable<RegisterRoute> { entry ->
-            val toCheckout = entry.toRoute<RegisterRoute>().toCheckout
-            val vm: RegisterViewModel = viewModel(factory = RegisterViewModel.Factory)
-            val state by vm.uiState.collectAsStateWithLifecycle()
-            // Зарегистрировались — как после входа; регистрация и вход под ней закрываются оба
-            LaunchedEffect(state.isDone) { if (state.isDone) navController.afterLogin(toCheckout) }
-            RegisterScreen(
-                uiState = state,
-                onNameChange = vm::onNameChange,
-                onPhoneChange = vm::onPhoneChange,
-                onPasswordChange = vm::onPasswordChange,
-                onSubmit = vm::submit,
-                onMessageShown = vm::onMessageShown,
-                // Регистрация открывается только со входа: «Войти» — вернуться к нему, а не открыть второй
-                onLogin = dropUnlessResumed { navController.popBackStack() },
-                onBack = dropUnlessResumed { navController.popBackStack() },
-                snackbarHostState = snackbarHostState
-            )
-        }
+        authGraph(navController, snackbarHostState)
 
         composable<FavoritesRoute> {
             ProvideNavScope {
@@ -316,7 +192,7 @@ fun CoffeeRunNavHost(
                     onRetry = vm::retry,
                     onRemoveMissing = { id ->
                         vm.removeMissing(id) {
-                            appScope.launch { snackbarHostState.showSnackbar(appContext.getString(R.string.favorites_toggle_error)) }
+                            appScope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.favorites_toggle_error)) }
                         }
                     }
                 )
@@ -331,10 +207,11 @@ fun CoffeeRunNavHost(
                 // Сервер не принял сердечко — оно уже откатилось, объясняем почему
                 val message by vm.message.collectAsStateWithLifecycle()
                 val context = LocalContext.current
+                val resources = LocalResources.current
                 LaunchedEffect(message) {
                     message?.let {
                         // Сначала показать, потом сбросить: сброс меняет ключ эффекта и отменил бы снэкбар
-                        snackbarHostState.showSnackbar(context.getString(it))
+                        snackbarHostState.showSnackbar(resources.getString(it))
                         vm.onMessageShown()
                     }
                 }
@@ -375,7 +252,7 @@ fun CoffeeRunNavHost(
                                     if (error == null) {
                                         if (navController.currentBackStackEntry === entry) navController.popBackStack()
                                     } else appScope.launch {
-                                        snackbarHostState.showSnackbar(appContext.getString(error))
+                                        snackbarHostState.showSnackbar(resources.getString(error))
                                     }
                                 }
                             },
@@ -411,6 +288,7 @@ fun CoffeeRunNavHost(
                 onBack = { navController.popBackStack() },
                 onConfirm = { vm.placeOrder(checkoutState.quote) },
                 onCheckOrderHistory = { navController.jumpToTab(Tab.ORDERS) },
+                onRecoverOrder = vm::recoverOrder,
                 onAllowNewOrder = vm::allowNewOrder,
                 onPickupAsap = vm::pickupAsap,
                 onPickupTimeChosen = vm::setPickupTime,
@@ -450,14 +328,6 @@ private fun AnimatedContentScope.ProvideNavScope(content: @Composable () -> Unit
 
 private fun NavBackStackEntry.isTab() = Tab.entries.any { destination.hasRoute(it.route::class) }
 
-/** Ключ результата «профиль сохранён» в SavedStateHandle профиля. */
-
-/** После входа или регистрации: закрыть вход (и регистрацию над ним) и, если гость шёл оформлять, открыть оформление. */
-private fun NavController.afterLogin(toCheckout: Boolean) {
-    if (toCheckout) navigate(CheckoutRoute) { popUpTo<LoginRoute> { inclusive = true } }
-    else popBackStack<LoginRoute>(inclusive = true)
-}
-
 /** Переключение вкладок с сохранением их состояния — для нижней панели и кнопок «В меню». */
 internal fun NavController.openTab(tab: Tab) = navigate(tab.route) {
     popUpTo(graph.findStartDestination().id) { saveState = true }
@@ -471,7 +341,7 @@ internal fun NavController.openTab(tab: Tab) = navigate(tab.route) {
  * Переход на вкладку с экрана поверх вкладок: этот экран закрываем, а не сохраняем,
  * иначе вкладка «Меню» потом восстановит его через restoreState.
  */
-private fun NavController.jumpToTab(tab: Tab) = navigate(tab.route) {
+internal fun NavController.jumpToTab(tab: Tab) = navigate(tab.route) {
     popUpTo(MenuRoute)
     launchSingleTop = true
 }

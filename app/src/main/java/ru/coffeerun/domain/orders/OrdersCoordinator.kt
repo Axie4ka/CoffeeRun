@@ -60,19 +60,28 @@ class OrdersCoordinator(
         sessions.withSession(session) { }
     }
 
-    override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession): PlaceOrderResult {
+    override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession, attemptId: String, beforeSend: suspend () -> Boolean): PlaceOrderResult {
         return inSession(session) {
             // Ожидание очереди могло сделать время недопустимым после проверки use case.
             if (!pickup.isValid(shop, pickupAtMillis)) PlaceOrderResult.InvalidPickupTime
-            else repository.place(lines, shop, pickupAtMillis, session)
+            else if (!beforeSend()) PlaceOrderResult.CartChanged
+            else repository.place(lines, shop, pickupAtMillis, session, attemptId)
         }
     }
+
+    override suspend fun resolveAttempt(attemptId: String, session: AuthSession) =
+        inSession(session) { repository.resolveAttempt(attemptId, session) }
+
+    override suspend fun publishConfirmed(order: Order, session: AuthSession) =
+        inSession(session) { repository.publishConfirmed(order, session) }
 
     override suspend fun cancel(number: Int): CancelOrderResult {
         val session = authorizedSession()
         return inSession(session) {
             repository.cancel(number, session).also { result ->
-                if (result == CancelOrderResult.TooLate) {
+                if (result == CancelOrderResult.NetworkError) {
+                    try { repository.load(number, session) } catch (_: IOException) { }
+                } else if (result == CancelOrderResult.TooLate) {
                     // Уже под operations: повторный вход через refresh() привёл бы к deadlock.
                     try { repository.refresh(session) } catch (_: IOException) { }
                 }

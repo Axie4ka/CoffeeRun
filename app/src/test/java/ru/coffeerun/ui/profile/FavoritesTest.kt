@@ -56,10 +56,63 @@ class FavoritesTest {
         val repo = FakeMenuRepository(fail = true)
         val vm = FavoritesViewModel(repo, favorites)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
-        assertEquals(FavoritesUiState.Error, vm.uiState.value)
+        assertEquals(FavoritesUiState.CatalogError, vm.uiState.value)
         repo.fail = false
         vm.retry()
         assertEquals(FavoritesUiState.Success(listOf(DemoMenu.LATTE)), vm.uiState.value)
+    }
+
+    @Test
+    fun addingFirstFavoriteLoadsItsCatalogCard() = runTest {
+        val vm = FavoritesViewModel(DemoMenuRepository(), favorites)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertEquals(FavoritesUiState.Success(emptyList()), vm.uiState.value)
+        favorites.toggle("latte")
+        assertEquals(FavoritesUiState.Success(listOf(DemoMenu.LATTE)), vm.uiState.value)
+    }
+
+    @Test
+    fun confirmedEmptyFavoritesAreVisibleWhenOffline() = runTest {
+        val saved = object : Favorites by favorites {
+            override val hasSnapshot = true
+            override suspend fun refresh() { throw IOException("offline") }
+        }
+        val vm = FavoritesViewModel(FakeMenuRepository(fail = true), saved)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertEquals(FavoritesUiState.Success(emptyList(), isCached = true), vm.uiState.value)
+    }
+
+    @Test
+    fun productInUnsupportedCategoryCannotBeRemovedAsMissing() = runTest {
+        favorites.toggle("latte")
+        favorites.toggle("new-category")
+        val catalog = object : ru.coffeerun.data.MenuRepository by DemoMenuRepository() {
+            override suspend fun refresh() = ru.coffeerun.model.MenuSnapshot(
+                listOf(DemoMenu.LATTE), DemoMenu.prices, catalogProductIds = setOf("latte", "new-category")
+            )
+        }
+        val vm = FavoritesViewModel(catalog, favorites)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertEquals(FavoritesUiState.Success(listOf(DemoMenu.LATTE)), vm.uiState.value)
+        vm.removeMissing("new-category") { throw AssertionError() }
+        assertTrue("new-category" in favorites.ids.value)
+    }
+
+    @Test
+    fun staleCatalogCannotAuthorizeRemovingAnUnknownId() = runTest {
+        favorites.toggle("latte")
+        favorites.toggle("gone")
+        val catalog = object : ru.coffeerun.data.MenuRepository by DemoMenuRepository() {
+            override suspend fun refresh(): ru.coffeerun.model.MenuSnapshot = throw IOException("offline")
+            override fun observeSnapshot() = kotlinx.coroutines.flow.flowOf(
+                ru.coffeerun.model.MenuSnapshot(listOf(DemoMenu.LATTE), DemoMenu.prices, isCached = true)
+            )
+        }
+        val vm = FavoritesViewModel(catalog, favorites)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        assertEquals(FavoritesUiState.Success(listOf(DemoMenu.LATTE), isCached = true), vm.uiState.value)
+        vm.removeMissing("gone") { throw AssertionError() }
+        assertTrue("gone" in favorites.ids.value)
     }
 
     @Test

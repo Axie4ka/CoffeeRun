@@ -2,6 +2,7 @@ package ru.coffeerun.domain.usecase
 
 import java.time.Instant
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Test
@@ -22,12 +23,13 @@ class PlaceOrderUseCaseTest {
         var gate: CompletableDeferred<Unit>? = null
         var result: PlaceOrderResult? = null
         var uncooperative = false
-        override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession): PlaceOrderResult {
+        override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession, attemptId: String, beforeSend: suspend () -> Boolean): PlaceOrderResult {
+            if (!beforeSend()) return PlaceOrderResult.CartChanged
             calls++
             receivedSession = session
             submitted = lines
             if (uncooperative) withContext(NonCancellable) { gate?.await() } else gate?.await()
-            return result ?: delegate.place(lines, shop, pickupAtMillis, session)
+            return result ?: delegate.place(lines, shop, pickupAtMillis, session, attemptId)
         }
     }
     private val orders = ControlledOrders()
@@ -96,6 +98,30 @@ class PlaceOrderUseCaseTest {
         assertEquals(2, cart.lines.value.single().quantity)
     }
 
+    @Test fun beginFailureAllowsRetryWithoutPostingOrRequiringRecovery() = runTest {
+        sessions.replaceToken("token", "owner")
+        var broken = true
+        val store = object : CheckoutAttemptStore {
+            override fun observeKeyedAttempt(owner: String) = kotlinx.coroutines.flow.flowOf<Boolean?>(null)
+            override suspend fun activeId(owner: String): String? = null
+            override suspend fun isLegacy(owner: String, id: String) = false
+            override suspend fun begin(owner: String, id: String, lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?): Boolean {
+                if (broken) throw java.io.IOException("storage full")
+                return true
+            }
+            override suspend fun finish(owner: String, id: String, order: ru.coffeerun.model.Order?) = true
+            override suspend fun dismiss(owner: String, id: String) = false
+        }
+        val place = PlaceOrderUseCase(cart, orders, sessions, policy, DemoMenuRepository(), store)
+        add()
+        assertEquals(CheckoutResult.LocalStorageUnavailable, place(Shop.MOSKOVSKAYA, null))
+        assertEquals(0, orders.calls)
+        assertEquals(CheckoutAttemptStatus.Idle, place.attemptStatus.first())
+        broken = false
+        assertTrue(place(Shop.MOSKOVSKAYA, null) is CheckoutResult.Placed)
+        assertEquals(1, orders.calls)
+    }
+
     @Test fun emptyCart_doesNotSendOrder() = runTest {
         assertEquals(CheckoutResult.EmptyCart, useCase()(Shop.MOSKOVSKAYA, null))
         assertEquals(0, orders.calls)
@@ -123,7 +149,7 @@ class PlaceOrderUseCaseTest {
         assertEquals(CheckoutResult.AttemptPending, place(Shop.MOSKOVSKAYA, null))
         assertEquals(CheckoutResult.AttemptPending, place(Shop.MOSKOVSKAYA, null))
         assertEquals(1, orders.calls)
-        place.dismissUnknownAttempt()
+        assertNull(place.recoverOrder())
         assertEquals(1, orders.calls)
         assertEquals(1, cart.lines.value.single().quantity)
         orders.result = null

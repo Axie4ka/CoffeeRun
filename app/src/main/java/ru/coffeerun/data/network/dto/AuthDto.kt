@@ -1,4 +1,4 @@
-package ru.coffeerun.data.network
+package ru.coffeerun.data.network.dto
 
 import kotlinx.serialization.Serializable
 
@@ -11,7 +11,7 @@ data class LoginRequest(val phone: String, val password: String)
 data class RegisterRequest(val name: String, val phone: String, val password: String)
 
 @Serializable
-data class AuthResponse(val token: String, val user: UserDto)
+data class AuthResponse(val token: String, val user: UserDto, val accountId: String? = null)
 
 @Serializable
 data class UserDto(val name: String, val phone: String)

@@ -1,6 +1,6 @@
 package ru.coffeerun.domain.favorites
 
-import ru.coffeerun.data.NetworkFavoritesRepository
+import ru.coffeerun.data.repository.NetworkFavoritesRepository
 
 import ru.coffeerun.StubApi
 import java.io.IOException

@@ -1,8 +1,9 @@
-package ru.coffeerun.data
+package ru.coffeerun.data.repository
+
+import ru.coffeerun.data.FavoritesRepository
 
 import java.io.IOException
-import android.database.sqlite.SQLiteException
-import androidx.room.withTransaction
+import ru.coffeerun.data.local.room.withPersonalCache
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,8 +13,8 @@ import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
 import ru.coffeerun.data.network.CoffeeRunApi
 import ru.coffeerun.data.network.CoffeeRunJson
-import ru.coffeerun.data.local.CoffeeRunDatabase
-import ru.coffeerun.data.local.SavedFavorites
+import ru.coffeerun.data.local.room.CoffeeRunDatabase
+import ru.coffeerun.data.local.room.SavedFavorites
 import ru.coffeerun.data.session.AuthSession
 import ru.coffeerun.data.session.SessionProvider
 import ru.coffeerun.data.session.runInSession
@@ -69,7 +70,7 @@ class NetworkFavoritesRepository(
 
     private suspend fun hydrate(session: AuthSession) {
         if (hasSnapshot) return
-        val saved = onDisk(session) { database, owner ->
+        val saved = db.withPersonalCache(sessions, session) { database, owner ->
             database.favoritesSnapshots().find(owner)?.let { CoffeeRunJson.decodeFromString<Set<String>>(it.payload) }
         } ?: return
         commit(session) {
@@ -79,25 +80,11 @@ class NetworkFavoritesRepository(
     }
 
     private suspend fun persist(session: AuthSession, ids: Set<String>) {
-        onDisk(session) { database, owner ->
+        db.withPersonalCache(sessions, session) { database, owner ->
             database.favoritesSnapshots().save(SavedFavorites(owner, CoffeeRunJson.encodeToString(ids)))
         }
     }
 
-    private suspend fun <T> onDisk(session: AuthSession, action: suspend (CoffeeRunDatabase, String) -> T): T? {
-        val database = db ?: return null
-        val owner = session.localOwner ?: return null
-        return try {
-            database.withTransaction {
-                sessions.withSession(session) { }
-                if (database.localOwner().current() == owner) action(database, owner) else null
-            }
-        } catch (_: SQLiteException) {
-            null
-        } catch (_: SerializationException) {
-            null
-        }
-    }
 
     private suspend fun <T> network(request: suspend () -> T): T = try {
         request()

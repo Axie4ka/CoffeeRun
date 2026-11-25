@@ -1,13 +1,3 @@
-# Proposed server behavior for the local storage rollout.
-# The paths, fields and guarantees below are design dependencies, not live Mockoon routes.
-# POST /orders with Idempotency-Key would bind one exact request and its outcome
-# to the authenticated account. Replaying the same payload returns the prior result.
-# Reusing the key with a different payload is a separate conflict.
-# The server must publish the retention window and provide lookup by client request ID.
-# A purchase conflict would identify affected lines, unavailable options and current prices.
-# A stable opaque userId would allow safe account-scoped caching between logins.
-# Product images with mutable content would use a versioned URL or HTTP validators.
-
 openapi: 3.0.3
 info:
   title: CoffeeRun API
@@ -201,7 +191,8 @@ paths:
 
   /orders:
     post:
-      operationId: placeOrder
+      deprecated: true
+      operationId: placeLegacyOrder
       summary: Оформить заказ из корзины
       description: |
         unitPrice присылает приложение (считает по ценам из /menu). Настоящий сервер
@@ -243,6 +234,83 @@ paths:
                   $ref: '#/components/schemas/Order'
         '401':
           $ref: '#/components/responses/Unauthorized'
+
+  /order-attempts/{attemptId}:
+    parameters:
+      - $ref: '#/components/parameters/AttemptId'
+    post:
+      operationId: placeOrder
+      summary: Оформить заказ по сохранённому UUID
+      description: |
+        Ключ принадлежит авторизованному пользователю. Сервер атомарно фиксирует
+        заказ и связь с ключом. Для этого пользователя один UUID обозначает
+        одну покупку. Повтор, в том числе конкурентный, возвращает исходный
+        номер при одинаковом содержимом. При изменённом содержимом сервер
+        возвращает 409 с кодом ATTEMPT_PAYLOAD_MISMATCH. Перед созданием заказа
+        сервер проверяет актуальную цену и доступность всех позиций.
+        Сервер сохраняет ключи принятых и закрытых попыток после перезапуска
+        на протяжении всего срока жизни аккаунта.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+      responses:
+        '201':
+          description: Новый заказ принят
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '200':
+          description: Ранее принятый заказ с тем же UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Позиция или опция недоступна, цена изменилась или ключ связан с другим запросом
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [code]
+                properties:
+                  code:
+                    type: string
+                    enum: [ORDER_UNAVAILABLE, ATTEMPT_PAYLOAD_MISMATCH]
+                  message:
+                    type: string
+        '410':
+          description: Сверка уже закрыла этот ключ без заказа
+
+  /order-attempts/{attemptId}/resolve:
+    parameters:
+      - $ref: '#/components/parameters/AttemptId'
+    post:
+      operationId: resolveAttempt
+      summary: Узнать результат отправки или закрыть неиспользованный UUID
+      description: |
+        В одной транзакции с проверкой ключа сервер возвращает принятый заказ
+        либо навсегда закрывает ключ. Параллельный или запоздалый запрос
+        оформления с закрытым ключом получает 410. Клиент сохраняет попытку
+        при потере ответа, 404 или другой ошибке сверки.
+      responses:
+        '200':
+          description: Актуальный статус и состав заказа текущего пользователя с этим UUID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '410':
+          description: Ключ закрыт, заказ по нему отсутствует
 
   /orders/{number}:
     get:
@@ -314,6 +382,13 @@ components:
 
 
   parameters:
+    AttemptId:
+      name: attemptId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     AcceptLanguage:
       name: Accept-Language
       in: header
@@ -509,8 +584,13 @@ components:
 
     AuthResponse:
       type: object
-      required: [token, user]
+      required: [token, user, accountId]
       properties:
+        accountId:
+          type: string
+          minLength: 1
+          description: Stable immutable account ID, identical for all logins of this account.
+          example: mockoon-demo
         token:
           type: string
           description: 'Передавать в заголовке Authorization: Bearer <token>'

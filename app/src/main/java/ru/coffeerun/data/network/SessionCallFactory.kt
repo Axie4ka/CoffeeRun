@@ -14,9 +14,9 @@ internal class SessionCallFactory(private val delegate: Call.Factory) : Call.Fac
         val session = request.tag(AuthSession::class.java) ?: RequestSession.current.get()
         val builder = request.newBuilder().tag(AuthSession::class.java, session)
         val endpoint = request.tag(Invocation::class.java)?.method()?.getAnnotation(POST::class.java)?.value
-        if (endpoint == "orders") {
+        if (endpoint == "order-attempts/{attemptId}") {
             val body = requireNotNull(request.body)
-            // У сервера нет ключа идемпотентности. Даже ответ 503 мог прийти после записи заказа.
+            // После потери ответа отдельный запрос сверяет сохранённый UUID.
             builder.method(request.method, object : RequestBody() {
                 override fun contentType() = body.contentType()
                 override fun contentLength() = body.contentLength()

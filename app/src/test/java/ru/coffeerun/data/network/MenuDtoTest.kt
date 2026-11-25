@@ -1,5 +1,12 @@
 package ru.coffeerun.data.network
 
+import ru.coffeerun.data.network.mapper.toOptionPrices
+import ru.coffeerun.data.network.mapper.toModel
+import ru.coffeerun.data.network.dto.ExtraOptionDto
+import ru.coffeerun.data.network.dto.MenuDto
+import ru.coffeerun.data.network.dto.ProductDto
+import ru.coffeerun.data.network.dto.SizeOptionDto
+
 import ru.coffeerun.BuildConfig
 import java.io.File
 import kotlinx.serialization.json.jsonArray
