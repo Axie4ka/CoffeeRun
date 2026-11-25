@@ -45,6 +45,7 @@ fun FavoritesScreen(
             FavoritesUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
+            FavoritesUiState.CatalogError -> RetryMessage(stringResource(R.string.favorites_catalog_error), onRetry)
             FavoritesUiState.Error -> RetryMessage(stringResource(R.string.load_error), onRetry)
             is FavoritesUiState.Success -> {
                 if (uiState.isCached) {

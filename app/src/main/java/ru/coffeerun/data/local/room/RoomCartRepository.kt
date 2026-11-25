@@ -1,7 +1,6 @@
-package ru.coffeerun.data.local
+package ru.coffeerun.data.local.room
 
 import android.database.sqlite.SQLiteException
-import androidx.room.withTransaction
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,7 +18,6 @@ import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.CartRead
 import ru.coffeerun.data.network.CoffeeRunJson
 import ru.coffeerun.data.session.AuthSession
-import ru.coffeerun.data.session.SessionChangedException
 import ru.coffeerun.data.session.SessionProvider
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.DrinkOptions
@@ -58,7 +56,7 @@ class RoomCartRepository(
         transaction(session) { owner -> lines.map { add(owner, it, exact = true) } }
 
     override suspend fun changeLineQuantity(id: Int, delta: Int) = transaction(sessions.currentSession()) { owner ->
-        dao.snapshot(owner).find { it.id == id }?.let {
+        dao.find(owner, id)?.let {
             dao.setQuantity(owner, id, (it.quantity + delta.toLong()).coerceIn(MIN_QUANTITY.toLong(), MAX_QUANTITY.toLong()).toInt())
         }
         Unit
@@ -78,9 +76,7 @@ class RoomCartRepository(
 
     private suspend fun add(owner: String, line: CartLine, exact: Boolean): Boolean {
         val recipe = line.options.key()
-        val existing = dao.snapshot(owner).find {
-            it.productId == line.product.id && it.unitPrice == line.unitPrice && it.optionsJson == recipe
-        }
+        val existing = dao.findRecipe(owner, line.product.id, line.unitPrice, recipe)
         val quantity = (existing?.quantity ?: 0) + line.quantity.toLong()
         if (line.quantity < MIN_QUANTITY || (exact && quantity > MAX_QUANTITY)) return false
         val capped = quantity.coerceAtMost(MAX_QUANTITY.toLong()).toInt()
@@ -91,13 +87,8 @@ class RoomCartRepository(
     }
 
     private suspend fun <T> transaction(session: AuthSession, action: suspend (String) -> T): T {
-        val owner = session.owner()
         return try {
-            db.withTransaction {
-                sessions.withSession(session) { }
-                if (db.localOwner().current() != owner) throw SessionChangedException()
-                action(owner)
-            }
+            db.withOwner(sessions, session, action)
         } catch (error: SQLiteException) {
             throw IOException("Cannot access the cart", error)
         } catch (error: SerializationException) {

@@ -5,7 +5,7 @@ import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
 import ru.coffeerun.data.session.AuthSession
 
-enum class CheckoutAttemptStatus { Idle, Sending, OutcomeUnknown }
+enum class CheckoutAttemptStatus { Idle, Sending, OutcomeUnknown, LegacyUnknown }
 
 class CheckoutQuote internal constructor(
     internal val session: AuthSession,

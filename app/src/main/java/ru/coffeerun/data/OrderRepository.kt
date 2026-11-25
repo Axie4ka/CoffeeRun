@@ -15,6 +15,7 @@ sealed interface PlaceOrderResult {
 
     /** Время стало недопустимым до отправки из очереди координатора. */
     data object InvalidPickupTime : PlaceOrderResult
+    data object CartChanged : PlaceOrderResult
 
     /** Нет сети или сервер ответил не так. */
     data object NetworkError : PlaceOrderResult
@@ -37,7 +38,10 @@ interface OrderRepository {
     val orders: StateFlow<List<Order>>
     val isLoaded: StateFlow<Boolean>
     suspend fun refresh(session: AuthSession)
-    suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession): PlaceOrderResult
+    suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession, attemptId: String = java.util.UUID.randomUUID().toString()): PlaceOrderResult
+    suspend fun resolveAttempt(attemptId: String, session: AuthSession): Order?
+
+    suspend fun publishConfirmed(order: Order, session: AuthSession)
     suspend fun cancel(number: Int, session: AuthSession): CancelOrderResult
     suspend fun load(number: Int, session: AuthSession): Order?
     fun find(number: Int): Order?

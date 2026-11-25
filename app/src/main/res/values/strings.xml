@@ -1,4 +1,8 @@
 <resources>
+    <string name="favorites_catalog_error">Couldn\'t load the menu for your favorites</string>
+    <string name="orders_cached_refresh">Showing saved orders · Retry</string>
+    <string name="order_status_updated">Status last updated %1$s</string>
+    <string name="order_status_update_unknown">Last status update unknown</string>
     <string name="favorites_cached_refresh">Showing saved favorites · Refresh</string>
     <string name="favorite_missing_product">Item unavailable (%1$s)</string>
     <string name="status_unknown">Status unknown</string>
@@ -10,9 +14,12 @@
     <string name="checkout_shop_changed">The pickup location changed. Review it and confirm again.</string>
     <string name="cart_read_unavailable">Couldn’t read your saved cart. Try again.</string>
     <string name="cart_storage_unavailable">Couldn’t save the cart change. Try again.</string>
-    <string name="checkout_storage_unavailable">Couldn’t access the saved order attempt. Check order history and try again.</string>
+    <string name="checkout_storage_unavailable">Could not save your checkout attempt. Try again.</string>
     <string name="checkout_outcome_unknown">We couldn’t confirm whether the order was accepted. Check your order history.</string>
     <string name="checkout_check_history">Check order history</string>
+    <string name="checkout_recover_order">Check order status</string>
+    <string name="checkout_attempt_closed">The order was not placed. You can submit your cart again.</string>
+    <string name="checkout_resolution_unavailable">Could not confirm this order. Try checking again.</string>
     <string name="checkout_new_order">Start a separate order</string>
     <string name="checkout_duplicate_warning">The previous order may already have been accepted. Sending another order could create a duplicate. Check your order history first.</string>
     <string name="checkout_allow_new_order">Allow a new order</string>
@@ -98,4 +105,5 @@
 
     <!-- Пункт 10 -->
     <string name="notice_not_implemented">This feature is not available yet</string>
+    <string name="order_repeat_storage_unavailable">Could not update your cart. Try again.</string>
 </resources>

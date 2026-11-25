@@ -15,5 +15,6 @@ internal fun RepeatOrderResult.toUiResult(): OrderRepeatResult = when (this) {
         else -> null
     })
     is RepeatOrderResult.Unavailable -> OrderRepeatResult(false, R.string.order_repeat_unavailable)
+    RepeatOrderResult.LocalStorageUnavailable -> OrderRepeatResult(false, R.string.order_repeat_storage_unavailable)
     RepeatOrderResult.NetworkError -> OrderRepeatResult(false, R.string.order_repeat_error)
 }

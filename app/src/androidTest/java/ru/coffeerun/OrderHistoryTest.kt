@@ -37,6 +37,7 @@ import ru.coffeerun.model.Shop
 class OrderHistoryTest {
     private val menuReply = CompletableDeferred<Unit>()
     private var delayMenu = false
+    private var offline = false
     @Volatile private var croissantPrice = 180
     private var menuWaiting = false
     private lateinit var container: AppContainer
@@ -64,6 +65,9 @@ class OrderHistoryTest {
             )
             historyState = MutableStateFlow(listOf(order))
             val history = object : Orders by InMemoryOrders() {
+                override suspend fun refresh() {
+                    if (offline) throw java.io.IOException("offline")
+                }
                 override val orders = historyState
                 override fun observeOrder(number: Int) = orders.map { list -> list.find { it.number == number } }
                 override fun find(number: Int) = orders.value.find { it.number == number }
@@ -87,6 +91,18 @@ class OrderHistoryTest {
     private fun openDetails() {
         clickable(R.string.tab_orders).performClick()
         rule.onNodeWithText(str(R.string.order_title, 1050)).performClick()
+    }
+
+    @Test
+    fun offlineEmptyHistoryShowsSavedSnapshotAndAllowsRetry() {
+        rule.runOnIdle { historyState.value = emptyList(); offline = true }
+        clickable(R.string.tab_orders).performClick()
+        rule.onNodeWithText(str(R.string.orders_empty)).assertIsDisplayed()
+        rule.onNodeWithText(str(R.string.orders_cached_refresh)).assertIsDisplayed()
+        rule.runOnIdle { offline = false }
+        rule.onNodeWithText(str(R.string.orders_cached_refresh)).performClick()
+        rule.onNodeWithText(str(R.string.orders_cached_refresh)).assertDoesNotExist()
+        rule.onNodeWithText(str(R.string.orders_empty)).assertIsDisplayed()
     }
 
     @Test

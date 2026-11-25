@@ -1,4 +1,4 @@
-package ru.coffeerun.domain.usecase
+package ru.coffeerun.domain.orders
 
 import java.io.IOException
 import kotlinx.coroutines.currentCoroutineContext
@@ -56,7 +56,7 @@ class RepeatOrderUseCase(
                 if (added == 0) RepeatOrderResult.Unavailable(skipped)
                 else RepeatOrderResult.Added(added, skipped, pricesChanged)
             } catch (_: IOException) {
-                RepeatOrderResult.NetworkError
+                RepeatOrderResult.LocalStorageUnavailable
             }
         }
     }

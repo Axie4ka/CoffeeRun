@@ -5,7 +5,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
-import ru.coffeerun.data.local.TokenStore
+import ru.coffeerun.data.local.datastore.TokenStore
 
 /**
  * Язык текстов меню для сервера: «ru» для русского интерфейса, иначе «en» — других у сервера нет.

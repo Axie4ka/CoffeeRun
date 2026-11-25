@@ -11,11 +11,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import ru.coffeerun.data.NetworkMenuRepository
-import ru.coffeerun.data.local.CoffeeRunDatabase
-import ru.coffeerun.data.network.MenuDto
-import ru.coffeerun.data.network.ProductDto
-import ru.coffeerun.data.network.SizeOptionDto
+import ru.coffeerun.data.repository.NetworkMenuRepository
+import ru.coffeerun.data.local.room.CoffeeRunDatabase
+import ru.coffeerun.data.network.dto.MenuDto
+import ru.coffeerun.data.network.dto.ProductDto
+import ru.coffeerun.data.network.dto.SizeOptionDto
 import ru.coffeerun.model.DrinkSize
 
 @RunWith(AndroidJUnit4::class)

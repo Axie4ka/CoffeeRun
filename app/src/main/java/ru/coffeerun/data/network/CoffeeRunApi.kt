@@ -1,5 +1,13 @@
 package ru.coffeerun.data.network
 
+import ru.coffeerun.data.network.dto.AuthResponse
+import ru.coffeerun.data.network.dto.LoginRequest
+import ru.coffeerun.data.network.dto.MenuDto
+import ru.coffeerun.data.network.dto.OrderDto
+import ru.coffeerun.data.network.dto.OrderRequest
+import ru.coffeerun.data.network.dto.RegisterRequest
+import ru.coffeerun.data.network.dto.UserDto
+
 import kotlinx.serialization.json.Json
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -46,8 +54,11 @@ interface CoffeeRunApi {
     suspend fun getOrder(@Path("number") number: Int): OrderDto
 
     /** 201 — заказ принят; 409 — чего-то из заказа нет в наличии. */
-    @POST("orders")
-    suspend fun placeOrder(@Body request: OrderRequest): OrderDto
+    @POST("order-attempts/{attemptId}")
+    suspend fun placeOrder(@Path("attemptId") attemptId: String, @Body request: OrderRequest): OrderDto
+
+    @POST("order-attempts/{attemptId}/resolve")
+    suspend fun resolveAttempt(@Path("attemptId") attemptId: String): OrderDto
 
     /** 200 — заказ отменён (статус CANCELLED); 409 — его уже готовят или выдали. */
     @POST("orders/{number}/cancel")

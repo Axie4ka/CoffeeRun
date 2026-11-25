@@ -1,5 +1,6 @@
 package ru.coffeerun.ui.checkout
 
+import androidx.lifecycle.SavedStateHandle
 import ru.coffeerun.testCheckout
 
 import ru.coffeerun.MainDispatcherRule
@@ -79,6 +80,27 @@ class PickupTimeTest {
         assertEquals(today(13), order.readyAtMillis)
         // К 13:00 ещё рано готовить — заказ только принят
         assertEquals(OrderStatus.ACCEPTED, order.status)
+    }
+
+    @Test
+    fun restoredSelection_isRevalidatedBeforeConfirmation() = runTest {
+        var nowMillis = today(12)
+        val saved = SavedStateHandle()
+        fun restore(handle: SavedStateHandle) =
+            testCheckout(cart, orders, InMemoryShopRepository(), now = { nowMillis }, savedState = handle)
+        assertTrue(restore(saved).setPickupTime(13, 0))
+        val snapshot = saved.keys().associateWith { saved.get<Any?>(it) }
+        val valid = restore(SavedStateHandle(snapshot)).uiState.value
+        assertEquals(today(13), valid.pickupAtMillis)
+        assertFalse(valid.pickupTimeExpired)
+
+        nowMillis = today(12, 55)
+        val expired = restore(SavedStateHandle(snapshot))
+        keepActive(expired)
+        assertEquals(today(13), expired.uiState.value.pickupAtMillis)
+        assertTrue(expired.uiState.value.pickupTimeExpired)
+        assertTrue(expired.setPickupTime(13, 15))
+        assertFalse(expired.uiState.value.pickupTimeExpired)
     }
 
     @Test

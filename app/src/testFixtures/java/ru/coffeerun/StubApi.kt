@@ -1,13 +1,13 @@
 package ru.coffeerun
 
-import ru.coffeerun.data.network.AuthResponse
+import ru.coffeerun.data.network.dto.AuthResponse
 import ru.coffeerun.data.network.CoffeeRunApi
-import ru.coffeerun.data.network.LoginRequest
-import ru.coffeerun.data.network.MenuDto
-import ru.coffeerun.data.network.OrderDto
-import ru.coffeerun.data.network.OrderRequest
-import ru.coffeerun.data.network.RegisterRequest
-import ru.coffeerun.data.network.UserDto
+import ru.coffeerun.data.network.dto.LoginRequest
+import ru.coffeerun.data.network.dto.MenuDto
+import ru.coffeerun.data.network.dto.OrderDto
+import ru.coffeerun.data.network.dto.OrderRequest
+import ru.coffeerun.data.network.dto.RegisterRequest
+import ru.coffeerun.data.network.dto.UserDto
 
 /**
  * Общая основа для unit- и UI-фейков API: неизвестный тесту запрос считается ошибкой.
@@ -24,7 +24,8 @@ open class StubApi : CoffeeRunApi {
     override suspend fun removeFavorite(productId: String): Unit = unused()
     override suspend fun getOrders(): List<OrderDto> = unused()
     override suspend fun getOrder(number: Int): OrderDto = unused()
-    override suspend fun placeOrder(request: OrderRequest): OrderDto = unused()
+    override suspend fun placeOrder(attemptId: String, request: OrderRequest): OrderDto = unused()
+    override suspend fun resolveAttempt(attemptId: String): OrderDto = unused()
     override suspend fun cancelOrder(number: Int): OrderDto = unused()
 
     private fun unused(): Nothing = error("Этот запрос не используется в тесте")

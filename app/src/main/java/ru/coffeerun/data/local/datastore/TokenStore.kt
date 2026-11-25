@@ -1,4 +1,4 @@
-package ru.coffeerun.data.local
+package ru.coffeerun.data.local.datastore
 
 import java.util.UUID
 import java.io.IOException
@@ -68,10 +68,10 @@ class TokenStore(
         return state.credentials()
     }
 
-    suspend fun save(token: String) {
+    suspend fun save(token: String, accountId: String? = null) {
         updates.withLock {
             initializeLocked()
-            persist(token) // Даже одинаковый токен означает новый успешный вход.
+            persist(token, accountId) // Даже одинаковый токен означает новый успешный вход.
         }
     }
 
@@ -97,10 +97,12 @@ class TokenStore(
     }
 
     /** Под updates: после начала записи обязательно завершаем и публикацию снимка в памяти. */
-    private suspend fun persist(token: String?) {
+    private suspend fun persist(token: String?, accountId: String? = null) {
         currentCoroutineContext().ensureActive()
         withContext(NonCancellable) {
-            val owner = token?.let { UUID.randomUUID().toString() }
+            val owner = token?.let {
+                accountId?.takeIf(String::isNotBlank)?.let { "account:$it" } ?: UUID.randomUUID().toString()
+            }
             dataStore.edit { preferences ->
                 if (token == null) {
                     preferences.remove(TOKEN)

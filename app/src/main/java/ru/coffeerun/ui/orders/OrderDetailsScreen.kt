@@ -133,6 +133,9 @@ private fun OrderContent(order: Order, modifier: Modifier = Modifier) {
             Icon(Icons.Default.LocationOn, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.tertiary)
             Text(stringResource(order.shop.addressRes), style = MaterialTheme.typography.bodyMedium)
         }
+        if (order.isActive) {
+            Text(order.statusUpdateText(), style = MaterialTheme.typography.bodySmall)
+        }
         HorizontalDivider()
         order.lines.forEach { line -> LineRow(line) }
         HorizontalDivider()

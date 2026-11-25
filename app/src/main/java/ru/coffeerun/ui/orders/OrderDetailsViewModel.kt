@@ -1,7 +1,5 @@
 package ru.coffeerun.ui.orders
 
-import ru.coffeerun.ui.util.ReloadOnLocaleChange
-import java.util.Locale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -9,7 +7,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.toRoute
 import java.io.IOException
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 import ru.coffeerun.R
 import ru.coffeerun.container
 import ru.coffeerun.domain.orders.Orders
-import ru.coffeerun.domain.usecase.RepeatOrderUseCase
+import ru.coffeerun.domain.orders.RepeatOrderUseCase
 import ru.coffeerun.model.Order
 import ru.coffeerun.ui.navigation.OrderDetailsRoute
 
@@ -49,30 +49,26 @@ class OrderDetailsViewModel(
     private val _message = MutableStateFlow<Int?>(null)
     val message: StateFlow<Int?> = _message.asStateFlow()
 
-    private var loadJob: Job? = null
+    private val refreshRequest = MutableStateFlow(0)
 
-    init {
-        retry()
-    }
+    fun retry() = refreshRequest.update { it + 1 }
 
-    private val languageWatch = ReloadOnLocaleChange(::retry)
-
-    /** Экран сообщает язык; сменился — данные с сервера загружаются заново, уже на новом языке. */
-    fun onLocale(locale: Locale) = languageWatch.onLocale(locale)
-
-    fun retry() {
-        loadJob?.cancel()
-        _notFound.value = false
-        _load.value = OrdersLoad.LOADING
-        loadJob = viewModelScope.launch {
-            _load.value = try {
-                _notFound.value = repository.load(number) == null
-                OrdersLoad.DONE
-            } catch (e: IOException) {
-                // Заказ уже на экране — показываем его и говорим, что статус мог устареть
-                if (order.value != null) _message.value = R.string.orders_refresh_error
-                OrdersLoad.FAILED
-            }
+    /** Вызывается в RESUMED. Уход с экрана отменяет и задержку, и выполняющийся запрос. */
+    suspend fun refreshWhileVisible() {
+        refreshRequest.collectLatest {
+            _notFound.value = false
+            _load.value = OrdersLoad.LOADING
+            do {
+                _load.value = try {
+                    _notFound.value = repository.load(number) == null
+                    OrdersLoad.DONE
+                } catch (_: IOException) {
+                    if (repository.find(number) != null) _message.value = R.string.orders_refresh_error
+                    OrdersLoad.FAILED
+                }
+                if (repository.find(number)?.isActive != true || _notFound.value) return@collectLatest
+                delay(STATUS_REFRESH_MILLIS)
+            } while (repository.find(number)?.isActive == true)
         }
     }
 
@@ -107,6 +103,8 @@ class OrderDetailsViewModel(
     }
 
     companion object {
+        internal const val STATUS_REFRESH_MILLIS = 30_000L
+
         val Factory = viewModelFactory {
             initializer {
                 val number = createSavedStateHandle().toRoute<OrderDetailsRoute>().number

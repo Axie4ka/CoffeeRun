@@ -26,7 +26,7 @@
 
 ## Task 1: Сценарий и policy
 
-**Files:** domain/usecase/PlaceOrderUseCase.kt, domain/checkout/{PickupPolicy,CheckoutResult}.kt, AuthRepository/NetworkAuthRepository, Orders/OrdersCoordinator, auth/order fixtures.
+**Files:** domain/checkout/PlaceOrderUseCase.kt, domain/checkout/{PickupPolicy,CheckoutResult}.kt, AuthRepository/NetworkAuthRepository, Orders/OrdersCoordinator, auth/order fixtures.
 
 - [x] Написать тесты сценария и времени, запустить до реализации.
 - [x] Выделить результаты, policy и use case; передавать исходную сессию явно.

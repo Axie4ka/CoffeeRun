@@ -26,7 +26,7 @@
 
 ## Task 1: Свежий каталог и сценарий
 
-**Files:** data/MenuRepository, NetworkMenuRepository, model/MenuSnapshot, domain/usecase/RepeatOrderUseCase, domain/orders/RepeatOrderResult, fixtures и тесты.
+**Files:** data/MenuRepository, NetworkMenuRepository, model/MenuSnapshot, domain/orders/RepeatOrderUseCase, domain/orders/RepeatOrderResult, fixtures и тесты.
 
 - [x] Написать тесты обновления кеша и повтора по новой цене; увидеть отсутствие реализации.
 - [x] Реализовать единый snapshot и refresh; обновить все реализации контракта.

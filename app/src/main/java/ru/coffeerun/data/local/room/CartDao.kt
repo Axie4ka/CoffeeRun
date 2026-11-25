@@ -1,4 +1,4 @@
-package ru.coffeerun.data.local
+package ru.coffeerun.data.local.room
 
 import androidx.room.Dao
 import androidx.room.Entity
@@ -26,6 +26,12 @@ interface CartDao {
 
     @Query("SELECT * FROM cart_line WHERE owner = :owner ORDER BY id")
     fun observe(owner: String): Flow<List<CartLineEntity>>
+
+    @Query("SELECT * FROM cart_line WHERE owner = :owner AND id = :id")
+    suspend fun find(owner: String, id: Int): CartLineEntity?
+
+    @Query("SELECT * FROM cart_line WHERE owner = :owner AND productId = :productId AND unitPrice = :unitPrice AND optionsJson = :recipe")
+    suspend fun findRecipe(owner: String, productId: String, unitPrice: Int, recipe: String): CartLineEntity?
 
     @Insert
     suspend fun insert(line: CartLineEntity): Long

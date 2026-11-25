@@ -28,9 +28,18 @@ class InMemoryOrders(private val now: () -> Long = System::currentTimeMillis) : 
 
     private var nextOrderNumber = FIRST_ORDER_NUMBER
 
+    private val attempts = mutableMapOf<Pair<AuthSession, String>, Order?>()
+
+    override suspend fun resolveAttempt(attemptId: String, session: AuthSession): Order? =
+        attempts.getOrPut(session to attemptId) { null }
+
     override suspend fun refresh() = Unit
 
-    override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession): PlaceOrderResult {
+    override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession, attemptId: String, beforeSend: suspend () -> Boolean): PlaceOrderResult {
+        if (!beforeSend()) return PlaceOrderResult.CartChanged
+        if (attempts.containsKey(session to attemptId)) {
+            return attempts[session to attemptId]?.let { PlaceOrderResult.Placed(it) } ?: PlaceOrderResult.Unavailable
+        }
         require(lines.isNotEmpty()) { "Пустой заказ" }
         val order = Order(
             number = nextOrderNumber++,
@@ -41,6 +50,7 @@ class InMemoryOrders(private val now: () -> Long = System::currentTimeMillis) : 
             placedAtMillis = now(),
             pickupAtMillis = pickupAtMillis
         )
+        attempts[session to attemptId] = order
         _orders.update { listOf(order) + it }
         return PlaceOrderResult.Placed(order)
     }

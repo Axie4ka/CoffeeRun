@@ -1,4 +1,7 @@
-package ru.coffeerun.data.network
+package ru.coffeerun.data.network.mapper
+
+import ru.coffeerun.data.network.dto.MenuDto
+import ru.coffeerun.data.network.dto.ProductDto
 
 import java.net.URI
 import ru.coffeerun.model.Allergen

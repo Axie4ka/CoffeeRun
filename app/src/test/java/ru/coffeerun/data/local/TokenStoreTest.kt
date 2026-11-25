@@ -1,5 +1,7 @@
 package ru.coffeerun.data.local
 
+import ru.coffeerun.data.local.datastore.TokenStore
+
 import ru.coffeerun.testPreferences
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences

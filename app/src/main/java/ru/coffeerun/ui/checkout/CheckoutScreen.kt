@@ -16,7 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import ru.coffeerun.ui.auth.SubmitButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -77,6 +77,7 @@ fun CheckoutScreen(
     onShopSelected: (Shop) -> Unit = {},
     modifier: Modifier = Modifier,
     onCheckOrderHistory: () -> Unit = {},
+    onRecoverOrder: () -> Unit = {},
     onAllowNewOrder: () -> Unit = {},
     onMessageShown: () -> Unit = {},
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
@@ -93,18 +94,18 @@ fun CheckoutScreen(
     var confirmNewOrder by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val invalidMessage = stringResource(R.string.pickup_time_invalid)
-    val context = LocalContext.current
+    val resources = LocalResources.current
     LaunchedEffect(uiState.message) {
         uiState.message?.let {
             // Сначала показать, потом сбросить: сброс меняет ключ эффекта и отменил бы снэкбар
-            snackbarHostState.showSnackbar(context.getString(it))
+            snackbarHostState.showSnackbar(resources.getString(it))
             onMessageShown()
         }
     }
 
     if (showShopPicker) ShopPickerSheet(uiState.shop, onShopSelected, onDismiss = { showShopPicker = false })
 
-    if (confirmNewOrder && uiState.outcomeUnknown) {
+    if (confirmNewOrder && uiState.legacyAttempt) {
         AlertDialog(
             onDismissRequest = { confirmNewOrder = false },
             title = { Text(stringResource(R.string.checkout_new_order)) },
@@ -122,7 +123,7 @@ fun CheckoutScreen(
     }
 
     if (showTimePicker && earliestPickup != null) {
-        val initial = pickupAtMillis?.let { Instant.ofEpochMilli(it).atZone(uiState.pickupZone).toLocalTime() } ?: earliestPickup
+        val initial = pickupAtMillis?.takeUnless { uiState.pickupTimeExpired }?.let { Instant.ofEpochMilli(it).atZone(uiState.pickupZone).toLocalTime() } ?: earliestPickup
         val timeState = rememberTimePickerState(initial.hour, initial.minute, is24Hour = true)
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
@@ -158,15 +159,20 @@ fun CheckoutScreen(
                 ) {
                     if (uiState.outcomeUnknown) {
                         Text(stringResource(R.string.checkout_outcome_unknown))
-                        SubmitButton(R.string.checkout_check_history, isLoading = false, onClick = onCheckOrderHistory)
-                        TextButton(onClick = { confirmNewOrder = true }) { Text(stringResource(R.string.checkout_new_order)) }
+                        if (uiState.legacyAttempt) {
+                            SubmitButton(R.string.checkout_check_history, isLoading = false, onClick = onCheckOrderHistory)
+                            TextButton(onClick = { confirmNewOrder = true }) { Text(stringResource(R.string.checkout_new_order)) }
+                        } else {
+                            SubmitButton(R.string.checkout_recover_order, isLoading = uiState.isPlacing, onClick = onRecoverOrder)
+                            TextButton(onClick = onCheckOrderHistory) { Text(stringResource(R.string.checkout_check_history)) }
+                        }
                     } else {
                         if (uiState.quote != null) Text(stringResource(R.string.checkout_prices_changed))
                         if (uiState.totalOverflow) Text(stringResource(R.string.checkout_invalid_total))
                         else TotalRow(total = uiState.total)
                         SubmitButton(
                             if (uiState.quote != null) R.string.checkout_accept_price else R.string.checkout_confirm,
-                            isLoading = uiState.isPlacing, onClick = onConfirm
+                            isLoading = uiState.isPlacing, onClick = onConfirm, enabled = !uiState.pickupTimeExpired
                         )
                     }
                 }
@@ -207,6 +213,7 @@ fun CheckoutScreen(
                 RadioRow(
                     label = stringResource(R.string.pickup_scheduled),
                     supporting = when {
+                        uiState.pickupTimeExpired -> stringResource(R.string.pickup_time_unavailable)
                         earliestPickup == null -> stringResource(R.string.pickup_scheduled_closed)
                         pickupAtMillis != null -> formatTime(pickupAtMillis, uiState.pickupZone)
                         else -> stringResource(R.string.pickup_scheduled_hint)

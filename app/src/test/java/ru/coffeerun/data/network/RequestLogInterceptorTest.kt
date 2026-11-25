@@ -1,5 +1,7 @@
 package ru.coffeerun.data.network
 
+import ru.coffeerun.data.network.mapper.orderRequest
+
 import ru.coffeerun.testPreferences
 import java.io.File
 import java.io.IOException
@@ -17,7 +19,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import ru.coffeerun.data.DemoMenu
-import ru.coffeerun.data.local.TokenStore
+import ru.coffeerun.data.local.datastore.TokenStore
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
 
@@ -47,16 +49,16 @@ class RequestLogInterceptorTest {
                    "lines":[{"productId":"croissant","quantity":2,"unitPrice":180}]}"""
             ).build()
         )
-        val order = api.placeOrder(orderRequest(listOf(CartLine(DemoMenu.CROISSANT, unitPrice = 180, quantity = 2)), Shop.STROITELEY, null))
+        val order = api.placeOrder("8dd6cb42-3f52-4801-9d13-8efb7c3c609e", orderRequest(listOf(CartLine(DemoMenu.CROISSANT, unitPrice = 180, quantity = 2)), Shop.STROITELEY, null))
 
         val sent = server.takeRequest()
         assertEquals("POST", sent.method)
-        assertEquals("/orders", sent.url.encodedPath)
+        assertEquals("/order-attempts/8dd6cb42-3f52-4801-9d13-8efb7c3c609e", sent.url.encodedPath)
         val body = sent.body!!.utf8()
         assertTrue(body, "\"shop\":\"STROITELEY\"" in body && "\"productId\":\"croissant\"" in body)
         assertEquals(1042, order.number)
         assertEquals(1, lines.size)
-        assertTrue(lines.single(), lines.single().startsWith("POST /orders → 201 ("))
+        assertTrue(lines.single(), lines.single().startsWith("POST /order-attempts/8dd6cb42-3f52-4801-9d13-8efb7c3c609e → 201 ("))
     }
 
     @Test
@@ -66,7 +68,7 @@ class RequestLogInterceptorTest {
         server.enqueue(MockResponse.Builder().code(409).build())
         val request = orderRequest(listOf(CartLine(DemoMenu.CROISSANT, 180)), Shop.STROITELEY, null)
 
-        val error = runCatching { api.placeOrder(request) }.exceptionOrNull() as retrofit2.HttpException
+        val error = runCatching { api.placeOrder("8dd6cb42-3f52-4801-9d13-8efb7c3c609e", request) }.exceptionOrNull() as retrofit2.HttpException
 
         assertEquals(503, error.code())
         assertEquals(1, server.requestCount)

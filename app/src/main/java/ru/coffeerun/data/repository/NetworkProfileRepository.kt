@@ -1,4 +1,7 @@
-package ru.coffeerun.data
+package ru.coffeerun.data.repository
+
+import ru.coffeerun.data.ProfileRepository
+import ru.coffeerun.data.ProfileSaveResult
 
 import java.io.IOException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,7 +11,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
 import ru.coffeerun.data.network.CoffeeRunApi
-import ru.coffeerun.data.network.UserDto
+import ru.coffeerun.data.network.dto.UserDto
 import ru.coffeerun.model.User
 import ru.coffeerun.data.session.SessionProvider
 import ru.coffeerun.data.session.AuthSession

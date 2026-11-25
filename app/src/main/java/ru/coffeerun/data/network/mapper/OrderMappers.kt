@@ -1,4 +1,9 @@
-package ru.coffeerun.data.network
+package ru.coffeerun.data.network.mapper
+
+import ru.coffeerun.data.network.dto.DrinkOptionsDto
+import ru.coffeerun.data.network.dto.OrderDto
+import ru.coffeerun.data.network.dto.OrderLineDto
+import ru.coffeerun.data.network.dto.OrderRequest
 
 import java.time.Instant
 import java.time.OffsetDateTime

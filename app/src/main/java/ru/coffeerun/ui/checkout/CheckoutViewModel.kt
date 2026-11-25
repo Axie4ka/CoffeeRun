@@ -2,6 +2,8 @@ package ru.coffeerun.ui.checkout
 
 import androidx.annotation.StringRes
 import java.io.IOException
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -19,7 +21,7 @@ import kotlinx.coroutines.launch
 import ru.coffeerun.R
 import ru.coffeerun.container
 import ru.coffeerun.data.CartRepository
-import ru.coffeerun.domain.usecase.PlaceOrderUseCase
+import ru.coffeerun.domain.checkout.PlaceOrderUseCase
 import ru.coffeerun.domain.checkout.PickupPolicy
 import ru.coffeerun.domain.checkout.CheckoutResult
 import ru.coffeerun.domain.checkout.CheckoutQuote
@@ -49,7 +51,9 @@ data class CheckoutUiState(
     val quote: CheckoutQuote? = null,
     val unavailableItems: List<String> = emptyList(),
     val totalOverflow: Boolean = false,
-    val outcomeUnknown: Boolean = false
+    val legacyAttempt: Boolean = false,
+    val outcomeUnknown: Boolean = false,
+    val pickupTimeExpired: Boolean = false
 )
 
 /** Ход отправки заказа — одним потоком, чтобы три поля менялись вместе. */
@@ -74,13 +78,14 @@ class CheckoutViewModel(
     private val placeOrderUseCase: PlaceOrderUseCase,
     private val shops: ShopRepository,
     private val pickupPolicy: PickupPolicy,
+    private val savedState: SavedStateHandle,
     ticks: Flow<Unit> = everyMinute()
 ) : ViewModel() {
-    private val _pickupAtMillis = MutableStateFlow<Long?>(null)
+    private val pickupAtMillis = savedState.getStateFlow<Long?>(PICKUP_TIME_KEY, null)
     private val submit = MutableStateFlow(Submit())
 
     val uiState: StateFlow<CheckoutUiState> =
-        combine(cart.lines, shops.selected, _pickupAtMillis, submit,
+        combine(cart.lines, shops.selected, pickupAtMillis, submit,
             combine(ticks, placeOrderUseCase.attemptStatus) { _, status -> status }
         ) { lines, shop, pickupAt, submit, attempt ->
             stateOf(lines, shop, pickupAt, submit, attempt)
@@ -88,7 +93,7 @@ class CheckoutViewModel(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
             // Начальное значение из текущих данных — чтобы экран не мигнул пустым заказом
-            stateOf(cart.lines.value, shops.selected.value, _pickupAtMillis.value, submit.value)
+            stateOf(cart.lines.value, shops.selected.value, pickupAtMillis.value, submit.value)
         )
 
     private fun stateOf(
@@ -103,7 +108,8 @@ class CheckoutViewModel(
             total = total.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
             shop = shop,
             pickupAtMillis = pickupAt,
-            earliestPickup = earliestPickupTime(),
+            earliestPickup = pickupPolicy.earliestTime(shop),
+            pickupTimeExpired = pickupAt != null && !pickupPolicy.isValid(shop, pickupAt),
             pickupZone = pickupPolicy.zone(shop),
             placedOrderNumber = submit.placedOrderNumber,
             isPlacing = submit.isPlacing || attempt == CheckoutAttemptStatus.Sending,
@@ -111,7 +117,8 @@ class CheckoutViewModel(
             quote = quote,
             unavailableItems = submit.unavailableItems,
             totalOverflow = total > Int.MAX_VALUE,
-            outcomeUnknown = attempt == CheckoutAttemptStatus.OutcomeUnknown
+            legacyAttempt = attempt == CheckoutAttemptStatus.LegacyUnknown,
+            outcomeUnknown = attempt == CheckoutAttemptStatus.OutcomeUnknown || attempt == CheckoutAttemptStatus.LegacyUnknown
         )
     }
 
@@ -127,14 +134,14 @@ class CheckoutViewModel(
     /** Выбирает допустимое время в часовом поясе выбранной кофейни. */
     fun setPickupTime(hour: Int, minute: Int): Boolean {
         val selected = pickupPolicy.selectTime(shops.selected.value, hour, minute) ?: return false
-        _pickupAtMillis.value = selected
+        savedState[PICKUP_TIME_KEY] = selected
         return true
     }
 
     fun earliestPickupTime(): LocalTime? = pickupPolicy.earliestTime(shops.selected.value)
 
     fun pickupAsap() {
-        _pickupAtMillis.value = null
+        savedState[PICKUP_TIME_KEY] = null
     }
 
     /**
@@ -145,7 +152,7 @@ class CheckoutViewModel(
     fun placeOrder(confirmed: CheckoutQuote? = null) {
         if (submit.value.isPlacing) return
         val shop = shops.selected.value
-        val pickupAt = _pickupAtMillis.value
+        val pickupAt = pickupAtMillis.value
         val visibleQuote = submit.value.quote?.takeIf { it.matches(cart.lines.value, shop, pickupAt) }
         if (confirmed != visibleQuote) return
         submit.value = Submit(isPlacing = true, quote = confirmed)
@@ -183,6 +190,22 @@ class CheckoutViewModel(
     /** Снэкбар показан — второй раз его не будет. */
     fun onMessageShown() = submit.update { it.copy(message = null) }
 
+    fun recoverOrder() {
+        if (submit.value.isPlacing) return
+        submit.value = Submit(isPlacing = true)
+        viewModelScope.launch {
+            try {
+                val order = placeOrderUseCase.recoverOrder()
+                submit.value = if (order == null) Submit(message = R.string.checkout_attempt_closed)
+                    else Submit(placedOrderNumber = order.number)
+            } catch (_: IOException) {
+                submit.value = Submit(message = R.string.checkout_resolution_unavailable)
+            } finally {
+                submit.update { it.copy(isPlacing = false) }
+            }
+        }
+    }
+
     fun allowNewOrder() {
         viewModelScope.launch {
             try {
@@ -194,8 +217,10 @@ class CheckoutViewModel(
     }
 
     companion object {
+        private const val PICKUP_TIME_KEY = "pickupAtMillis"
+
         val Factory = viewModelFactory {
-            initializer { CheckoutViewModel(container.cart, container.placeOrder, container.shops, container.pickupPolicy) }
+            initializer { CheckoutViewModel(container.cart, container.placeOrder, container.shops, container.pickupPolicy, createSavedStateHandle()) }
         }
     }
 }

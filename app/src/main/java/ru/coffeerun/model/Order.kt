@@ -36,7 +36,8 @@ data class Order(
     /**
      * Итог в рублях. Состав включает и позиции, которых больше нет в текущем каталоге.
      */
-    val total: Int = lines.sumOf { it.total }
+    val total: Int = lines.sumOf { it.total },
+    val confirmedAtMillis: Long? = null
 ) {
     val readyAtMillis: Long get() = pickupAtMillis ?: (placedAtMillis + READY_IN_MINUTES * 60_000L)
 

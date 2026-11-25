@@ -1,5 +1,7 @@
 package ru.coffeerun.data.network
 
+import ru.coffeerun.data.network.dto.LoginRequest
+
 import ru.coffeerun.testPreferences
 import java.io.File
 import java.io.IOException
@@ -31,8 +33,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import ru.coffeerun.data.local.TokenStore
-import ru.coffeerun.data.NetworkMenuRepository
+import ru.coffeerun.data.local.datastore.TokenStore
+import ru.coffeerun.data.repository.NetworkMenuRepository
 
 /** Токен в запросах и выход по 401 — на настоящем HTTP-сервере и настоящем клиенте приложения. */
 class AuthInterceptorTest {

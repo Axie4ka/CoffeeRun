@@ -18,10 +18,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import ru.coffeerun.data.NetworkFavoritesRepository
-import ru.coffeerun.data.local.CoffeeRunDatabase
-import ru.coffeerun.data.local.RoomOwnerScope
-import ru.coffeerun.data.local.TokenStore
+import ru.coffeerun.data.repository.NetworkFavoritesRepository
+import ru.coffeerun.data.local.room.CoffeeRunDatabase
+import ru.coffeerun.data.local.room.RoomOwnerScope
+import ru.coffeerun.data.local.datastore.TokenStore
 
 @RunWith(AndroidJUnit4::class)
 class RoomFavoritesCacheTest {

@@ -16,7 +16,7 @@ import ru.coffeerun.R
 import ru.coffeerun.container
 import ru.coffeerun.data.CancelOrderResult
 import ru.coffeerun.domain.orders.Orders
-import ru.coffeerun.domain.usecase.RepeatOrderUseCase
+import ru.coffeerun.domain.orders.RepeatOrderUseCase
 import ru.coffeerun.model.Order
 
 /** Текст снэкбара об итоге отмены — один и тот же в списке и на экране заказа. */
@@ -39,6 +39,7 @@ class OrdersViewModel(
     private val repeatOrderUseCase: RepeatOrderUseCase
 ) : ViewModel() {
     val orders: StateFlow<List<Order>> = repository.orders
+    val hasSnapshot = repository.isLoaded
 
     private val _load = MutableStateFlow(OrdersLoad.LOADING)
     val load: StateFlow<OrdersLoad> = _load.asStateFlow()

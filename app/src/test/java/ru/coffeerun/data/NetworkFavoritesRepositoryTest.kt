@@ -1,5 +1,7 @@
 package ru.coffeerun.data
 
+import ru.coffeerun.data.repository.NetworkFavoritesRepository
+
 import java.io.IOException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart

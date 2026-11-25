@@ -1,5 +1,7 @@
 package ru.coffeerun.data
 
+import ru.coffeerun.data.repository.NetworkMenuRepository
+
 import ru.coffeerun.StubApi
 import java.io.IOException
 import kotlinx.coroutines.async
@@ -13,9 +15,9 @@ import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Response
 import ru.coffeerun.data.network.CoffeeRunApi
-import ru.coffeerun.data.network.MenuDto
-import ru.coffeerun.data.network.ProductDto
-import ru.coffeerun.data.network.SizeOptionDto
+import ru.coffeerun.data.network.dto.MenuDto
+import ru.coffeerun.data.network.dto.ProductDto
+import ru.coffeerun.data.network.dto.SizeOptionDto
 import ru.coffeerun.model.DrinkSize
 
 /** Сетевое меню: один запрос на всё, ошибки — только [IOException], смена языка — новый запрос. */

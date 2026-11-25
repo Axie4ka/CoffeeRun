@@ -1,11 +1,13 @@
 package ru.coffeerun.domain.orders
 
+import ru.coffeerun.data.repository.NetworkOrderRepository
+
 import ru.coffeerun.data.*
 import ru.coffeerun.testPickupPolicy
 import java.time.Instant
 import ru.coffeerun.domain.checkout.PickupPolicy
 import ru.coffeerun.domain.checkout.CheckoutResult
-import ru.coffeerun.domain.usecase.PlaceOrderUseCase
+import ru.coffeerun.domain.checkout.PlaceOrderUseCase
 
 import ru.coffeerun.StubApi
 import java.io.IOException
@@ -30,9 +32,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.HttpException
 import retrofit2.Response
-import ru.coffeerun.data.network.OrderDto
-import ru.coffeerun.data.network.OrderLineDto
-import ru.coffeerun.data.network.OrderRequest
+import ru.coffeerun.data.network.dto.OrderDto
+import ru.coffeerun.data.network.dto.OrderLineDto
+import ru.coffeerun.data.network.dto.OrderRequest
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
@@ -70,7 +72,7 @@ class OrdersCoordinatorTest {
             return snapshot
         }
 
-        override suspend fun placeOrder(request: OrderRequest): OrderDto {
+        override suspend fun placeOrder(attemptId: String, request: OrderRequest): OrderDto {
             placeReply?.let { return it(request) }
             maybeFail()
             val status = if (request.pickupAt != null) "ACCEPTED" else "PREPARING"
@@ -296,6 +298,43 @@ class OrdersCoordinatorTest {
         api.gate!!.complete(Unit)
         assertTrue(pending.await().exceptionOrNull() is CancellationException)
         assertTrue(repo.orders.value.isEmpty())
+    }
+
+    @Test
+    fun confirmedCheckoutUpdatesHistoryWithoutReplacingNewerStatus() = runTest {
+        val api = FakeApi()
+        val repo = repo(api)
+        val session = sessions.currentSession()
+        val existing = repo.find(1037)!!
+        val confirmedAt = existing.confirmedAtMillis!!
+        repo.publishConfirmed(existing.copy(status = OrderStatus.PREPARING, confirmedAtMillis = confirmedAt - 1), session)
+        assertEquals(OrderStatus.PICKED_UP, repo.find(1037)?.status)
+        repo.publishConfirmed(existing.copy(number = 1042, confirmedAtMillis = confirmedAt + 1), session)
+        assertEquals(1042, repo.find(1042)?.number)
+    }
+
+    @Test
+    fun queuedCheckoutChecksCartAgainBeforeSending() = runTest {
+        val api = FakeApi()
+        val repo = repo(api)
+        val release = CompletableDeferred<Unit>()
+        val entered = CompletableDeferred<Unit>()
+        api.orderReply = {
+            entered.complete(Unit)
+            release.await()
+            api.server.single()
+        }
+        val loading = async { repo.load(1037) }
+        entered.await()
+        var cartMatches = true
+        val placing = async(start = CoroutineStart.UNDISPATCHED) {
+            repo.place(croissant, Shop.MOSKOVSKAYA, session = sessions.currentSession()) { cartMatches }
+        }
+        cartMatches = false
+        release.complete(Unit)
+        loading.await()
+        assertEquals(PlaceOrderResult.CartChanged, placing.await())
+        assertEquals(1, api.server.size)
     }
 
     @Test

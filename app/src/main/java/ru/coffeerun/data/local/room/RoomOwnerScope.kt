@@ -1,4 +1,4 @@
-package ru.coffeerun.data.local
+package ru.coffeerun.data.local.room
 
 import android.database.sqlite.SQLiteException
 import androidx.room.Dao
@@ -9,8 +9,35 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.withTransaction
 import java.io.IOException
+import kotlinx.serialization.SerializationException
+import ru.coffeerun.data.session.AuthSession
+import ru.coffeerun.data.session.SessionChangedException
+import ru.coffeerun.data.session.SessionProvider
 
 internal const val GUEST_OWNER = "guest"
+
+internal suspend fun <T> CoffeeRunDatabase.withOwner(
+    sessions: SessionProvider, session: AuthSession, action: suspend (String) -> T
+): T = withTransaction {
+    val owner = session.localOwner ?: GUEST_OWNER
+    sessions.withSession(session) { }
+    if (localOwner().current() != owner) throw SessionChangedException()
+    val result = action(owner)
+    sessions.withSession(session) { result }
+}
+
+internal suspend fun <T> CoffeeRunDatabase?.withPersonalCache(
+    sessions: SessionProvider, session: AuthSession, action: suspend (CoffeeRunDatabase, String) -> T
+): T? {
+    if (this == null || session.localOwner == null) return null
+    return try {
+        withOwner(sessions, session) { owner -> action(this, owner) }
+    } catch (_: SQLiteException) {
+        null
+    } catch (_: SerializationException) {
+        null
+    }
+}
 
 @Entity(tableName = "local_owner")
 data class LocalOwnerEntity(val owner: String, @PrimaryKey val id: Int = 1)

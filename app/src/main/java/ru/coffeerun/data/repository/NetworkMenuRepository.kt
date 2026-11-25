@@ -1,4 +1,6 @@
-package ru.coffeerun.data
+package ru.coffeerun.data.repository
+
+import ru.coffeerun.data.MenuRepository
 
 import java.io.IOException
 import android.database.sqlite.SQLiteException
@@ -15,11 +17,11 @@ import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
 import ru.coffeerun.data.network.CoffeeRunApi
 import ru.coffeerun.data.network.CoffeeRunJson
-import ru.coffeerun.data.network.MenuDto
-import ru.coffeerun.data.local.MenuSnapshotDao
-import ru.coffeerun.data.local.MenuSnapshotEntity
-import ru.coffeerun.data.network.toModel
-import ru.coffeerun.data.network.toOptionPrices
+import ru.coffeerun.data.network.dto.MenuDto
+import ru.coffeerun.data.local.room.MenuSnapshotDao
+import ru.coffeerun.data.local.room.MenuSnapshotEntity
+import ru.coffeerun.data.network.mapper.toModel
+import ru.coffeerun.data.network.mapper.toOptionPrices
 import ru.coffeerun.model.OptionPrices
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.MenuSnapshot
@@ -105,6 +107,10 @@ class NetworkMenuRepository(
             sizes.any { it.price < 0 } || milks.any { it.price < 0 } || extras.any { it.price < 0 }) {
             throw IOException("Некорректные идентификаторы или цены в меню")
         }
-        return MenuSnapshot(products.mapNotNull { it.toModel(baseUrl) }, toOptionPrices())
+        return MenuSnapshot(
+            products.mapNotNull { it.toModel(baseUrl) },
+            toOptionPrices(),
+            catalogProductIds = products.mapTo(mutableSetOf()) { it.id }
+        )
     }
 }

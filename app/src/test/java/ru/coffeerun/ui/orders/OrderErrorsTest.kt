@@ -61,7 +61,9 @@ class OrderErrorsTest {
             orders.value = listOf(Order(1037, OrderStatus.PICKED_UP, emptyList(), Shop.MOSKOVSKAYA, 0L, total = 480))
         }
 
-        override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession): PlaceOrderResult {
+        override suspend fun resolveAttempt(attemptId: String, session: AuthSession): Order? = error("unused")
+        override suspend fun place(lines: List<CartLine>, shop: Shop, pickupAtMillis: Long?, session: AuthSession, attemptId: String, beforeSend: suspend () -> Boolean): PlaceOrderResult {
+            if (!beforeSend()) return PlaceOrderResult.CartChanged
             placeCalls++
             gate?.await()
             if (placeAfterGate) throw CancellationException("смена сессии")
