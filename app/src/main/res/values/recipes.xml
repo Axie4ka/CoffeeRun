@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recipe_refresh">Refresh</string>
+    <string name="favorites_products_tab">Products</string>
+    <string name="favorites_recipes_tab">My recipes</string>
+    <string name="recipes_empty">Save a drink recipe to order it again.</string>
+    <string name="recipe_name_title">Name your recipe</string>
+    <string name="recipe_name">Recipe name</string>
+    <string name="recipe_save_action">Save recipe</string>
+    <string name="recipe_save">Save</string>
+    <string name="recipe_cancel">Cancel</string>
+    <string name="recipe_saved">Recipe saved</string>
+    <string name="recipe_deleted">Recipe deleted</string>
+    <string name="recipe_already_deleted">This recipe was already deleted.</string>
+    <string name="recipe_added">Recipe added to cart</string>
+    <string name="recipe_edit">Edit drink</string>
+    <string name="recipe_rename">Rename</string>
+    <string name="recipe_delete_title">Delete recipe?</string>
+    <string name="recipe_delete_prompt">Delete “%1$s” from My recipes?</string>
+    <string name="recipe_add_one">Add one to cart</string>
+    <string name="recipe_action_error">Couldn’t complete the recipe action. Please try again.</string>
+    <string name="recipe_sync_failed">Couldn’t sync recipes. Retry</string>
+    <string name="recipe_menu_unavailable">Couldn’t load the menu. Retry</string>
+    <string name="recipe_options_adjusted">Some saved options are unavailable. Review the selection before saving.</string>
+    <string name="recipe_cart_limit">The cart already has the maximum quantity for this drink.</string>
+    <string name="recipe_cart_edit_save">Save changes · %1$d ₽</string>
+    <string name="recipe_cart_edit_error">Couldn’t change the cart item. It may have been removed or the quantity limit reached.</string>
+</resources>

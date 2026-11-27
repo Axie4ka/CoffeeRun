@@ -17,9 +17,11 @@ data class DrinkOptionsDto(
 data class OrderLineDto(
     val productId: String,
     val quantity: Int,
-    /** Цена одной порции с опциями, ₽ — считает приложение по ценам из /menu. */
+    /** Цена одной порции с опциями до скидки в рублях. */
     val unitPrice: Int,
-    val options: DrinkOptionsDto? = null
+    val options: DrinkOptionsDto? = null,
+    /** Скидка в рублях на все порции строки. */
+    val discount: Int = 0
 )
 
 @Serializable
@@ -37,5 +39,6 @@ data class OrderDto(
     val shop: String,
     val placedAt: String,
     val pickupAt: String? = null,
-    val lines: List<OrderLineDto>
+    val lines: List<OrderLineDto>,
+    val promisedReadyAt: String? = null
 )

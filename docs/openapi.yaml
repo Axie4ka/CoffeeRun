@@ -143,6 +143,94 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /me/avatar:
+    get:
+      operationId: getAvatar
+      responses:
+        '200':
+          description: Аватар текущего аккаунта
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Avatar' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    put:
+      operationId: putAvatar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Avatar' }
+      responses:
+        '200':
+          description: Сохранённый аватар
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Avatar' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      operationId: deleteAvatar
+      responses:
+        '204': { description: Аватар удалён }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /me/recipes:
+    get:
+      operationId: getRecipes
+      responses:
+        '200':
+          description: Рецепты текущего аккаунта
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SavedRecipe' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /me/recipes/{recipeId}:
+    parameters:
+      - name: recipeId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    put:
+      operationId: saveRecipe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SavedRecipe' }
+      responses:
+        '204': { description: Рецепт сохранён }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      operationId: removeRecipe
+      responses:
+        '204': { description: Рецепт удалён }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      operationId: renameRecipe
+      summary: Изменить только название существующего рецепта
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              additionalProperties: false
+              properties:
+                name: { type: string, minLength: 1, maxLength: 60, pattern: '^\S(?:[\s\S]*\S)?$' }
+      responses:
+        '200':
+          description: Полный рецепт с актуальными настройками напитка
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SavedRecipe' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { description: Рецепт отсутствует }
+
   /me/favorites:
     get:
       operationId: getFavorites
@@ -247,7 +335,8 @@ paths:
         одну покупку. Повтор, в том числе конкурентный, возвращает исходный
         номер при одинаковом содержимом. При изменённом содержимом сервер
         возвращает 409 с кодом ATTEMPT_PAYLOAD_MISMATCH. Перед созданием заказа
-        сервер проверяет актуальную цену и доступность всех позиций.
+        сервер проверяет актуальные цены, скидки и доступность всех позиций.
+        Повтор и сверка UUID возвращают сохранённые цены и скидки исходного заказа.
         Сервер сохраняет ключи принятых и закрытых попыток после перезапуска
         на протяжении всего срока жизни аккаунта.
       requestBody:
@@ -446,6 +535,90 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ExtraOption'
+        promotions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Promotion'
+        shopSchedules:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShopSchedule'
+
+    ShopSchedule:
+      type: object
+      required: [shop, timeZone, preparationMinutes, hours]
+      properties:
+        shop: { $ref: '#/components/schemas/Shop' }
+        timeZone: { type: string, example: Europe/Moscow }
+        preparationMinutes: { type: integer, minimum: 1, maximum: 120 }
+        hours:
+          type: array
+          items:
+            type: object
+            required: [days, opensAt, closesAt]
+            properties:
+              days:
+                description: Дни недели по ISO, понедельник равен 1
+                type: array
+                items: { type: integer, minimum: 1, maximum: 7 }
+              opensAt: { type: string, example: '08:00' }
+              closesAt: { type: string, example: '21:00' }
+
+    Avatar:
+      type: object
+      properties:
+        jpegBase64: { type: string, format: byte, nullable: true }
+
+    SavedRecipe:
+      type: object
+      required: [id, name, productId]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 60 }
+        productId: { type: string }
+        options:
+          type: object
+          nullable: true
+          properties:
+            size: { type: string, nullable: true, enum: [SMALL, MEDIUM, LARGE] }
+            milk: { type: string, nullable: true }
+            isIced: { type: boolean }
+            extras:
+              type: array
+              items: { type: string }
+            note: { type: string, maxLength: 100 }
+
+    Promotion:
+      type: object
+      required: [id, type, startsAt, endsAt]
+      properties:
+        id:
+          type: string
+          example: medium-cappuccino
+        type:
+          type: string
+          enum: [CAPPUCCINO_MEDIUM, PASTRY_2_PLUS_1]
+          description: |
+            CAPPUCCINO_MEDIUM даёт скидку 20% на базовую цену MEDIUM, округлённую вниз до рубля.
+            Молоко и добавки оплачиваются полностью. Для PASTRY_2_PLUS_1 за каждые три
+            подходящие порции одна бесплатна. Бесплатные порции выбираются из самых дешёвых
+            во всей корзине, при равной цене действует порядок строк.
+        startsAt:
+          type: string
+          format: date-time
+          description: Первый момент действия акции
+        endsAt:
+          type: string
+          format: date-time
+          description: Первый момент после окончания акции
+        productId:
+          type: string
+          description: Идентификатор позиции для CAPPUCCINO_MEDIUM
+          example: cappuccino
+        category:
+          type: string
+          description: Категория позиций для PASTRY_2_PLUS_1
+          example: PASTRY
 
     Product:
       type: object
@@ -642,10 +815,16 @@ components:
           example: 2
         unitPrice:
           type: integer
-          description: Цена одной порции с опциями, ₽
+          minimum: 0
+          description: Цена одной порции с опциями до скидки, ₽
           example: 240
         options:
           $ref: '#/components/schemas/DrinkOptions'
+        discount:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Скидка на все порции строки, ₽. Не превышает unitPrice × quantity.
 
     OrderRequest:
       type: object
@@ -666,7 +845,7 @@ components:
 
     Order:
       type: object
-      description: Итог и время готовности приложение считает само из lines, placedAt и pickupAt
+      description: Итог заказа равен сумме unitPrice × quantity − discount по строкам
       required: [number, status, shop, placedAt, lines]
       properties:
         number:
@@ -675,6 +854,10 @@ components:
         status:
           type: string
           enum: [ACCEPTED, PREPARING, READY, PICKED_UP, CANCELLED]
+        promisedReadyAt:
+          type: string
+          format: date-time
+          nullable: true
         shop:
           $ref: '#/components/schemas/Shop'
         placedAt:

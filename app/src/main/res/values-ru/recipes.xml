@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="recipe_refresh">Обновить</string>
+    <string name="favorites_products_tab">Товары</string>
+    <string name="favorites_recipes_tab">Мои рецепты</string>
+    <string name="recipes_empty">Сохраните рецепт напитка, чтобы заказать его снова.</string>
+    <string name="recipe_name_title">Название рецепта</string>
+    <string name="recipe_name">Название</string>
+    <string name="recipe_save_action">Сохранить рецепт</string>
+    <string name="recipe_save">Сохранить</string>
+    <string name="recipe_cancel">Отмена</string>
+    <string name="recipe_saved">Рецепт сохранён</string>
+    <string name="recipe_deleted">Рецепт удалён</string>
+    <string name="recipe_already_deleted">Этот рецепт уже удалён.</string>
+    <string name="recipe_added">Рецепт добавлен в корзину</string>
+    <string name="recipe_edit">Изменить напиток</string>
+    <string name="recipe_rename">Переименовать</string>
+    <string name="recipe_delete_title">Удалить рецепт?</string>
+    <string name="recipe_delete_prompt">Удалить «%1$s» из моих рецептов?</string>
+    <string name="recipe_add_one">В корзину · 1 порция</string>
+    <string name="recipe_action_error">Не удалось выполнить действие с рецептом. Попробуйте ещё раз.</string>
+    <string name="recipe_sync_failed">Не удалось обновить рецепты. Повторить</string>
+    <string name="recipe_menu_unavailable">Не удалось загрузить меню. Повторить</string>
+    <string name="recipe_options_adjusted">Часть сохранённых опций недоступна. Проверьте состав перед сохранением.</string>
+    <string name="recipe_cart_limit">В корзине уже максимальное количество порций этого напитка.</string>
+    <string name="recipe_cart_edit_save">Сохранить изменения · %1$d ₽</string>
+    <string name="recipe_cart_edit_error">Не удалось изменить позицию. Возможно, её удалили или достигнут предел количества.</string>
+</resources>

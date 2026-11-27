@@ -7,6 +7,7 @@ import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import java.io.IOException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,9 @@ import ru.coffeerun.R
 import ru.coffeerun.container
 import ru.coffeerun.data.AuthRepository
 import ru.coffeerun.data.AuthResult
+import ru.coffeerun.data.AvatarRepository
+import ru.coffeerun.data.AvatarUploadDraft
+import ru.coffeerun.data.session.SessionChangedException
 
 /** Экран регистрации; поля и ошибки — как у [LoginUiState], плюс имя. */
 data class RegisterUiState(
@@ -27,14 +31,22 @@ data class RegisterUiState(
     @StringRes val passwordError: Int? = null,
     val isLoading: Boolean = false,
     @StringRes val message: Int? = null,
-    val isDone: Boolean = false
+    val isDone: Boolean = false,
+    val avatarPreview: ByteArray? = null,
+    val isPreparingAvatar: Boolean = false,
+    val avatarUploadFailed: Boolean = false
 )
 
 private const val NAME_KEY = "name"
 private const val PHONE_KEY = "phone"
 
 /** Регистрация: имя, телефон, пароль от 6 символов. Имя и телефон переживают смерть процесса, пароль — нет. */
-class RegisterViewModel(private val auth: AuthRepository, private val savedState: SavedStateHandle) : ViewModel() {
+class RegisterViewModel(
+    private val auth: AuthRepository,
+    private val savedState: SavedStateHandle,
+    private val avatars: AvatarRepository = AvatarRepository.Unavailable,
+    private val avatarDraft: AvatarUploadDraft = AvatarUploadDraft()
+) : ViewModel() {
     private val _uiState = MutableStateFlow(
         RegisterUiState(name = savedState[NAME_KEY] ?: "", phone = savedState[PHONE_KEY] ?: "")
     )
@@ -54,8 +66,28 @@ class RegisterViewModel(private val auth: AuthRepository, private val savedState
 
     fun onPasswordChange(password: String) = edit { copy(password = password) }
 
+    fun onAvatarPicked(uri: String) {
+        if (_uiState.value.isLoading || _uiState.value.isPreparingAvatar || _uiState.value.isDone) return
+        _uiState.update { it.copy(isPreparingAvatar = true) }
+        viewModelScope.launch {
+            try {
+                val jpeg = avatars.prepare(uri)
+                _uiState.update { it.copy(avatarPreview = jpeg) }
+            } catch (_: IOException) {
+                _uiState.update { it.copy(message = R.string.avatar_read_failed) }
+            } finally {
+                _uiState.update { it.copy(isPreparingAvatar = false) }
+            }
+        }
+    }
+
+    fun onAvatarRemoved() {
+        if (_uiState.value.isLoading || _uiState.value.isPreparingAvatar) return
+        _uiState.update { it.copy(avatarPreview = null) }
+    }
+
     fun submit() {
-        if (_uiState.value.isLoading) return
+        if (_uiState.value.isLoading || _uiState.value.isPreparingAvatar || _uiState.value.isDone) return
         submitted = true
         edit { this }
         val form = _uiState.value
@@ -63,9 +95,24 @@ class RegisterViewModel(private val auth: AuthRepository, private val savedState
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             val result = auth.register(form.name.trim(), fullPhone(form.phone), form.password)
+            val avatarUploadFailed = if (result is AuthResult.Success && form.avatarPreview != null) {
+                val session = auth.currentSession()
+                try {
+                    avatars.upload(session, form.avatarPreview)
+                    false
+                } catch (_: IOException) {
+                    try { auth.withSession(session) { avatarDraft.save(session, form.avatarPreview) } }
+                    catch (_: SessionChangedException) { }
+                    true
+                } catch (_: SessionChangedException) {
+                    true
+                }
+            } else false
             _uiState.update {
                 when (result) {
-                    is AuthResult.Success -> it.copy(isLoading = false, isDone = true)
+                    is AuthResult.Success -> it.copy(
+                        isLoading = false, isDone = true, avatarUploadFailed = avatarUploadFailed, avatarPreview = null
+                    )
                     AuthResult.PhoneTaken -> it.copy(isLoading = false, phoneError = R.string.auth_phone_taken)
                     AuthResult.Unavailable -> it.copy(isLoading = false, message = R.string.auth_unavailable)
                     AuthResult.InvalidInput, AuthResult.WrongCredentials -> it.copy(isLoading = false, message = R.string.auth_invalid)
@@ -87,6 +134,8 @@ class RegisterViewModel(private val auth: AuthRepository, private val savedState
     }
 
     companion object {
-        val Factory = viewModelFactory { initializer { RegisterViewModel(container.auth, createSavedStateHandle()) } }
+        val Factory = viewModelFactory {
+            initializer { RegisterViewModel(container.auth, createSavedStateHandle(), container.avatars, container.avatarUploadDraft) }
+        }
     }
 }

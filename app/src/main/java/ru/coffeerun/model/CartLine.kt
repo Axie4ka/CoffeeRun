@@ -23,7 +23,7 @@ data class DrinkOptions(
 
 /**
  * Позиция корзины. [unitPrice] — цена одной порции с учётом опций (в рублях).
- * У позиции, добавленной кнопкой «+» из меню, [options] = null.
+ * [discount] — скидка на все порции строки, рассчитывается для конкретной корзины.
  * [id] выдаёт корзина при добавлении; до этого он равен 0.
  */
 data class CartLine(
@@ -31,9 +31,11 @@ data class CartLine(
     val unitPrice: Int,
     val quantity: Int = 1,
     val options: DrinkOptions? = null,
-    val id: Int = 0
+    val id: Int = 0,
+    val discount: Int = 0
 ) {
-    val total: Int get() = unitPrice * quantity
+    val totalAmount: Long get() = unitPrice.toLong() * quantity - discount
+    val total: Int get() = totalAmount.toInt()
 
     /** Та же позиция с теми же опциями — такие строки в корзине объединяются. */
     fun isSameItem(other: CartLine) =

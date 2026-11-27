@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import ru.coffeerun.model.CartLine
@@ -28,15 +29,16 @@ interface CartRepository {
     val readState: Flow<CartRead> get() = lines.map { CartRead.Ready(it) }
     fun retryRead() = Unit
 
-    /** Одинаковые позиции сливаются в одну строку; количество не превышает [MAX_QUANTITY]. */
-    suspend fun addLine(line: CartLine)
+    /** Добавляет всё количество или возвращает false, оставляя корзину без изменений. */
+    suspend fun addLine(line: CartLine): Boolean
     suspend fun addWithinLimit(lines: List<CartLine>, session: AuthSession): List<Boolean>
     suspend fun snapshot(session: AuthSession): List<CartLine> = lines.value
 
     /** Меняет количество в пределах [MIN_QUANTITY]…[MAX_QUANTITY]; удаляет позицию [remove]. */
     suspend fun changeLineQuantity(id: Int, delta: Int)
 
-    suspend fun removeLine(id: Int)
+    suspend fun removeLine(id: Int, session: AuthSession? = null): CartLine?
+    suspend fun replaceLine(id: Int, replacement: CartLine, session: AuthSession): Boolean
 
     suspend fun onSessionEnded() {}
 
@@ -56,26 +58,42 @@ class InMemoryCartRepository : CartRepository {
 
     override suspend fun addLine(line: CartLine) = add(line)
     override suspend fun changeLineQuantity(id: Int, delta: Int) = changeQuantity(id, delta)
-    override suspend fun removeLine(id: Int) = remove(id)
+    override suspend fun removeLine(id: Int, session: AuthSession?): CartLine? =
+        _lines.getAndUpdate { cart -> cart.filterNot { it.id == id } }.firstOrNull { it.id == id }
+
+    override suspend fun replaceLine(id: Int, replacement: CartLine, session: AuthSession): Boolean {
+        val newId = nextLineId.getAndIncrement()
+        while (true) {
+            val before = _lines.value
+            val original = before.firstOrNull { it.id == id } ?: return false
+            if (original.isSameItem(replacement)) return true
+            val target = before.firstOrNull { it.id != id && it.isSameItem(replacement) }
+            val quantity = original.quantity + (target?.quantity ?: 0)
+            if (quantity > MAX_QUANTITY) return false
+            val after = before.filterNot { it.id == id }.let { remaining ->
+                if (target == null) remaining + replacement.copy(id = newId, quantity = quantity)
+                else remaining.map { if (it.id == target.id) it.copy(quantity = quantity) else it }
+            }
+            if (_lines.compareAndSet(before, after)) return true
+        }
+    }
     override suspend fun onSessionEnded() = clear()
     override suspend fun removeOrderedLines(submitted: List<CartLine>, session: AuthSession) = removeOrdered(submitted)
     override suspend fun updateProducts(products: List<Product>) = replaceProducts(products)
 
-    override suspend fun addWithinLimit(lines: List<CartLine>, session: AuthSession): List<Boolean> = lines.map { line ->
-        val existing = _lines.value.firstOrNull { it.isSameItem(line) }?.quantity ?: 0
-        (existing + line.quantity <= MAX_QUANTITY).also { if (it) add(line) }
-    }
+    override suspend fun addWithinLimit(lines: List<CartLine>, session: AuthSession): List<Boolean> = lines.map(::add)
 
-    fun add(line: CartLine) {
-        // id выдаём до update: его лямбда может выполниться повторно
+    fun add(line: CartLine): Boolean {
+        if (line.quantity !in MIN_QUANTITY..MAX_QUANTITY) return false
         val id = nextLineId.getAndIncrement()
-        _lines.update { cart ->
-            val index = cart.indexOfFirst { it.isSameItem(line) }
-            if (index >= 0) {
-                cart.replaceAt(index) { it.copy(quantity = (it.quantity + line.quantity).coerceAtMost(MAX_QUANTITY)) }
-            } else {
-                cart + line.copy(id = id, quantity = line.quantity.coerceAtMost(MAX_QUANTITY))
-            }
+        while (true) {
+            val before = _lines.value
+            val index = before.indexOfFirst { it.isSameItem(line) }
+            val quantity = (before.getOrNull(index)?.quantity ?: 0) + line.quantity
+            if (quantity > MAX_QUANTITY) return false
+            val after = if (index < 0) before + line.copy(id = id)
+                else before.replaceAt(index) { it.copy(quantity = quantity) }
+            if (_lines.compareAndSet(before, after)) return true
         }
     }
 

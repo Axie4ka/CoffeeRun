@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="avatar_description">Фото профиля</string>
+    <string name="avatar_add">Добавить фото</string>
+    <string name="avatar_add_optional">Добавить фото (необязательно)</string>
+    <string name="avatar_change">Заменить фото</string>
+    <string name="avatar_remove">Удалить фото</string>
+    <string name="avatar_read_failed">Не удалось открыть фото. Выберите другое.</string>
+    <string name="avatar_upload_failed">Не удалось сохранить фото профиля.</string>
+    <string name="avatar_remove_failed">Не удалось удалить фото профиля.</string>
+    <string name="avatar_load_failed">Не удалось обновить фото профиля.</string>
+    <string name="avatar_registration_upload_failed">Аккаунт создан. Отправку фото можно повторить в профиле.</string>
+</resources>

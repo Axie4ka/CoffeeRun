@@ -48,12 +48,11 @@ class RoomCartRepository(
         transaction(session) { owner -> dao.snapshot(owner).map(CartLineEntity::toCartLine) }
 
     override suspend fun addLine(line: CartLine) = transaction(sessions.currentSession()) { owner ->
-        add(owner, line, exact = false)
-        Unit
+        add(owner, line)
     }
 
     override suspend fun addWithinLimit(lines: List<CartLine>, session: AuthSession) =
-        transaction(session) { owner -> lines.map { add(owner, it, exact = true) } }
+        transaction(session) { owner -> lines.map { add(owner, it) } }
 
     override suspend fun changeLineQuantity(id: Int, delta: Int) = transaction(sessions.currentSession()) { owner ->
         dao.find(owner, id)?.let {
@@ -62,10 +61,24 @@ class RoomCartRepository(
         Unit
     }
 
-    override suspend fun removeLine(id: Int) = transaction(sessions.currentSession()) { dao.delete(it, id) }
+    override suspend fun removeLine(id: Int, session: AuthSession?): CartLine? =
+        transaction(session ?: sessions.currentSession()) { owner ->
+            val line = dao.find(owner, id)?.toCartLine() ?: return@transaction null
+            dao.delete(owner, id)
+            line
+        }
 
     override suspend fun removeOrderedLines(submitted: List<CartLine>, session: AuthSession) =
         transaction(session) { owner -> dao.consume(owner, submitted) }
+
+    override suspend fun replaceLine(id: Int, replacement: CartLine, session: AuthSession): Boolean =
+        transaction(session) { owner ->
+            val original = dao.find(owner, id)?.toCartLine() ?: return@transaction false
+            if (original.isSameItem(replacement)) return@transaction true
+            if (!add(owner, replacement.copy(quantity = original.quantity))) return@transaction false
+            dao.delete(owner, id)
+            true
+        }
 
     override suspend fun updateProducts(products: List<Product>) = transaction(sessions.currentSession()) { owner ->
         val byId = products.associateBy { it.id }
@@ -74,15 +87,15 @@ class RoomCartRepository(
         }
     }
 
-    private suspend fun add(owner: String, line: CartLine, exact: Boolean): Boolean {
+    private suspend fun add(owner: String, line: CartLine): Boolean {
+        if (line.quantity !in MIN_QUANTITY..MAX_QUANTITY) return false
         val recipe = line.options.key()
         val existing = dao.findRecipe(owner, line.product.id, line.unitPrice, recipe)
-        val quantity = (existing?.quantity ?: 0) + line.quantity.toLong()
-        if (line.quantity < MIN_QUANTITY || (exact && quantity > MAX_QUANTITY)) return false
-        val capped = quantity.coerceAtMost(MAX_QUANTITY.toLong()).toInt()
-        if (existing != null) dao.setQuantity(owner, existing.id, capped)
+        val quantity = (existing?.quantity ?: 0) + line.quantity
+        if (quantity > MAX_QUANTITY) return false
+        if (existing != null) dao.setQuantity(owner, existing.id, quantity)
         else dao.insert(CartLineEntity(owner = owner, productId = line.product.id, unitPrice = line.unitPrice,
-            quantity = capped, productJson = CoffeeRunJson.encodeToString(line.product), optionsJson = recipe))
+            quantity = quantity, productJson = CoffeeRunJson.encodeToString(line.product), optionsJson = recipe))
         return true
     }
 

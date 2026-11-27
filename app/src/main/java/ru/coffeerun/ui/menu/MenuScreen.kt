@@ -1,5 +1,12 @@
 package ru.coffeerun.ui.menu
 
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.lazy.LazyRow
+import ru.coffeerun.model.Order
+import ru.coffeerun.model.PromotionType
+import ru.coffeerun.ui.orders.statusUpdateText
+
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.fadeIn
@@ -82,11 +89,21 @@ fun MenuScreen(
     onRetry: () -> Unit,
     onProductClick: (Product) -> Unit,
     onAddProduct: (Product) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    activeOrder: Order? = null,
+    multipleActiveOrders: Boolean = false,
+    onActiveOrder: (Order) -> Unit = {},
+    onAllOrders: () -> Unit = {},
+    onPromotedProduct: (String) -> Unit = {},
+    showPastry: Boolean = false,
+    onPastryShown: () -> Unit = {},
+    refreshState: MenuRefresh = MenuRefresh.IDLE
 ) {
     var showShopPicker by rememberSaveable { mutableStateOf(false) }
+    var pastryRequested by remember { mutableStateOf(false) }
     // null — поиск закрыт; пустая строка — открыт, но ещё ничего не введено
     var query by rememberSaveable { mutableStateOf<String?>(null) }
+    LaunchedEffect(showPastry) { if (showPastry) query = null }
     BackHandler(enabled = query != null) { query = null }
 
     Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
@@ -99,9 +116,81 @@ fun MenuScreen(
                 MenuSearchField(query.orEmpty(), onChange = { query = it }, onClose = { query = null })
             }
         }
-        if (uiState is MenuUiState.Success && uiState.isCached) {
-            TextButton(onClick = onRetry, modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium)) {
-                Text(stringResource(R.string.menu_cached_refresh))
+        if (search == null && activeOrder != null) {
+            Card(
+                onClick = { onActiveOrder(activeOrder) },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.medium)
+            ) {
+                Column(Modifier.padding(MaterialTheme.spacing.medium)) {
+                    Text(
+                        stringResource(R.string.menu_active_order, activeOrder.number, stringResource(activeOrder.status.labelRes)),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(stringResource(activeOrder.shop.addressRes))
+                    Text(activeOrder.statusUpdateText(), style = MaterialTheme.typography.bodySmall)
+                    if (multipleActiveOrders) {
+                        TextButton(onClick = onAllOrders) { Text(stringResource(R.string.menu_all_orders)) }
+                    }
+                }
+            }
+        }
+        if (search == null && uiState is MenuUiState.Success && uiState.promotions.isNotEmpty()) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small),
+                contentPadding = PaddingValues(horizontal = MaterialTheme.spacing.medium)
+            ) {
+                items(uiState.promotions, key = { it.id }) { promotion ->
+                    val isDrink = promotion.type == PromotionType.CAPPUCCINO_MEDIUM
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val endDate = android.text.format.DateUtils.formatDateTime(
+                        context, promotion.endsAtMillis - 1, android.text.format.DateUtils.FORMAT_SHOW_DATE
+                    )
+                    Card(
+                        onClick = {
+                            if (isDrink) promotion.productId?.let(onPromotedProduct) else pastryRequested = true
+                        },
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                        )
+                    ) {
+                        Column(Modifier.padding(MaterialTheme.spacing.medium)) {
+                            Text(
+                                stringResource(if (isDrink) R.string.menu_promo_cappuccino else R.string.menu_promo_pastry),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(stringResource(R.string.menu_promo_through, endDate))
+                        }
+                    }
+                }
+            }
+        }
+        if (uiState is MenuUiState.Success) {
+            TextButton(
+                onClick = onRetry,
+                enabled = refreshState != MenuRefresh.RUNNING,
+                modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium)
+            ) {
+                val fetchedAt = uiState.fetchedAtMillis
+                val saved = uiState.isCached || refreshState == MenuRefresh.FAILED
+                Text(if (refreshState == MenuRefresh.RUNNING) stringResource(R.string.menu_refreshing)
+                else if (fetchedAt == null) stringResource(if (saved) R.string.menu_cached_refresh else R.string.menu_refresh)
+                else {
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val date = android.text.format.DateUtils.formatDateTime(
+                        context, fetchedAt, android.text.format.DateUtils.FORMAT_SHOW_TIME or
+                            (if (android.text.format.DateUtils.isToday(fetchedAt)) 0
+                            else android.text.format.DateUtils.FORMAT_SHOW_DATE)
+                    )
+                    stringResource(if (saved) R.string.menu_cached_refresh_at else R.string.menu_refresh_at, date)
+                })
+            }
+            if (refreshState == MenuRefresh.FAILED) {
+                Text(
+                    stringResource(R.string.menu_refresh_failed),
+                    modifier = Modifier.padding(horizontal = MaterialTheme.spacing.medium),
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
         when (uiState) {
@@ -110,12 +199,16 @@ fun MenuScreen(
             }
             MenuUiState.Error -> RetryMessage(stringResource(R.string.menu_error), onRetry)
             is MenuUiState.Success -> if (uiState.products.isEmpty()) {
-                RetryMessage(stringResource(R.string.menu_empty), onRetry)
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.menu_empty))
+                }
             } else if (search.isNullOrBlank()) {
                 MenuFeed(
                     products = uiState.products,
                     onProductClick = onProductClick,
-                    onAddProduct = onAddProduct
+                    onAddProduct = onAddProduct,
+                    showPastry = showPastry || pastryRequested,
+                    onPastryShown = { pastryRequested = false; onPastryShown() }
                 )
             } else {
                 SearchResults(searchProducts(uiState.products, search), onProductClick, onAddProduct)
@@ -130,7 +223,9 @@ fun MenuScreen(
 private fun MenuFeed(
     products: List<Product>,
     onProductClick: (Product) -> Unit,
-    onAddProduct: (Product) -> Unit
+    onAddProduct: (Product) -> Unit,
+    showPastry: Boolean,
+    onPastryShown: () -> Unit
 ) {
     val sections = remember(products) {
         ProductCategory.entries.mapNotNull { category ->
@@ -144,6 +239,13 @@ private fun MenuFeed(
     }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    LaunchedEffect(showPastry, headerIndexes) {
+        if (showPastry) {
+            val pastryIndex = sections.indexOfFirst { it.first == ProductCategory.PASTRY }
+            headerIndexes.getOrNull(pastryIndex)?.let { listState.animateScrollToItem(it) }
+            onPastryShown()
+        }
+    }
     val selectedIndex by remember(headerIndexes) {
         derivedStateOf {
             // Последнюю секцию часто нельзя докрутить до верха — когда список упёрся в конец, выбираем её

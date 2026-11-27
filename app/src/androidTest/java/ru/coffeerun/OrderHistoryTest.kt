@@ -4,10 +4,12 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -38,6 +40,7 @@ class OrderHistoryTest {
     private val menuReply = CompletableDeferred<Unit>()
     private var delayMenu = false
     private var offline = false
+    private var savedSearchFails = false
     @Volatile private var croissantPrice = 180
     private var menuWaiting = false
     private lateinit var container: AppContainer
@@ -71,6 +74,10 @@ class OrderHistoryTest {
                 override val orders = historyState
                 override fun observeOrder(number: Int) = orders.map { list -> list.find { it.number == number } }
                 override fun find(number: Int) = orders.value.find { it.number == number }
+                override suspend fun findSaved(number: Int): Order? {
+                    if (savedSearchFails) throw java.io.IOException("Cannot read history")
+                    return find(number)
+                }
                 override suspend fun load(number: Int) = find(number)
             }
             container = AppContainer(
@@ -103,6 +110,21 @@ class OrderHistoryTest {
         rule.onNodeWithText(str(R.string.orders_cached_refresh)).performClick()
         rule.onNodeWithText(str(R.string.orders_cached_refresh)).assertDoesNotExist()
         rule.onNodeWithText(str(R.string.orders_empty)).assertIsDisplayed()
+    }
+
+    @Test
+    fun savedSearchShowsReadErrorAndRetriesTheSameNumber() {
+        rule.runOnIdle { savedSearchFails = true }
+        clickable(R.string.tab_orders).performClick()
+        val search = rule.onNode(hasSetTextAction() and hasText(str(R.string.orders_search)))
+        search.performTextReplacement("№ 1050")
+        rule.onNodeWithText(str(R.string.orders_search_failed)).assertIsDisplayed()
+        rule.onNodeWithText(str(R.string.orders_search_missing)).assertDoesNotExist()
+        rule.runOnIdle { savedSearchFails = false }
+        clickable(R.string.action_retry).performClick()
+        rule.onNodeWithText(str(R.string.order_title, 1050)).assertIsDisplayed()
+        search.performTextReplacement("9999")
+        rule.onNodeWithText(str(R.string.orders_search_missing)).assertIsDisplayed()
     }
 
     @Test

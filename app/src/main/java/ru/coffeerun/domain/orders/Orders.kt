@@ -48,4 +48,5 @@ interface Orders {
 
     /** Ищет среди загруженных [orders]. */
     fun find(number: Int): Order?
+    suspend fun findSaved(number: Int): Order? = find(number)
 }

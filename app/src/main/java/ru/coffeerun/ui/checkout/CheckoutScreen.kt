@@ -1,5 +1,8 @@
 package ru.coffeerun.ui.checkout
 
+import ru.coffeerun.ui.util.currentPickupHours
+import ru.coffeerun.ui.util.shopHoursText
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -53,6 +56,7 @@ import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.components.ShopPickerSheet
+import ru.coffeerun.ui.components.PromotionSummary
 import ru.coffeerun.ui.components.RadioRow
 import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.TotalRow
@@ -169,7 +173,10 @@ fun CheckoutScreen(
                     } else {
                         if (uiState.quote != null) Text(stringResource(R.string.checkout_prices_changed))
                         if (uiState.totalOverflow) Text(stringResource(R.string.checkout_invalid_total))
-                        else TotalRow(total = uiState.total)
+                        else {
+                            PromotionSummary(total = uiState.total, discount = uiState.discount)
+                            TotalRow(total = uiState.total)
+                        }
                         SubmitButton(
                             if (uiState.quote != null) R.string.checkout_accept_price else R.string.checkout_confirm,
                             isLoading = uiState.isPlacing, onClick = onConfirm, enabled = !uiState.pickupTimeExpired
@@ -189,7 +196,7 @@ fun CheckoutScreen(
             SectionTitle(stringResource(R.string.section_shop), gutter)
             ListItem(
                 headlineContent = { Text(stringResource(uiState.shop.addressRes)) },
-                supportingContent = { Text(stringResource(R.string.shop_status)) },
+                supportingContent = { Text(shopHoursText(uiState.shop)) },
                 leadingContent = {
                     Icon(Icons.Default.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
                 },
@@ -205,7 +212,9 @@ fun CheckoutScreen(
             Column(gutter.selectableGroup()) {
                 RadioRow(
                     label = stringResource(R.string.pickup_asap),
-                    supporting = stringResource(R.string.pickup_asap_hint),
+                    supporting = stringResource(
+                        R.string.pickup_asap_estimate, currentPickupHours(uiState.shop).preparationMinutes
+                    ),
                     selected = pickupAtMillis == null,
                     onClick = onPickupAsap,
                     enabled = !uiState.isPlacing
@@ -250,7 +259,7 @@ fun CheckoutScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = stringResource(R.string.price_rub, line.unitPrice.toLong() * line.quantity),
+                        text = stringResource(R.string.price_rub, line.totalAmount),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

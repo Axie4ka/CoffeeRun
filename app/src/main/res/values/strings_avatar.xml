@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="avatar_description">Profile photo</string>
+    <string name="avatar_add">Add photo</string>
+    <string name="avatar_add_optional">Add photo (optional)</string>
+    <string name="avatar_change">Change photo</string>
+    <string name="avatar_remove">Remove photo</string>
+    <string name="avatar_read_failed">Couldn’t open this photo. Choose another.</string>
+    <string name="avatar_upload_failed">Couldn’t save the profile photo.</string>
+    <string name="avatar_remove_failed">Couldn’t remove the profile photo.</string>
+    <string name="avatar_load_failed">Couldn’t refresh the profile photo.</string>
+    <string name="avatar_registration_upload_failed">Account created. You can retry uploading your photo in Profile.</string>
+</resources>

@@ -22,6 +22,7 @@ import ru.coffeerun.data.local.room.MenuSnapshotDao
 import ru.coffeerun.data.local.room.MenuSnapshotEntity
 import ru.coffeerun.data.network.mapper.toModel
 import ru.coffeerun.data.network.mapper.toOptionPrices
+import ru.coffeerun.data.network.mapper.toPromotions
 import ru.coffeerun.model.OptionPrices
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.MenuSnapshot
@@ -38,7 +39,8 @@ class NetworkMenuRepository(
     private val api: CoffeeRunApi,
     private val baseUrl: String,
     private val language: () -> String,
-    private val disk: MenuSnapshotDao? = null
+    private val disk: MenuSnapshotDao? = null,
+    private val schedules: ShopScheduleBook? = null
 ) : MenuRepository {
     private val mutex = Mutex() // меню и позиция грузятся одновременно — запрос должен уйти один
     private val snapshots = MutableStateFlow<Map<String, MenuSnapshot>>(emptyMap())
@@ -76,7 +78,9 @@ class NetworkMenuRepository(
 
     private suspend fun readDisk(language: String): MenuSnapshot? = try {
         disk?.find(language)?.let {
-            CoffeeRunJson.decodeFromString<MenuDto>(it.payload).toSnapshot().copy(isCached = true)
+            val dto = CoffeeRunJson.decodeFromString<MenuDto>(it.payload)
+            dto.toSnapshot().copy(isCached = true, fetchedAtMillis = it.fetchedAtMillis)
+                .also { _ -> schedules?.publish(dto.shopSchedules, it.fetchedAtMillis) }
         }
     } catch (_: SQLiteException) { null }
       catch (_: SerializationException) { null }
@@ -90,10 +94,12 @@ class NetworkMenuRepository(
         } catch (e: SerializationException) {
             throw IOException("Ответ сервера не по контракту", e)
         }
-        val snapshot = dto.toSnapshot()
+        val fetchedAt = System.currentTimeMillis()
+        val snapshot = dto.toSnapshot().copy(fetchedAtMillis = fetchedAt)
+        schedules?.publish(dto.shopSchedules, fetchedAt)
         if (disk != null) {
             try {
-                disk.save(MenuSnapshotEntity(language, CoffeeRunJson.encodeToString(dto), System.currentTimeMillis()))
+                disk.save(MenuSnapshotEntity(language, CoffeeRunJson.encodeToString(dto), fetchedAt))
             } catch (_: SQLiteException) {
                 // Успешный ответ всё равно доступен в памяти.
             }
@@ -110,7 +116,8 @@ class NetworkMenuRepository(
         return MenuSnapshot(
             products.mapNotNull { it.toModel(baseUrl) },
             toOptionPrices(),
-            catalogProductIds = products.mapTo(mutableSetOf()) { it.id }
+            catalogProductIds = products.mapTo(mutableSetOf()) { it.id },
+            promotions = toPromotions()
         )
     }
 }

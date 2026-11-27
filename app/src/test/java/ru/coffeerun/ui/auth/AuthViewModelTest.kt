@@ -4,7 +4,9 @@ import ru.coffeerun.MainDispatcherRule
 import ru.coffeerun.R
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.SavedStateHandle
+import java.io.IOException
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -13,7 +15,13 @@ import org.junit.Rule
 import org.junit.Test
 import ru.coffeerun.data.AuthRepository
 import ru.coffeerun.data.AuthResult
+import ru.coffeerun.data.AvatarRepository
+import ru.coffeerun.data.AvatarUploadDraft
 import ru.coffeerun.data.InMemoryAuthRepository
+import ru.coffeerun.data.InMemoryProfileRepository
+import ru.coffeerun.data.session.AuthSession
+import ru.coffeerun.model.User
+import ru.coffeerun.ui.profile.EditProfileViewModel
 
 /** Вход и регистрация: проверка полей, ответы сервера и что переживает смерть процесса. */
 class AuthViewModelTest {
@@ -170,6 +178,46 @@ class AuthViewModelTest {
         assertEquals("Аня", restored.name)
         assertEquals("9991112233", restored.phone)
         assertEquals("", restored.password)
+    }
+
+    @Test
+    fun register_keepsAvatarForRetryInProfileWithoutRetryingRegistration() = runTest {
+        val operations = mutableListOf<String>()
+        val account = InMemoryAuthRepository()
+        val auth = object : AuthRepository by account {
+            override suspend fun register(name: String, phone: String, password: String): AuthResult {
+                operations += "register"
+                return account.register(name, phone, password)
+            }
+        }
+        val avatars = object : AvatarRepository by AvatarRepository.Unavailable {
+            override suspend fun prepare(uri: String): ByteArray = byteArrayOf(1)
+            override suspend fun upload(session: AuthSession, jpeg: ByteArray): Unit {
+                operations += "upload"
+                assertEquals(1.toByte(), jpeg.single())
+                if (operations.count { it == "upload" } == 1) throw IOException()
+            }
+        }
+        val draft = AvatarUploadDraft()
+        val vm = RegisterViewModel(auth, SavedStateHandle(), avatars, draft)
+        vm.onNameChange("Аня")
+        vm.onPhoneChange("9991112233")
+        vm.onPasswordChange("secret1")
+        vm.onAvatarPicked("content://test/avatar")
+        vm.submit()
+        vm.submit()
+
+        assertEquals(listOf("register", "upload"), operations)
+        assertTrue(vm.uiState.value.isDone)
+        assertTrue(vm.uiState.value.avatarUploadFailed)
+        assertEquals(1.toByte(), draft.get(auth.currentSession())?.single())
+
+        val profile = EditProfileViewModel(InMemoryProfileRepository(), SavedStateHandle(), avatars, auth, draft)
+        assertTrue(profile.uiState.value.avatarUploadPending)
+        profile.retryAvatar()
+        assertEquals(listOf("register", "upload", "upload"), operations)
+        assertFalse(profile.uiState.value.avatarUploadPending)
+        assertNull(draft.get(auth.currentSession()))
     }
 
     @Test

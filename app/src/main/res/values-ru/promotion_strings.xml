@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="promotion_subtotal">Сумма без скидки</string>
+    <string name="promotion_discount">Скидка</string>
+    <string name="promotion_discount_amount">−%1$d ₽</string>
+    <string name="promotion_product_discount">Скидка −%1$d ₽</string>
+</resources>

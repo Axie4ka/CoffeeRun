@@ -144,6 +144,15 @@ class OrderMappersTest {
     }
 
     @Test
+    fun orderHistoryKeepsTheActualDiscountAfterThePromotionEnds() {
+        val lines = listOf(OrderLineDto("croissant", 4, 180, discount = 180))
+        val order = demo[0].copy(lines = lines).toModel(products)!!
+        assertEquals(180, order.lines.single().discount)
+        assertEquals(540, order.total)
+        assertNull(demo[0].copy(lines = listOf(lines[0].copy(discount = 721))).toModel(products))
+    }
+
+    @Test
     fun unknownStatus_cannotBeCancelled_unknownShop_isDropped() {
         val unknown = demo[0].copy(status = "COOKING_ON_MARS").toModel(products)!!
         assertEquals(OrderStatus.UNKNOWN, unknown.status)

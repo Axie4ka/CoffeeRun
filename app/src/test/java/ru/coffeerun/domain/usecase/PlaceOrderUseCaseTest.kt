@@ -65,6 +65,17 @@ class PlaceOrderUseCaseTest {
         assertEquals(0, orders.calls)
     }
 
+    @Test fun promotionChangedAfterDisplay_requiresConfirmation() = runTest {
+        add(3)
+        val lines = cart.lines.value
+        val shown = lines.map { it.copy(discount = 180) }
+        val place = useCase()
+        val result = place(Shop.MOSKOVSKAYA, null, displayedLines = shown) as CheckoutResult.PricesChanged
+        assertEquals(0, orders.calls)
+        assertEquals(540, result.quote.updatedLines.single().total)
+        assertTrue(place(Shop.MOSKOVSKAYA, null, result.quote) is CheckoutResult.Placed)
+    }
+
     @Test fun catalogUnavailable_orProductRemoved_doesNotSubmitOrConsumeCart() = runTest {
         add()
         val before = cart.lines.value

@@ -9,12 +9,16 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,8 +30,11 @@ import ru.coffeerun.domain.checkout.PickupPolicy
 import ru.coffeerun.domain.checkout.CheckoutResult
 import ru.coffeerun.domain.checkout.CheckoutQuote
 import ru.coffeerun.domain.checkout.CheckoutAttemptStatus
+import ru.coffeerun.domain.promotion.priceCart
+import ru.coffeerun.domain.promotion.pricingTimes
 import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.model.CartLine
+import ru.coffeerun.model.MenuSnapshot
 import ru.coffeerun.model.Shop
 import java.time.LocalTime
 import java.time.ZoneId
@@ -53,7 +60,8 @@ data class CheckoutUiState(
     val totalOverflow: Boolean = false,
     val legacyAttempt: Boolean = false,
     val outcomeUnknown: Boolean = false,
-    val pickupTimeExpired: Boolean = false
+    val pickupTimeExpired: Boolean = false,
+    val discount: Long = lines.sumOf { it.discount.toLong() }
 )
 
 /** Ход отправки заказа — одним потоком, чтобы три поля менялись вместе. */
@@ -73,6 +81,7 @@ private fun everyMinute(): Flow<Unit> = flow {
     }
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CheckoutViewModel(
     private val cart: CartRepository,
     private val placeOrderUseCase: PlaceOrderUseCase,
@@ -83,12 +92,17 @@ class CheckoutViewModel(
 ) : ViewModel() {
     private val pickupAtMillis = savedState.getStateFlow<Long?>(PICKUP_TIME_KEY, null)
     private val submit = MutableStateFlow(Submit())
+    private val pricing = placeOrderUseCase.pricingMenu.flatMapLatest { menu ->
+        menu?.pricingTimes()?.map { now -> menu to now } ?: flowOf(null)
+    }
 
     val uiState: StateFlow<CheckoutUiState> =
         combine(cart.lines, shops.selected, pickupAtMillis, submit,
-            combine(ticks, placeOrderUseCase.attemptStatus) { _, status -> status }
-        ) { lines, shop, pickupAt, submit, attempt ->
-            stateOf(lines, shop, pickupAt, submit, attempt)
+            combine(ticks, pickupPolicy.scheduleRevision, placeOrderUseCase.attemptStatus, pricing) { _, _, status, prices ->
+                status to prices
+            }
+        ) { lines, shop, pickupAt, submit, (attempt, prices) ->
+            stateOf(lines, shop, pickupAt, submit, attempt, prices)
         }.stateIn(
             viewModelScope,
             SharingStarted.WhileSubscribed(5_000),
@@ -98,11 +112,11 @@ class CheckoutViewModel(
 
     private fun stateOf(
         lines: List<CartLine>, shop: Shop, pickupAt: Long?, submit: Submit,
-        attempt: CheckoutAttemptStatus = CheckoutAttemptStatus.Idle
+        attempt: CheckoutAttemptStatus = CheckoutAttemptStatus.Idle, pricing: Pair<MenuSnapshot, Long>? = null
     ): CheckoutUiState {
         val quote = submit.quote?.takeIf { it.matches(lines, shop, pickupAt) }
-        val shown = quote?.updatedLines ?: lines
-        val total = shown.sumOf { it.unitPrice.toLong() * it.quantity }
+        val shown = quote?.updatedLines ?: priceCart(lines, pricing?.first, pricing?.second ?: System.currentTimeMillis())
+        val total = shown.sumOf { it.totalAmount }
         return CheckoutUiState(
             lines = shown,
             total = total.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
@@ -149,7 +163,7 @@ class CheckoutViewModel(
      * Пустая корзина или заказ уже отправлен — нового заказа не будет.
      * Сервер не принял заказ — корзина остаётся как была, а в [CheckoutUiState.message] — почему.
      */
-    fun placeOrder(confirmed: CheckoutQuote? = null) {
+    fun placeOrder(confirmed: CheckoutQuote? = null, displayedLines: List<CartLine>? = null) {
         if (submit.value.isPlacing) return
         val shop = shops.selected.value
         val pickupAt = pickupAtMillis.value
@@ -162,7 +176,7 @@ class CheckoutViewModel(
                     submit.value = Submit(message = R.string.checkout_shop_changed)
                     return@launch
                 }
-                submit.value = when (val result = placeOrderUseCase(shop, pickupAt, confirmed)) {
+                submit.value = when (val result = placeOrderUseCase(shop, pickupAt, confirmed, displayedLines)) {
                     is CheckoutResult.Placed -> Submit(placedOrderNumber = result.order.number)
                     is CheckoutResult.PricesChanged -> Submit(quote = result.quote)
                     is CheckoutResult.UnavailableLines -> Submit(unavailableItems = result.names)

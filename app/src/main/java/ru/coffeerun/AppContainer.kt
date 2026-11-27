@@ -1,6 +1,9 @@
 package ru.coffeerun
 
 import ru.coffeerun.data.AuthRepository
+import ru.coffeerun.data.AvatarRepository
+import ru.coffeerun.data.AvatarUploadDraft
+import ru.coffeerun.data.RecipeRepository
 import ru.coffeerun.domain.checkout.PickupPolicy
 import ru.coffeerun.domain.checkout.PlaceOrderUseCase
 import ru.coffeerun.domain.orders.RepeatOrderUseCase
@@ -36,14 +39,18 @@ class AppContainer(
     val pickupPolicy: PickupPolicy = PickupPolicy(),
     checkoutAttemptStore: CheckoutAttemptStore? = null,
     val cart: CartRepository = InMemoryCartRepository(),
-    val shops: ShopRepository = InMemoryShopRepository()
+    val shops: ShopRepository = InMemoryShopRepository(),
+    val recipes: RecipeRepository? = null,
+    val avatars: AvatarRepository = AvatarRepository.Unavailable
 ) {
+    val avatarUploadDraft = AvatarUploadDraft()
     val placeOrder = PlaceOrderUseCase(cart, orders, auth, pickupPolicy, menu, checkoutAttemptStore)
     val repeatOrder = RepeatOrderUseCase(menu, cart, auth)
 
     internal fun observeSession(scope: CoroutineScope): Job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
         var previous: AuthSession? = null
         auth.sessions.collect { current ->
+            avatarUploadDraft.retain(current)
             profile.onSessionChanged(current)
             if (previous?.isLoggedIn == true && previous != current) cart.onSessionEnded()
             previous = current

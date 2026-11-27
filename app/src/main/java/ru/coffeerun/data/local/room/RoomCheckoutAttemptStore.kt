@@ -30,7 +30,7 @@ class RoomCheckoutAttemptStore(private val db: CoffeeRunDatabase) : CheckoutAtte
             val snapshot = lines.mapIndexed { index, line ->
                 CheckoutAttemptLineEntity(
                     id, index, line.id, line.product.id, line.quantity, line.unitPrice,
-                    line.toDto().options?.let { CoffeeRunJson.encodeToString(it) }
+                    line.toDto().options?.let { CoffeeRunJson.encodeToString(it) }, line.discount
                 )
             }
             db.withTransaction {

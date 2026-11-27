@@ -45,5 +45,6 @@ interface OrderRepository {
     suspend fun cancel(number: Int, session: AuthSession): CancelOrderResult
     suspend fun load(number: Int, session: AuthSession): Order?
     fun find(number: Int): Order?
+    suspend fun findSaved(number: Int, session: AuthSession): Order? = find(number)
     fun clear(session: AuthSession)
 }

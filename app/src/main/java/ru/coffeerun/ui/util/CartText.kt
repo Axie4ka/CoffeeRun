@@ -37,7 +37,7 @@ fun OrderItem.nameText(): String = name ?: stringResource(R.string.order_item_un
 fun OrderItem.optionsText(): String = optionsText(options, description)
 
 @Composable
-private fun optionsText(options: DrinkOptions?, description: String): String {
+internal fun optionsText(options: DrinkOptions?, description: String): String {
     val o = options ?: return description
     val parts = buildList {
         // Метка размера выглядит как «M · 350 мл» — в корзине нужна только буква

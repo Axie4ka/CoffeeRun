@@ -1,6 +1,8 @@
 package ru.coffeerun.ui.product
 
 import ru.coffeerun.MainDispatcherRule
+import ru.coffeerun.R
+import ru.coffeerun.testCheckout
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.DemoMenuRepository
 import ru.coffeerun.data.MenuRepository
@@ -8,6 +10,7 @@ import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -16,16 +19,27 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import ru.coffeerun.data.InMemoryCartRepository
+import ru.coffeerun.data.InMemoryAuthRepository
 import ru.coffeerun.data.InMemoryFavorites
+import ru.coffeerun.data.InMemoryOrders
 import ru.coffeerun.data.InMemoryShopRepository
+import ru.coffeerun.data.RecipeRepository
+import ru.coffeerun.data.session.AuthSession
+import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
+import ru.coffeerun.model.MenuSnapshot
 import ru.coffeerun.model.Product
+import ru.coffeerun.model.ProductCategory
+import ru.coffeerun.model.Promotion
+import ru.coffeerun.model.PromotionType
+import ru.coffeerun.model.Recipe
 import ru.coffeerun.model.MAX_NOTE_LENGTH
 import ru.coffeerun.model.MIN_QUANTITY
 import ru.coffeerun.ui.menu.MenuViewModel
+import ru.coffeerun.ui.cart.CartViewModel
 
 /** Форма напитка: правила выбора, цена и строка, которая уходит в корзину. */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -171,6 +185,146 @@ class ProductViewModelTest {
         vm.changeQuantity(+1)
         vm.addToCart()
         assertEquals(2, (vm.uiState.value as ProductUiState.Success).cartCount)
+    }
+
+    @Test
+    fun recipeUsesCurrentDrinkOptionsWithoutAddingCartQuantity() = runTest {
+        val recipes = object : RecipeRepository {
+            val recipes = MutableStateFlow<List<Recipe>>(emptyList())
+            override fun observe(session: AuthSession) = recipes
+            override suspend fun find(id: String, session: AuthSession) = recipes.value.firstOrNull()
+            override suspend fun refresh(session: AuthSession) = Unit
+            override suspend fun rename(id: String, name: String, session: AuthSession): Recipe? = error("Unused")
+            override suspend fun remove(id: String, session: AuthSession) = Unit
+            override suspend fun save(recipe: Recipe, session: AuthSession) { recipes.value = listOf(recipe) }
+        }
+        val auth = InMemoryAuthRepository(loggedIn = true)
+        val product = DemoMenu.CAPPUCCINO
+        val vm = ProductViewModel(
+            product.id, DemoMenuRepository(), cart, InMemoryFavorites(), savedState, recipes, auth
+        )
+        vm.selectSize(DrinkSize.LARGE)
+        vm.selectMilk(MilkType.OAT)
+        vm.toggleExtra(Extra.VANILLA)
+        vm.setIced(true)
+        vm.setNote(" Less foam ")
+        vm.changeQuantity(3)
+        vm.saveRecipe(" Morning ")
+        val recipe = recipes.recipes.value.single()
+        assertEquals("Morning", recipe.name)
+        assertEquals(product.defaultOptions()?.copy(
+            size = DrinkSize.LARGE, milk = MilkType.OAT, extras = setOf(Extra.VANILLA), isIced = true, note = "Less foam"
+        ), recipe.options)
+        assertEquals(emptyList<CartLine>(), cart.lines.value)
+
+        val editor = ProductViewModel(
+            product.id, DemoMenuRepository(), cart, InMemoryFavorites(), SavedStateHandle(), recipes, auth, recipeId = recipe.id
+        )
+        keepActive(editor)
+        val state = editor.uiState.value as ProductUiState.Success
+        assertEquals("Morning", state.recipeName)
+        assertEquals(MIN_QUANTITY, state.form.quantity)
+        assertEquals("Less foam", state.form.note)
+        editor.selectSize(DrinkSize.SMALL)
+        editor.saveRecipe("Short")
+        assertEquals(recipe.id, recipes.recipes.value.single().id)
+        assertEquals(DrinkSize.SMALL, recipes.recipes.value.single().options?.size)
+    }
+
+    @Test
+    fun cartEditorStartsFromExistingOptionsAndReplacesTheLineAtCurrentPrice() = runTest {
+        val product = DemoMenu.CAPPUCCINO
+        val options = checkNotNull(product.defaultOptions()).copy(size = DrinkSize.LARGE, milk = MilkType.OAT)
+        cart.addLine(CartLine(product, 200, 3, options))
+        val vm = ProductViewModel(
+            product.id, DemoMenuRepository(), cart, InMemoryFavorites(), savedState,
+            sessions = InMemoryAuthRepository(), cartLineId = cart.lines.value.single().id
+        )
+        keepActive(vm)
+        val state = vm.uiState.value as ProductUiState.Success
+        assertEquals(DrinkSize.LARGE, state.form.size)
+        assertEquals(MilkType.OAT, state.form.milk)
+        assertEquals(3, state.form.quantity)
+        vm.selectSize(DrinkSize.SMALL)
+        vm.addToCart()
+        val updated = cart.lines.value.single()
+        assertEquals(3, updated.quantity)
+        assertEquals(260, updated.unitPrice)
+        assertEquals(options.copy(size = DrinkSize.SMALL), updated.options)
+    }
+
+    @Test
+    fun mediumCappuccinoShowsPromotionWithoutChangingStoredUnitPrice() = runTest {
+        val product = DemoMenu.CAPPUCCINO
+        val demo = DemoMenuRepository()
+        val snapshot = MenuSnapshot(
+            listOf(product), DemoMenu.prices, promotions = listOf(
+                Promotion("medium", PromotionType.CAPPUCCINO_MEDIUM, 0, Long.MAX_VALUE, product.id)
+            )
+        )
+        val menu = object : MenuRepository by demo {
+            override fun observeSnapshot() = kotlinx.coroutines.flow.flowOf(snapshot)
+        }
+        val vm = ProductViewModel(product.id, menu, cart, InMemoryFavorites(), savedState)
+        keepActive(vm)
+        vm.selectMilk(MilkType.OAT)
+
+        val medium = vm.uiState.value as ProductUiState.Success
+        assertEquals(300, medium.unitPrice)
+        assertEquals(52, medium.discount)
+        vm.toggleExtra(Extra.VANILLA)
+        vm.changeQuantity(+1)
+        assertEquals(576L, (vm.uiState.value as ProductUiState.Success).totalPrice)
+        vm.addToCart()
+        assertEquals(340, cart.lines.value.single().unitPrice)
+        assertEquals(0, cart.lines.value.single().discount)
+
+        vm.selectSize(DrinkSize.LARGE)
+        assertEquals(0, (vm.uiState.value as ProductUiState.Success).discount)
+    }
+
+    @Test
+    fun pastryBundleUsesSelectedQuantityForTotalAndOnePortionForHeader() = runTest {
+        val product = DemoMenu.CROISSANT
+        val snapshot = MenuSnapshot(
+            listOf(product), DemoMenu.prices, promotions = listOf(
+                Promotion("pastry", PromotionType.PASTRY_2_PLUS_1, 0, Long.MAX_VALUE, category = ProductCategory.PASTRY)
+            )
+        )
+        val menu = object : MenuRepository by DemoMenuRepository() {
+            override fun observeSnapshot() = kotlinx.coroutines.flow.flowOf(snapshot)
+        }
+        val vm = ProductViewModel(product.id, menu, cart, InMemoryFavorites(), savedState)
+        keepActive(vm)
+        for (expected in listOf(360L, 360L, 540L)) {
+            vm.changeQuantity(+1)
+            val state = vm.uiState.value as ProductUiState.Success
+            assertEquals(180, state.unitPrice)
+            assertEquals(0, state.discount)
+            assertEquals(expected, state.totalPrice)
+        }
+        vm.changeQuantity(-1)
+        vm.addToCart()
+        val cartVm = CartViewModel(cart, menu).apply { onShown() }
+        val checkout = testCheckout(cart, InMemoryOrders(), InMemoryShopRepository(), menu = menu)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { cartVm.uiState.collect {} }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { checkout.uiState.collect {} }
+        assertEquals(360, cartVm.uiState.value.total)
+        assertEquals(360, checkout.uiState.value.total)
+    }
+
+    @Test
+    fun addingThreePortionsToNineReportsTheLimitAndKeepsNine() = runTest {
+        val product = DemoMenu.CROISSANT
+        cart.add(CartLine(product, product.price, quantity = 9))
+        val vm = vm(product)
+        keepActive(vm)
+        vm.changeQuantity(2)
+        val results = mutableListOf<Int?>()
+        vm.addToCart { results.add(it) }
+
+        assertEquals(listOf(R.string.cart_add_limit), results)
+        assertEquals(9, cart.lines.value.single().quantity)
     }
 
     @Test

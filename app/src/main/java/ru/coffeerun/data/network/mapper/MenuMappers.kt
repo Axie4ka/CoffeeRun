@@ -4,6 +4,8 @@ import ru.coffeerun.data.network.dto.MenuDto
 import ru.coffeerun.data.network.dto.ProductDto
 
 import java.net.URI
+import java.time.OffsetDateTime
+import java.time.format.DateTimeParseException
 import ru.coffeerun.model.Allergen
 import ru.coffeerun.model.Customization
 import ru.coffeerun.model.DrinkSize
@@ -13,6 +15,8 @@ import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.OptionPrices
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.ProductCategory
+import ru.coffeerun.model.Promotion
+import ru.coffeerun.model.PromotionType
 import ru.coffeerun.model.SizeOption
 
 /**
@@ -53,5 +57,32 @@ fun MenuDto.toOptionPrices(): OptionPrices = OptionPrices(
     milks = milks.mapNotNull { dto -> enumOrNull<MilkType>(dto.code)?.let { MilkOption(it, dto.price, dto.available) } },
     extras = extras.mapNotNull { dto -> enumOrNull<Extra>(dto.code)?.let { it to dto.price } }.toMap()
 )
+
+fun MenuDto.toPromotions(): List<Promotion> = promotions.mapNotNull { dto ->
+    val type = enumOrNull<PromotionType>(dto.type) ?: return@mapNotNull null
+    val starts = parsePromotionDate(dto.startsAt) ?: return@mapNotNull null
+    val ends = parsePromotionDate(dto.endsAt) ?: return@mapNotNull null
+    if (dto.id.isBlank() || starts >= ends) return@mapNotNull null
+    when (type) {
+        PromotionType.CAPPUCCINO_MEDIUM -> {
+            if (dto.productId != "cappuccino" || products.none { it.id == dto.productId } ||
+                sizes.none { it.code == DrinkSize.MEDIUM.name }) return@mapNotNull null
+            Promotion(dto.id, type, starts, ends, productId = dto.productId)
+        }
+        PromotionType.PASTRY_2_PLUS_1 -> {
+            val category = ProductCategory.PASTRY
+            if (dto.category != category.name || products.none { it.category == category.name }) return@mapNotNull null
+            Promotion(dto.id, type, starts, ends, category = category)
+        }
+    }
+}.distinctBy { it.id }
+
+private fun parsePromotionDate(value: String): Long? = try {
+    OffsetDateTime.parse(value).toInstant().toEpochMilli()
+} catch (_: DateTimeParseException) {
+    null
+} catch (_: ArithmeticException) {
+    null
+}
 
 private inline fun <reified T : Enum<T>> enumOrNull(code: String): T? = enumValues<T>().firstOrNull { it.name == code }

@@ -19,6 +19,7 @@ import ru.coffeerun.data.InMemoryCartRepository
 import ru.coffeerun.data.InMemoryShopRepository
 import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.data.DemoMenuRepository
+import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.data.InMemoryOrders
 import ru.coffeerun.model.CartLine
@@ -26,6 +27,10 @@ import ru.coffeerun.model.DEFAULT_DRINK_SIZE
 import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
+import ru.coffeerun.model.MenuSnapshot
+import ru.coffeerun.model.ProductCategory
+import ru.coffeerun.model.Promotion
+import ru.coffeerun.model.PromotionType
 import ru.coffeerun.model.Product
 import ru.coffeerun.model.itemCount
 import ru.coffeerun.ui.checkout.CheckoutViewModel
@@ -40,6 +45,30 @@ class CartTest {
     private val cart = InMemoryCartRepository()
     private val orders = InMemoryOrders()
     private val lines get() = cart.lines.value
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun pastrySuggestionCountsOnlyProductsStillEligibleInCurrentMenu() = runTest {
+        val pastries = listOf(DemoMenu.CROISSANT, DemoMenu.CINNAMON_ROLL)
+        val removed = DemoMenu.CHOCOLATE_MUFFIN
+        val snapshot = MenuSnapshot(pastries, DemoMenu.prices, promotions = listOf(
+            Promotion("pastry", PromotionType.PASTRY_2_PLUS_1, 0L, Long.MAX_VALUE, category = ProductCategory.PASTRY)
+        ))
+        val menu = object : MenuRepository by DemoMenuRepository() {
+            override fun observeSnapshot() = flowOf(snapshot)
+        }
+        cart.add(CartLine(pastries.first(), pastries.first().price))
+        cart.add(CartLine(removed, removed.price))
+        val vm = CartViewModel(cart, menu)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        vm.onShown()
+        assertNull(vm.uiState.value.recommendation)
+        assertEquals(false, vm.uiState.value.completesPromotion)
+
+        cart.add(CartLine(pastries.last(), pastries.last().price))
+        assertTrue(vm.uiState.value.completesPromotion)
+        assertTrue(vm.uiState.value.recommendation in pastries)
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test

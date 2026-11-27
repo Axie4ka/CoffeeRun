@@ -26,7 +26,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.ExternalResource
+import org.junit.rules.TestWatcher
+import org.junit.runner.Description
 import org.junit.runner.RunWith
 import ru.coffeerun.data.DemoMenuRepository
 import ru.coffeerun.data.InMemoryFavorites
@@ -46,6 +47,9 @@ import org.junit.Assert.assertTrue
 /** Настоящие TokenStore и репозиторий заказов; только HTTP заменён управляемыми ответами. */
 @RunWith(AndroidJUnit4::class)
 class OrderSessionTest {
+    private enum class InitialHistory { DELAYED, OFFLINE }
+    private annotation class StartHistory(val response: InitialHistory)
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private lateinit var tokenFile: File
     private lateinit var tokens: TokenStore
@@ -57,8 +61,13 @@ class OrderSessionTest {
     @Volatile private var listCalls = 0
 
     @get:Rule(order = 0)
-    val freshData = object : ExternalResource() {
-        override fun before() {
+    val freshData = object : TestWatcher() {
+        override fun starting(description: Description) {
+            when (description.getAnnotation(StartHistory::class.java)?.response) {
+                InitialHistory.DELAYED -> listGate = CompletableDeferred()
+                InitialHistory.OFFLINE -> listFails = true
+                null -> Unit
+            }
             val context = InstrumentationRegistry.getInstrumentation().targetContext
             tokenFile = File(context.cacheDir, "order-session-${UUID.randomUUID()}.preferences_pb")
             tokens = TokenStore(PreferenceDataStoreFactory.create(scope = scope) { tokenFile })
@@ -88,7 +97,7 @@ class OrderSessionTest {
             )
         }
 
-        override fun after() {
+        override fun finished(description: Description) {
             scope.cancel()
             tokenFile.delete()
         }
@@ -175,8 +184,8 @@ class OrderSessionTest {
         rule.onNodeWithText(str(R.string.status_ready)).assertIsDisplayed()
     }
     @Test
+    @StartHistory(InitialHistory.OFFLINE)
     fun profile_countFailure_canRetryFromProfile() {
-        rule.runOnIdle { listFails = true }
         rule.onNode(hasText(str(R.string.tab_profile)) and hasClickAction()).performClick()
         rule.waitUntil(5_000) {
             rule.onAllNodesWithText(str(R.string.action_retry)).fetchSemanticsNodes().isNotEmpty()
@@ -189,9 +198,9 @@ class OrderSessionTest {
     }
 
     @Test
+    @StartHistory(InitialHistory.DELAYED)
     fun profile_loadsHistoryWithoutOpeningOrders_countIsUnknownUntilReply() {
-        val reply = CompletableDeferred<Unit>()
-        rule.runOnIdle { listGate = reply }
+        val reply = checkNotNull(listGate)
         check(!orders.isLoaded.value)
         rule.onNode(hasText(str(R.string.tab_profile)) and hasClickAction()).performClick()
         rule.waitUntil(5_000) { listCalls == 1 }

@@ -14,6 +14,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,25 +47,35 @@ class RoomOrderHistoryTest {
                         listOf("VANILLA"), "без сахара")))))
             }
         }
-        suspend fun withRepository(action: suspend (NetworkOrderRepository) -> Unit) {
+        suspend fun withDatabase(action: suspend (NetworkOrderRepository, CoffeeRunDatabase) -> Unit) {
             val db = Room.databaseBuilder(context, CoffeeRunDatabase::class.java, name).build()
             try {
                 RoomOwnerScope(db).reconcile(tokens.currentSession().localOwner)
-                action(NetworkOrderRepository(api, DemoMenuRepository(), tokens, db))
+                action(NetworkOrderRepository(api, DemoMenuRepository(), tokens, db), db)
             } finally { db.close() }
         }
+        suspend fun withRepository(action: suspend (NetworkOrderRepository) -> Unit) =
+            withDatabase { repository, _ -> action(repository) }
         try {
             tokens.save("first")
             withRepository { it.refresh(tokens.currentSession()) }
             offline = true
-            withRepository {
-                assertTrue(runCatching { it.refresh(tokens.currentSession()) }.exceptionOrNull() is IOException)
-                val restored = it.orders.value.single()
+            withDatabase { repository, db ->
+                assertTrue(runCatching { repository.refresh(tokens.currentSession()) }.exceptionOrNull() is IOException)
+                val restored = repository.orders.value.single()
                 assertTrue(restored.confirmedAtMillis != null)
                 assertEquals(390, restored.total)
                 assertEquals(195, restored.lines.single().unitPrice)
                 assertEquals("без сахара", restored.lines.single().options?.note)
-                assertTrue(it.isLoaded.value)
+                assertTrue(repository.isLoaded.value)
+                val session = tokens.currentSession()
+                assertEquals(restored, repository.findSaved(1037, session))
+                assertNull(repository.findSaved(9999, session))
+                val row = checkNotNull(db.orderHistory().find(checkNotNull(session.localOwner), 1037))
+                db.orderHistory().save(listOf(row.copy(payload = "{")))
+                assertTrue(runCatching { repository.findSaved(1037, session) }.exceptionOrNull() is IOException)
+                db.orderHistory().save(listOf(row))
+                assertEquals(restored, repository.findSaved(1037, session))
             }
             tokens.save("second")
             withRepository {

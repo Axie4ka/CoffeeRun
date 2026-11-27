@@ -1,6 +1,7 @@
 package ru.coffeerun.data.local.room
 
 import android.database.sqlite.SQLiteException
+import android.content.Context
 import androidx.room.Dao
 import androidx.room.Entity
 import androidx.room.Insert
@@ -9,6 +10,7 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.withTransaction
 import java.io.IOException
+import java.io.File
 import kotlinx.serialization.SerializationException
 import ru.coffeerun.data.session.AuthSession
 import ru.coffeerun.data.session.SessionChangedException
@@ -52,7 +54,7 @@ interface LocalOwnerDao {
 }
 
 /** DataStore задаёт владельца, маркер SQLite хранит последний применённый переход. */
-class RoomOwnerScope(private val db: CoffeeRunDatabase) {
+class RoomOwnerScope(private val db: CoffeeRunDatabase, private val context: Context? = null) {
     suspend fun reconcile(localOwner: String?) {
         val target = localOwner ?: GUEST_OWNER
         try {
@@ -65,7 +67,16 @@ class RoomOwnerScope(private val db: CoffeeRunDatabase) {
                 db.orderHistory().clearOtherOrders(target)
                 db.orderHistory().clearOtherSync(target)
                 db.favoritesSnapshots().clearOtherOwners(target)
+                db.avatars().clearOtherOwners(target)
+                db.savedRecipes().clearOtherOwners(target)
                 db.localOwner().set(LocalOwnerEntity(target))
+            }
+            context?.let {
+                db.withTransaction {
+                    val currentOwner = db.localOwner().current() ?: return@withTransaction
+                    val filename = db.avatars().filename(currentOwner)
+                    avatarDirectory(it).listFiles()?.filter { file -> file.name != filename }?.forEach(File::delete)
+                }
             }
         } catch (error: SQLiteException) {
             throw IOException("Cannot switch the local data owner", error)

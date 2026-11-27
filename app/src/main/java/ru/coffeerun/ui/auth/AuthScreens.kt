@@ -50,6 +50,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.coffeerun.R
+import ru.coffeerun.ui.components.AvatarEditor
 import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
@@ -94,7 +95,9 @@ fun RegisterScreen(
     onMessageShown: () -> Unit,
     onLogin: () -> Unit,
     onBack: () -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
+    onAvatarPicked: (String) -> Unit = {},
+    onAvatarRemoved: () -> Unit = {}
 ) {
     AuthScaffold(
         title = R.string.auth_register_title,
@@ -119,8 +122,17 @@ fun RegisterScreen(
             uiState.password, onPasswordChange, uiState.passwordError, enabled = !uiState.isLoading, onDone = onSubmit,
             hint = R.string.auth_password_short
         )
+        AvatarEditor(
+            model = uiState.avatarPreview,
+            name = uiState.name,
+            onPicked = onAvatarPicked,
+            onRemoved = onAvatarRemoved,
+            enabled = !uiState.isLoading,
+            isWorking = uiState.isPreparingAvatar,
+            optional = true
+        )
         Spacer(Modifier.size(MaterialTheme.spacing.small))
-        SubmitButton(R.string.auth_register_button, uiState.isLoading, onSubmit)
+        SubmitButton(R.string.auth_register_button, uiState.isLoading, onSubmit, enabled = !uiState.isPreparingAvatar)
         SwitchRow(R.string.auth_have_account, R.string.auth_login_button, onLogin)
     }
 }
