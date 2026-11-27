@@ -41,6 +41,8 @@ class OrdersViewModel(
     val orders: StateFlow<List<Order>> = repository.orders
     val hasSnapshot = repository.isLoaded
 
+    suspend fun findSavedOrder(number: Int): Order? = repository.findSaved(number)
+
     private val _load = MutableStateFlow(OrdersLoad.LOADING)
     val load: StateFlow<OrdersLoad> = _load.asStateFlow()
     private var loadJob: Job? = null

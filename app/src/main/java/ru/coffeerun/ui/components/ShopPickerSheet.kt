@@ -13,6 +13,7 @@ import androidx.compose.ui.res.stringResource
 import ru.coffeerun.R
 import ru.coffeerun.model.Shop
 import ru.coffeerun.ui.theme.spacing
+import ru.coffeerun.ui.util.shopHoursText
 
 /** Лист выбора кофейни. Выбор сразу закрывает лист. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,7 +25,7 @@ fun ShopPickerSheet(selected: Shop, onSelect: (Shop) -> Unit, onDismiss: () -> U
             Shop.entries.forEach { shop ->
                 RadioRow(
                     label = stringResource(shop.addressRes),
-                    supporting = stringResource(R.string.shop_status),
+                    supporting = shopHoursText(shop),
                     selected = shop == selected,
                     onClick = {
                         onSelect(shop)

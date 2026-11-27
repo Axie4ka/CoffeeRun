@@ -1,5 +1,8 @@
 package ru.coffeerun.ui.cart
 
+import androidx.compose.foundation.clickable
+import ru.coffeerun.ui.components.PromotionSummary
+
 import ru.coffeerun.data.DemoMenu
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -54,7 +57,10 @@ fun CartScreen(
     onCheckout: () -> Unit,
     onBrowseMenu: () -> Unit,
     modifier: Modifier = Modifier,
-    onRetryRead: () -> Unit = {}
+    onRetryRead: () -> Unit = {},
+    onEdit: (CartLine) -> Unit = {},
+    onAddRecommendation: () -> Unit = {},
+    onBrowsePastry: () -> Unit = {}
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.cart_title))
@@ -82,6 +88,7 @@ fun CartScreen(
                         line = line,
                         onDecrease = { onChangeQuantity(line.id, -1) },
                         onIncrease = { onChangeQuantity(line.id, 1) },
+                        onEdit = { onEdit(line) },
                         onRemove = { onRemove(line.id) }
                     )
                 }
@@ -91,6 +98,21 @@ fun CartScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+                uiState.recommendation?.let { recommendation ->
+                    item(key = "recommendation") {
+                        Column {
+                            Text(stringResource(if (uiState.completesPromotion) R.string.cart_promo_complete else R.string.cart_pair))
+                            androidx.compose.material3.TextButton(onClick = onAddRecommendation) {
+                                Text(stringResource(R.string.cart_pair_add, recommendation.name, recommendation.price))
+                            }
+                            if (uiState.completesPromotion) {
+                                androidx.compose.material3.TextButton(onClick = onBrowsePastry) {
+                                    Text(stringResource(R.string.cart_browse_pastry))
+                                }
+                            }
+                        }
+                    }
                 }
             }
             // Итог показывается один раз — в закреплённой панели над кнопкой
@@ -102,6 +124,7 @@ fun CartScreen(
                     ),
                     verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.small)
                 ) {
+                    PromotionSummary(uiState.total, uiState.discount)
                     TotalRow(
                         total = uiState.total,
                         label = pluralStringResource(R.plurals.cart_total_items, uiState.count, uiState.count)
@@ -120,10 +143,11 @@ private fun CartItemCard(
     line: CartLine,
     onDecrease: () -> Unit,
     onIncrease: () -> Unit,
-    onRemove: () -> Unit
+    onRemove: () -> Unit,
+    onEdit: () -> Unit
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onEdit),
         shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {

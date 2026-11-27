@@ -1,5 +1,12 @@
 package ru.coffeerun.ui.orders
 
+import java.io.IOException
+
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+
 import ru.coffeerun.data.DemoMenu
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -70,7 +77,8 @@ fun OrdersScreen(
     refreshing: Boolean = false,
     onRefresh: () -> Unit = {},
     onOrderClick: (Order) -> Unit = {},
-    hasSnapshot: Boolean = false
+    hasSnapshot: Boolean = false,
+    findSavedOrder: suspend (Int) -> Order? = { null }
 ) {
     // Заказы — данные аккаунта: гостю приглашение войти; пока токен не прочитан — пусто, без мигания
     when (isLoggedIn) {
@@ -87,12 +95,52 @@ fun OrdersScreen(
     val (active, history) = orders.partition { it.isActive }
     // Номер, а не заказ: переживает поворот экрана; заказ ушёл из активных — диалог закрывается сам
     var confirmNumber by rememberSaveable { mutableStateOf<Int?>(null) }
+    var query by rememberSaveable { mutableStateOf("") }
     active.find { it.number == confirmNumber }?.let { order ->
         CancelOrderDialog(order.number, onConfirm = { confirmNumber = null; onCancel(order) }, onDismiss = { confirmNumber = null })
     }
 
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.orders_title))
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it.take(20) },
+            label = { Text(stringResource(R.string.orders_search)) },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.large)
+        )
+        if (query.isNotBlank()) {
+            val number = query.trim().removePrefix("№").trim().toIntOrNull()?.takeIf { it > 0 }
+            key(query) {
+                var result by remember { mutableStateOf<Order?>(null) }
+                var completed by remember { mutableStateOf(number == null) }
+                var failed by remember { mutableStateOf(false) }
+                var attempt by remember { mutableStateOf(0) }
+                LaunchedEffect(number, orders, attempt) {
+                    if (number != null) {
+                        failed = false
+                        completed = false
+                        result = null
+                        try {
+                            result = findSavedOrder(number)
+                            completed = true
+                        } catch (_: IOException) {
+                            failed = true
+                        }
+                    }
+                }
+                Column(Modifier.padding(MaterialTheme.spacing.large)) {
+                    val order = result
+                    if (order != null) OrderCard(order, { onOrderClick(order) })
+                    else if (failed) {
+                        Text(stringResource(R.string.orders_search_failed))
+                        TextButton(onClick = { attempt++ }) { Text(stringResource(R.string.action_retry)) }
+                    } else if (completed) Text(stringResource(R.string.orders_search_missing))
+                    else CircularProgressIndicator()
+                }
+            }
+            return@Column
+        }
         // Список уже есть — показываем его, даже если обновить не удалось
         if (load == OrdersLoad.FAILED && (hasSnapshot || orders.isNotEmpty())) {
             TextButton(onClick = onRetry) { Text(stringResource(R.string.orders_cached_refresh)) }

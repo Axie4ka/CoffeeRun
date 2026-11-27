@@ -1,6 +1,5 @@
 package ru.coffeerun.ui.profile
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,8 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -36,7 +33,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -46,6 +42,7 @@ import ru.coffeerun.R
 import ru.coffeerun.model.Shop
 import ru.coffeerun.model.User
 import ru.coffeerun.ui.auth.displayPhone
+import ru.coffeerun.ui.components.AvatarImage
 import ru.coffeerun.ui.components.RetryMessage
 import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.ShopPickerSheet
@@ -55,7 +52,7 @@ import ru.coffeerun.ui.theme.spacing
 import ru.coffeerun.ui.util.ProvidePreviewNotifier
 
 /**
- * Профиль: данные пользователя, статистика и список настроек («Изменить» и «Телефон» пока заглушки).
+ * Профиль: данные пользователя, статистика и список настроек.
  * Вкладка «Профиль» — это аккаунт, поэтому гость видит только приглашение войти.
  */
 @Composable
@@ -87,14 +84,14 @@ fun ProfileScreen(
                 ScreenTopBar(title = stringResource(R.string.profile_title))
                 RetryMessage(stringResource(R.string.load_error), onRetry)
             }
-            is AccountState.Loaded -> AccountProfile(account.user, uiState, onShopSelected, onFavoritesClick, onLogout, { onEdit(account.user) }, modifier, onRetry)
+            is AccountState.Loaded -> AccountProfile(account, uiState, onShopSelected, onFavoritesClick, onLogout, { onEdit(account.user) }, modifier, onRetry)
         }
     }
 }
 
 @Composable
 private fun AccountProfile(
-    user: User,
+    account: AccountState.Loaded,
     uiState: ProfileUiState,
     onShopSelected: (Shop) -> Unit,
     onFavoritesClick: () -> Unit,
@@ -106,8 +103,8 @@ private fun AccountProfile(
     val (shop, ordersCount, favoritesCount) = uiState
     var showShopPicker by rememberSaveable { mutableStateOf(false) }
     var showAbout by rememberSaveable { mutableStateOf(false) }
-    val name = user.name
-    val phone = displayPhone(user.phone)
+    val name = account.user.name
+    val phone = displayPhone(account.user.phone)
 
     Column(modifier = modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.profile_title))
@@ -116,20 +113,7 @@ private fun AccountProfile(
             horizontalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.large),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(64.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.tertiaryContainer),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    // Пустое имя сервер не пропускает, но на всякий случай кружок не должен падать
-                    text = name.firstOrNull()?.uppercase() ?: "",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer
-                )
-            }
+            AvatarImage(account.avatar, name)
             Column(Modifier.weight(1f)) {
                 Text(text = name, style = MaterialTheme.typography.titleLarge)
                 Text(

@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
@@ -39,6 +41,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import kotlinx.coroutines.launch
 import ru.coffeerun.R
+import ru.coffeerun.model.DrinkSize
 import ru.coffeerun.ui.cart.CartScreen
 import ru.coffeerun.ui.cart.CartViewModel
 import ru.coffeerun.ui.checkout.CheckoutScreen
@@ -50,6 +53,7 @@ import ru.coffeerun.ui.components.ScreenTopBar
 import ru.coffeerun.ui.components.Tab
 import ru.coffeerun.ui.menu.MenuScreen
 import ru.coffeerun.ui.menu.MenuViewModel
+import ru.coffeerun.ui.orders.OrdersViewModel
 import ru.coffeerun.ui.product.ProductScreen
 import ru.coffeerun.ui.product.ProductUiState
 import ru.coffeerun.ui.product.ProductViewModel
@@ -59,6 +63,7 @@ import ru.coffeerun.ui.profile.FavoritesScreen
 import ru.coffeerun.ui.profile.FavoritesViewModel
 import ru.coffeerun.ui.profile.ProfileScreen
 import ru.coffeerun.ui.profile.ProfileViewModel
+import ru.coffeerun.ui.profile.RecipesRoute
 
 /**
  * Граф экранов: каждому маршруту — его ViewModel и экран. Навигация живёт здесь, экраны о ней не знают.
@@ -90,17 +95,31 @@ fun CoffeeRunNavHost(
         popEnterTransition = { fadeIn(tween(if (initialState.isTab()) TAB_FADE_MS else SLIDE_MS)) },
         popExitTransition = { if (initialState.isTab()) fadeOut(tween(TAB_FADE_MS)) else slideOutOfContainer(SlideDirection.End, tween(SLIDE_MS)) }
     ) {
-        composable<MenuRoute> {
+        composable<MenuRoute> { entry ->
             ProvideNavScope {
                 val vm: MenuViewModel = viewModel(factory = MenuViewModel.Factory)
                 OnLocale(vm::onLocale)
                 val menuState by vm.uiState.collectAsStateWithLifecycle()
+                val menuRefresh by vm.refreshState.collectAsStateWithLifecycle()
                 val shop by vm.shop.collectAsStateWithLifecycle()
+                val showPastry by entry.savedStateHandle.getStateFlow(SHOW_PASTRY, false).collectAsStateWithLifecycle()
+                val orderVm: OrdersViewModel = viewModel(factory = OrdersViewModel.Factory)
+                val orders by orderVm.orders.collectAsStateWithLifecycle()
+                val active = if (isLoggedIn == true) orders.filter { it.isActive } else emptyList()
+                LaunchedEffect(isLoggedIn) { if (isLoggedIn == true) orderVm.onShown() }
                 MenuScreen(
                     uiState = menuState,
+                    refreshState = menuRefresh,
                     shop = shop,
+                    activeOrder = active.maxByOrNull { it.placedAtMillis },
+                    multipleActiveOrders = active.size > 1,
+                    onActiveOrder = { navController.navigate(OrderDetailsRoute(it.number)) },
+                    onAllOrders = { navController.openTab(Tab.ORDERS) },
+                    onPromotedProduct = { navController.navigate(ProductRoute(it, size = DrinkSize.MEDIUM.name)) },
+                    showPastry = showPastry,
+                    onPastryShown = { entry.savedStateHandle[SHOW_PASTRY] = false },
                     onShopSelected = { vm.selectShop(it, showShopError) },
-                    onRetry = vm::loadMenu,
+                    onRetry = vm::retry,
                     onProductClick = { navController.navigate(ProductRoute(it.id)) },
                     onAddProduct = { product ->
                         vm.quickAdd(product) { error ->
@@ -116,6 +135,26 @@ fun CoffeeRunNavHost(
             val vm: CartViewModel = viewModel(factory = CartViewModel.Factory)
             val cartState by vm.uiState.collectAsStateWithLifecycle()
             val storageFailed by vm.storageFailed.collectAsStateWithLifecycle()
+            val removedLine by vm.removedLine.collectAsStateWithLifecycle()
+            val restoreLimit by vm.restoreLimit.collectAsStateWithLifecycle()
+            OnLocale(vm::onLocale)
+            LaunchedEffect(Unit) { vm.onShown() }
+            LaunchedEffect(removedLine) {
+                val removal = removedLine ?: return@LaunchedEffect
+                val result = snackbarHostState.showSnackbar(
+                    message = resources.getString(R.string.cart_removed),
+                    actionLabel = resources.getString(R.string.cart_restore),
+                    withDismissAction = true,
+                    duration = SnackbarDuration.Long
+                )
+                vm.finishRemoval(removal, result == SnackbarResult.ActionPerformed)
+            }
+            LaunchedEffect(restoreLimit) {
+                if (restoreLimit) {
+                    snackbarHostState.showSnackbar(resources.getString(R.string.cart_restore_limit))
+                    vm.onRestoreLimitShown()
+                }
+            }
             LaunchedEffect(storageFailed) {
                 if (storageFailed) {
                     snackbarHostState.showSnackbar(resources.getString(R.string.cart_storage_unavailable))
@@ -126,6 +165,16 @@ fun CoffeeRunNavHost(
                 uiState = cartState,
                 onChangeQuantity = vm::changeQuantity,
                 onRemove = vm::remove,
+                onEdit = { navController.navigate(ProductRoute(it.product.id, cartLineId = it.id)) },
+                onAddRecommendation = {
+                    vm.addRecommendation {
+                        appScope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.cart_add_limit)) }
+                    }
+                },
+                onBrowsePastry = {
+                    navController.openTab(Tab.MENU)
+                    navController.currentBackStackEntry?.savedStateHandle?.set(SHOW_PASTRY, true)
+                },
                 // Гостя — сначала на вход, после входа оформление откроется само
                 onCheckout = { navController.navigate(if (isLoggedIn == true) CheckoutRoute else LoginRoute(toCheckout = true)) },
                 onBrowseMenu = { navController.openTab(Tab.MENU) },
@@ -172,12 +221,15 @@ fun CoffeeRunNavHost(
                 onSave = vm::save,
                 onMessageShown = vm::onMessageShown,
                 onRetryLoad = vm::load,
+                onAvatarPicked = vm::onAvatarPicked,
+                onAvatarRemoved = vm::onAvatarRemoved,
+                onAvatarRetry = vm::retryAvatar,
                 onBack = dropUnlessResumed { navController.popBackStack() },
                 snackbarHostState = snackbarHostState
             )
         }
 
-        authGraph(navController, snackbarHostState)
+        authGraph(navController, snackbarHostState, appScope)
 
         composable<FavoritesRoute> {
             ProvideNavScope {
@@ -190,6 +242,13 @@ fun CoffeeRunNavHost(
                     onBrowseMenu = { navController.jumpToTab(Tab.MENU) },
                     onBack = { navController.popBackStack() },
                     onRetry = vm::retry,
+                    recipes = {
+                        RecipesRoute(
+                            onEditRecipe = { navController.navigate(ProductRoute(it.productId, recipeId = it.id)) },
+                            onBrowseMenu = { navController.jumpToTab(Tab.MENU) },
+                            snackbarHostState = snackbarHostState
+                        )
+                    },
                     onRemoveMissing = { id ->
                         vm.removeMissing(id) {
                             appScope.launch { snackbarHostState.showSnackbar(resources.getString(R.string.favorites_toggle_error)) }
@@ -237,8 +296,21 @@ fun CoffeeRunNavHost(
                             product = state.product,
                             form = state.form,
                             unitPrice = state.unitPrice,
+                            totalPrice = state.totalPrice,
+                            unitDiscount = state.discount,
                             prices = state.prices,
                             cartCount = state.cartCount,
+                            recipeName = state.recipeName,
+                            onSaveRecipe = if (isLoggedIn == true && vm.recipeSavingEnabled) { name ->
+                                vm.saveRecipe(name) {
+                                    if (vm.isRecipeEdit && navController.currentBackStackEntry === entry) navController.popBackStack()
+                                }
+                            } else null,
+                            onRecipeLogin = if (isLoggedIn == false) {
+                                { navController.navigate(LoginRoute()) }
+                            } else null,
+                            isCartEdit = vm.isCartEdit,
+                            optionsAdjusted = state.optionsAdjusted,
                             onSizeSelected = vm::selectSize,
                             onMilkSelected = vm::selectMilk,
                             onIcedChange = vm::setIced,
@@ -286,7 +358,7 @@ fun CoffeeRunNavHost(
             CheckoutScreen(
                 uiState = checkoutState,
                 onBack = { navController.popBackStack() },
-                onConfirm = { vm.placeOrder(checkoutState.quote) },
+                onConfirm = { vm.placeOrder(checkoutState.quote, checkoutState.lines) },
                 onCheckOrderHistory = { navController.jumpToTab(Tab.ORDERS) },
                 onRecoverOrder = vm::recoverOrder,
                 onAllowNewOrder = vm::allowNewOrder,
@@ -329,6 +401,8 @@ private fun AnimatedContentScope.ProvideNavScope(content: @Composable () -> Unit
 private fun NavBackStackEntry.isTab() = Tab.entries.any { destination.hasRoute(it.route::class) }
 
 /** Переключение вкладок с сохранением их состояния — для нижней панели и кнопок «В меню». */
+private const val SHOW_PASTRY = "showPastry"
+
 internal fun NavController.openTab(tab: Tab) = navigate(tab.route) {
     popUpTo(graph.findStartDestination().id) { saveState = true }
     launchSingleTop = true

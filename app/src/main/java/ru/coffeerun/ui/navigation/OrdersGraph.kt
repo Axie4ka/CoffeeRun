@@ -71,6 +71,7 @@ internal fun NavGraphBuilder.ordersGraph(
             onCancel = vm::cancel,
             refreshing = refreshing,
             onRefresh = vm::refresh,
+            findSavedOrder = vm::findSavedOrder,
             onOrderClick = { navController.navigate(OrderDetailsRoute(it.number)) }
         )
     }

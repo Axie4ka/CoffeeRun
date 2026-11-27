@@ -1,11 +1,13 @@
 package ru.coffeerun.data.network
 
 import ru.coffeerun.data.network.dto.AuthResponse
+import ru.coffeerun.data.network.dto.AvatarDto
 import ru.coffeerun.data.network.dto.LoginRequest
 import ru.coffeerun.data.network.dto.MenuDto
 import ru.coffeerun.data.network.dto.OrderDto
 import ru.coffeerun.data.network.dto.OrderRequest
 import ru.coffeerun.data.network.dto.RegisterRequest
+import ru.coffeerun.data.network.dto.RenameRecipeRequest
 import ru.coffeerun.data.network.dto.UserDto
 
 import kotlinx.serialization.json.Json
@@ -13,9 +15,11 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import ru.coffeerun.model.Recipe
 
 /** Запросы к серверу CoffeeRun. Контракт — docs/openapi.yaml. */
 interface CoffeeRunApi {
@@ -34,6 +38,15 @@ interface CoffeeRunApi {
     @PUT("me")
     suspend fun updateMe(@Body user: UserDto): UserDto
 
+    @GET("me/avatar")
+    suspend fun getAvatar(): AvatarDto
+
+    @PUT("me/avatar")
+    suspend fun putAvatar(@Body avatar: AvatarDto): AvatarDto
+
+    @DELETE("me/avatar")
+    suspend fun deleteAvatar()
+
     @GET("me/favorites")
     suspend fun getFavorites(): List<String>
 
@@ -44,6 +57,18 @@ interface CoffeeRunApi {
     /** 204 без тела; если позиции в избранном не было — тоже 204. */
     @DELETE("me/favorites/{productId}")
     suspend fun removeFavorite(@Path("productId") productId: String)
+
+    @GET("me/recipes")
+    suspend fun getRecipes(): List<Recipe>
+
+    @PUT("me/recipes/{recipeId}")
+    suspend fun saveRecipe(@Path("recipeId") id: String, @Body recipe: Recipe)
+
+    @PATCH("me/recipes/{recipeId}")
+    suspend fun renameRecipe(@Path("recipeId") id: String, @Body request: RenameRecipeRequest): Recipe
+
+    @DELETE("me/recipes/{recipeId}")
+    suspend fun removeRecipe(@Path("recipeId") id: String)
 
     /** От новых к старым — сортирует сервер. */
     @GET("orders")

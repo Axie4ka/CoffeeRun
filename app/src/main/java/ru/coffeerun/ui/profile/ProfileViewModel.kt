@@ -5,22 +5,26 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import java.io.IOException
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import ru.coffeerun.container
 import ru.coffeerun.data.AuthRepository
+import ru.coffeerun.data.AvatarRepository
 import ru.coffeerun.domain.favorites.Favorites
 import ru.coffeerun.domain.orders.Orders
 import ru.coffeerun.data.ProfileRepository
@@ -32,7 +36,7 @@ import ru.coffeerun.model.User
 sealed interface AccountState {
     data object Loading : AccountState
     data object Error : AccountState
-    data class Loaded(val user: User) : AccountState
+    data class Loaded(val user: User, val avatar: File? = null) : AccountState
 }
 
 enum class LogoutState { Idle, InProgress, Failed }
@@ -60,7 +64,8 @@ class ProfileViewModel(
     orders: Orders,
     favorites: Favorites,
     private val auth: AuthRepository,
-    private val profile: ProfileRepository
+    private val profile: ProfileRepository,
+    private val avatars: AvatarRepository = AvatarRepository.Unavailable
 ) : ViewModel() {
     private val reload = MutableStateFlow(0)
     private val orderLoadFailed = MutableStateFlow(false)
@@ -68,16 +73,25 @@ class ProfileViewModel(
     private val account: Flow<AccountState> =
         combine(auth.sessions, reload) { session, _ -> session }.flatMapLatest { session ->
             if (!session.isLoggedIn) flowOf<AccountState>(AccountState.Loading) // гость в сеть не ходит
-            else flow {
-                emit(profile.confirmed(session)?.let(AccountState::Loaded) ?: AccountState.Loading)
-                emit(
-                    try {
-                        AccountState.Loaded(profile.getMe())
-                    } catch (e: IOException) {
-                        profile.confirmed(session)?.let(AccountState::Loaded) ?: AccountState.Error
-                    }
-                )
-                emitAll(profile.observeConfirmed(session).map(AccountState::Loaded))
+            else channelFlow {
+                send(AccountState.Loading)
+                launch {
+                    try { avatars.refresh(session) } catch (_: IOException) { }
+                }
+                val profileStates = flow {
+                    emit(profile.confirmed(session)?.let { AccountState.Loaded(it) } ?: AccountState.Loading)
+                    emit(
+                        try {
+                            AccountState.Loaded(profile.getMe())
+                        } catch (_: IOException) {
+                            profile.confirmed(session)?.let { AccountState.Loaded(it) } ?: AccountState.Error
+                        }
+                    )
+                    emitAll(profile.observeConfirmed(session).map { AccountState.Loaded(it) })
+                }
+                combine(profileStates, avatars.observe(session).onStart { emit(null) }) { state, avatar ->
+                    if (state is AccountState.Loaded) state.copy(avatar = avatar) else state
+                }.collect { send(it) }
             }
         }
 
@@ -136,7 +150,9 @@ class ProfileViewModel(
 
     companion object {
         val Factory = viewModelFactory {
-            initializer { ProfileViewModel(container.shops, container.orders, container.favorites, container.auth, container.profile) }
+            initializer {
+                ProfileViewModel(container.shops, container.orders, container.favorites, container.auth, container.profile, container.avatars)
+            }
         }
     }
 }

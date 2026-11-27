@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -20,6 +21,7 @@ import ru.coffeerun.ui.auth.AuthField
 import ru.coffeerun.ui.auth.AuthScaffold
 import ru.coffeerun.ui.auth.PhoneField
 import ru.coffeerun.ui.auth.SubmitButton
+import ru.coffeerun.ui.components.AvatarEditor
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.spacing
 
@@ -33,7 +35,10 @@ fun EditProfileScreen(
     onMessageShown: () -> Unit,
     onBack: () -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    onRetryLoad: () -> Unit = {}
+    onRetryLoad: () -> Unit = {},
+    onAvatarPicked: (String) -> Unit = {},
+    onAvatarRemoved: () -> Unit = {},
+    onAvatarRetry: () -> Unit = {}
 ) {
     AuthScaffold(
         title = R.string.profile_edit_title,
@@ -55,6 +60,21 @@ fun EditProfileScreen(
         uiState.lastConfirmed?.let {
             Text(stringResource(R.string.profile_confirmed_fields, it.name, it.phone))
         }
+        AvatarEditor(
+            model = uiState.avatar,
+            name = uiState.name,
+            onPicked = onAvatarPicked,
+            onRemoved = onAvatarRemoved,
+            enabled = !uiState.isSaving,
+            isWorking = uiState.isUpdatingAvatar
+        )
+        if (uiState.avatarUploadPending || uiState.avatarLoadFailed) {
+            val error = if (uiState.avatarUploadPending) R.string.avatar_upload_failed else R.string.avatar_load_failed
+            Text(stringResource(error))
+            TextButton(onClick = onAvatarRetry, enabled = !uiState.isUpdatingAvatar && !uiState.isSaving) {
+                Text(stringResource(R.string.action_retry))
+            }
+        }
         AuthField(
             value = uiState.name,
             onValueChange = onNameChange,
@@ -65,7 +85,7 @@ fun EditProfileScreen(
         )
         PhoneField(uiState.phone, onPhoneChange, uiState.phoneError, enabled = !uiState.isSaving)
         Spacer(Modifier.size(MaterialTheme.spacing.small))
-        SubmitButton(R.string.profile_save, uiState.isSaving, onSave)
+        SubmitButton(R.string.profile_save, uiState.isSaving, onSave, enabled = !uiState.isUpdatingAvatar)
     }
 }
 

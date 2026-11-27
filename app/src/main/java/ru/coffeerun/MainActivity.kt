@@ -9,14 +9,21 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.stringResource
+import ru.coffeerun.domain.promotion.refreshPromotionClock
 import ru.coffeerun.ui.CoffeeRunApp
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.util.LocalShopZone
+import ru.coffeerun.ui.util.LocalPickupPolicy
 import ru.coffeerun.ui.util.LocalPlaceholderNotifier
 import ru.coffeerun.ui.util.PlaceholderNotifier
 import ru.coffeerun.ui.util.showNotImplemented
 
 class MainActivity : ComponentActivity() {
+    override fun onResume() {
+        super.onResume()
+        refreshPromotionClock()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -37,7 +44,8 @@ class MainActivity : ComponentActivity() {
 
                 CompositionLocalProvider(
                     LocalPlaceholderNotifier provides placeholderNotifier,
-                    LocalShopZone provides ((application as CoffeeRunApplication).container.pickupPolicy::zone)
+                    LocalShopZone provides ((application as CoffeeRunApplication).container.pickupPolicy::zone),
+                    LocalPickupPolicy provides ((application as CoffeeRunApplication).container.pickupPolicy)
                 ) {
                     CoffeeRunApp(snackbarHostState = snackbarHostState)
                 }

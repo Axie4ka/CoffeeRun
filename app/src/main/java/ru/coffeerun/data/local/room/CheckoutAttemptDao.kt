@@ -40,7 +40,8 @@ data class CheckoutAttemptLineEntity(
     val productId: String,
     val quantity: Int,
     val unitPrice: Int,
-    val optionsJson: String?
+    val optionsJson: String?,
+    @androidx.room.ColumnInfo(defaultValue = "0") val discount: Int = 0
 )
 
 data class StoredCheckoutAttempt(

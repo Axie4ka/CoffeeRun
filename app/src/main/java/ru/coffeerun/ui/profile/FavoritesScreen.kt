@@ -17,7 +17,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -37,10 +43,22 @@ fun FavoritesScreen(
     onBack: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    onRemoveMissing: (String) -> Unit = {}
+    onRemoveMissing: (String) -> Unit = {},
+    recipes: (@Composable () -> Unit)? = null
 ) {
     Column(modifier.fillMaxSize()) {
         ScreenTopBar(title = stringResource(R.string.favorites_title), onBack = onBack)
+        if (recipes != null) {
+            var tab by rememberSaveable { mutableIntStateOf(0) }
+            PrimaryTabRow(selectedTabIndex = tab) {
+                Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(stringResource(R.string.favorites_products_tab)) })
+                Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(stringResource(R.string.favorites_recipes_tab)) })
+            }
+            if (tab == 1) {
+                recipes()
+                return@Column
+            }
+        }
         when (uiState) {
             FavoritesUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()

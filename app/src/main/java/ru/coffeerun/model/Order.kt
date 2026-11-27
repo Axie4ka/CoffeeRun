@@ -37,9 +37,10 @@ data class Order(
      * Итог в рублях. Состав включает и позиции, которых больше нет в текущем каталоге.
      */
     val total: Int = lines.sumOf { it.total },
-    val confirmedAtMillis: Long? = null
+    val confirmedAtMillis: Long? = null,
+    val promisedReadyAtMillis: Long? = null
 ) {
-    val readyAtMillis: Long get() = pickupAtMillis ?: (placedAtMillis + READY_IN_MINUTES * 60_000L)
+    val readyAtMillis: Long get() = promisedReadyAtMillis ?: pickupAtMillis ?: (placedAtMillis + READY_IN_MINUTES * 60_000L)
 
     /** Активный заказ — ещё не выдан клиенту и не отменён. */
     val isActive: Boolean get() = status != OrderStatus.PICKED_UP && status != OrderStatus.CANCELLED

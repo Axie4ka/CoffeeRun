@@ -39,6 +39,7 @@ import ru.coffeerun.data.DemoMenu
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.OrderItem
 import ru.coffeerun.model.toOrderItem
+import ru.coffeerun.ui.components.PromotionSummary
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.OrderStatus
 import ru.coffeerun.model.Shop
@@ -139,6 +140,7 @@ private fun OrderContent(order: Order, modifier: Modifier = Modifier) {
         HorizontalDivider()
         order.lines.forEach { line -> LineRow(line) }
         HorizontalDivider()
+        PromotionSummary(order.total, order.lines.sumOf { it.discount.toLong() })
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = stringResource(R.string.total_label),

@@ -3,6 +3,7 @@ package ru.coffeerun.ui.navigation
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -14,10 +15,14 @@ import ru.coffeerun.ui.auth.LoginViewModel
 import ru.coffeerun.ui.auth.RegisterScreen
 import ru.coffeerun.ui.auth.RegisterViewModel
 import androidx.navigation.NavGraphBuilder
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import ru.coffeerun.R
 
 internal fun NavGraphBuilder.authGraph(
     navController: NavController,
-    snackbarHostState: SnackbarHostState
+    snackbarHostState: SnackbarHostState,
+    appScope: CoroutineScope
 ) {
     composable<LoginRoute> { entry ->
         val toCheckout = entry.toRoute<LoginRoute>().toCheckout
@@ -41,8 +46,14 @@ internal fun NavGraphBuilder.authGraph(
         val toCheckout = entry.toRoute<RegisterRoute>().toCheckout
         val vm: RegisterViewModel = viewModel(factory = RegisterViewModel.Factory)
         val state by vm.uiState.collectAsStateWithLifecycle()
+        val avatarUploadFailed = stringResource(R.string.avatar_registration_upload_failed)
         // Зарегистрировались — как после входа; регистрация и вход под ней закрываются оба
-        LaunchedEffect(state.isDone) { if (state.isDone) navController.afterLogin(toCheckout) }
+        LaunchedEffect(state.isDone) {
+            if (state.isDone) {
+                navController.afterLogin(toCheckout)
+                if (state.avatarUploadFailed) appScope.launch { snackbarHostState.showSnackbar(avatarUploadFailed) }
+            }
+        }
         RegisterScreen(
             uiState = state,
             onNameChange = vm::onNameChange,
@@ -53,7 +64,9 @@ internal fun NavGraphBuilder.authGraph(
             // Регистрация открывается только со входа: «Войти» — вернуться к нему, а не открыть второй
             onLogin = dropUnlessResumed { navController.popBackStack() },
             onBack = dropUnlessResumed { navController.popBackStack() },
-            snackbarHostState = snackbarHostState
+            snackbarHostState = snackbarHostState,
+            onAvatarPicked = vm::onAvatarPicked,
+            onAvatarRemoved = vm::onAvatarRemoved
         )
     }
 }

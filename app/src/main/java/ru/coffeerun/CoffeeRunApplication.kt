@@ -1,8 +1,13 @@
 package ru.coffeerun
 
+import ru.coffeerun.data.repository.NetworkAvatarRepository
+import ru.coffeerun.data.repository.ShopScheduleBook
+import ru.coffeerun.data.local.room.RoomRecipeRepository
+
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import java.io.IOException
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -19,6 +24,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import ru.coffeerun.data.repository.NetworkAuthRepository
 import ru.coffeerun.data.repository.NetworkProfileRepository
 import ru.coffeerun.data.local.datastore.AUTH_DATASTORE
@@ -57,13 +63,17 @@ class CoffeeRunApplication : Application(), SingletonImageLoader.Factory {
         super.onCreate()
         val language = { serverLanguage() } // спрашивается на каждый запрос: язык могут сменить на ходу
         val database = Room.databaseBuilder(this, CoffeeRunDatabase::class.java, "coffeerun.db").build()
-        val tokens = TokenStore(authDataStore, RoomOwnerScope(database)::reconcile)
+        val tokens = TokenStore(authDataStore, RoomOwnerScope(database, this)::reconcile)
         // Запросы в Logcat (тег CoffeeRunHttp) — только в debug-сборке
         val log = if (BuildConfig.DEBUG) { line: String -> Log.d("CoffeeRunHttp", line); Unit } else null
         val api = createCoffeeRunApi(BuildConfig.BASE_URL, language, tokens, log)
         val auth = NetworkAuthRepository(api, tokens)
-        val menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language, database.menuSnapshots())
-        val pickupPolicy = PickupPolicy()
+        val schedules = ShopScheduleBook()
+        val menu = NetworkMenuRepository(api, BuildConfig.BASE_URL, language, database.menuSnapshots(), schedules)
+        val pickupPolicy = PickupPolicy(hours = schedules::today, scheduleRevision = schedules.revision)
+        applicationScope.launch {
+            try { menu.getMenu() } catch (_: IOException) { }
+        }
         container = AppContainer(
             menu = menu,
             auth = auth,
@@ -73,7 +83,9 @@ class CoffeeRunApplication : Application(), SingletonImageLoader.Factory {
             pickupPolicy = pickupPolicy,
             checkoutAttemptStore = RoomCheckoutAttemptStore(database),
             cart = RoomCartRepository(database, tokens, applicationScope),
-            shops = DataStoreShopRepository(shopDataStore, applicationScope)
+            shops = DataStoreShopRepository(shopDataStore, applicationScope),
+            recipes = RoomRecipeRepository(api, auth, database),
+            avatars = NetworkAvatarRepository(api, tokens, database, this)
         )
     }
 

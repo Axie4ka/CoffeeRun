@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import ru.coffeerun.data.session.SessionChangedException
 import ru.coffeerun.data.local.room.withPersonalCache
+import ru.coffeerun.data.local.room.withOwner
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -203,6 +204,21 @@ class NetworkOrderRepository(
     }
 
     override fun find(number: Int): Order? = _orders.value.find { it.number == number }
+
+    override suspend fun findSaved(number: Int, session: AuthSession): Order? {
+        val database = db ?: return commit(session) { find(number) }
+        return try {
+            database.withOwner(sessions, session) { owner ->
+                database.orderHistory().find(owner, number)?.let {
+                    CoffeeRunJson.decodeFromString<Order>(it.payload).copy(confirmedAtMillis = it.confirmedAtMillis)
+                }
+            }
+        } catch (error: SQLiteException) {
+            throw IOException("Cannot read saved order", error)
+        } catch (error: SerializationException) {
+            throw IOException("Cannot decode saved order", error)
+        }
+    }
 
     override fun clear(session: AuthSession) = sessions.withSession(session) {
         selectOwner(session)

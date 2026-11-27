@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.flowOf
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.DemoMenuRepository
 import ru.coffeerun.data.InMemoryAuthRepository
+import ru.coffeerun.data.MenuRepository
 import ru.coffeerun.data.ShopRepository
 import ru.coffeerun.domain.orders.Orders
 import ru.coffeerun.domain.checkout.PlaceOrderUseCase
@@ -18,8 +19,9 @@ fun testCheckout(
     shops: ShopRepository,
     now: () -> Long = { Instant.parse("2026-11-10T09:00:00Z").toEpochMilli() },
     ticks: Flow<Unit> = flowOf(Unit),
-    savedState: SavedStateHandle = SavedStateHandle()
+    savedState: SavedStateHandle = SavedStateHandle(),
+    menu: MenuRepository = DemoMenuRepository()
 ): CheckoutViewModel {
     val policy = testPickupPolicy(now)
-    return CheckoutViewModel(cart, PlaceOrderUseCase(cart, orders, InMemoryAuthRepository(loggedIn = true), policy, DemoMenuRepository()), shops, policy, savedState, ticks)
+    return CheckoutViewModel(cart, PlaceOrderUseCase(cart, orders, InMemoryAuthRepository(loggedIn = true), policy, menu), shops, policy, savedState, ticks)
 }

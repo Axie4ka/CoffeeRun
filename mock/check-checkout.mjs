@@ -64,16 +64,43 @@ if (submission.status === 201) {
 
 const cappuccino = menu.products.find(product => product.id === 'cappuccino');
 const priceOf = (options, code) => options.find(option => option.code === code).price;
+const findPromotion = type => menu.promotions.find(promotion => promotion.type === type);
+assert.equal(findPromotion('CAPPUCCINO_MEDIUM').productId, cappuccino.id);
+assert.equal(findPromotion('PASTRY_2_PLUS_1').category, 'PASTRY');
+const cappuccinoBase = cappuccino.price + priceOf(menu.sizes, 'MEDIUM') - priceOf(menu.sizes, 'SMALL');
 const configured = {
   ...request,
   lines: [{
     productId: cappuccino.id,
     quantity: 1,
-    unitPrice: cappuccino.price + priceOf(menu.sizes, 'MEDIUM') - priceOf(menu.sizes, 'SMALL')
-      + priceOf(menu.milks, 'OAT') + priceOf(menu.extras, 'VANILLA'),
+    unitPrice: cappuccinoBase + priceOf(menu.milks, 'OAT') + priceOf(menu.extras, 'VANILLA'),
+    discount: Math.floor(cappuccinoBase / 5),
     options: { size: 'MEDIUM', milk: 'OAT', iced: false, extras: ['VANILLA'], note: '' },
   }],
 };
-assert.equal((await post(randomUUID(), configured)).status, 201);
+const promotedKey = randomUUID();
+const promoted = await post(promotedKey, configured);
+assert.equal(promoted.status, 201);
+assert.equal(promoted.body.lines[0].discount, configured.lines[0].discount);
+const tampered = structuredClone(configured);
+tampered.lines[0].discount++;
+assert.equal((await post(randomUUID(), tampered)).status, 409);
+assert.equal((await post(promotedKey, tampered)).body.code, 'ATTEMPT_PAYLOAD_MISMATCH');
+assert.equal((await post(promotedKey, null, '/resolve')).body.lines[0].discount, configured.lines[0].discount);
+
+const pastryLine = (id, quantity, free = 0) => {
+  const product = menu.products.find(item => item.id === id);
+  return { productId: id, quantity, unitPrice: product.price, discount: product.price * free };
+};
+const twoTrios = { ...request, lines: [
+  pastryLine('croissant', 3), pastryLine('chocolate_muffin', 2, 2), pastryLine('cinnamon_roll', 1),
+] };
+const pastryOrder = await post(randomUUID(), twoTrios);
+assert.equal(pastryOrder.status, 201);
+assert.deepEqual(pastryOrder.body.lines.map(line => line.discount), twoTrios.lines.map(line => line.discount));
+const wrongFreeItems = { ...twoTrios, lines: [
+  pastryLine('croissant', 3, 2), pastryLine('chocolate_muffin', 2), pastryLine('cinnamon_roll', 1),
+] };
+assert.equal((await post(randomUUID(), wrongFreeItems)).status, 409);
 
 console.log('Mockoon checkout scenarios passed');

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="promotion_subtotal">Subtotal</string>
+    <string name="promotion_discount">Discount</string>
+    <string name="promotion_discount_amount">−%1$d ₽</string>
+    <string name="promotion_product_discount">Discount −%1$d ₽</string>
+</resources>

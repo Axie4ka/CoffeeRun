@@ -34,7 +34,8 @@ fun CartLine.toDto() = OrderLineDto(
     productId = product.id,
     quantity = quantity,
     unitPrice = unitPrice,
-    options = options?.let { DrinkOptionsDto(it.size?.name, it.milk?.name, it.isIced, it.extras.map(Extra::name), it.note) }
+    options = options?.let { DrinkOptionsDto(it.size?.name, it.milk?.name, it.isIced, it.extras.map(Extra::name), it.note) },
+    discount = discount
 )
 
 /**
@@ -48,7 +49,9 @@ fun OrderDto.toModel(products: Map<String, Product>, knownItems: List<OrderItem>
     var total = 0L
     for (line in lines) {
         if (line.quantity !in MIN_QUANTITY..MAX_QUANTITY || line.unitPrice < 0) return null
-        total += line.unitPrice.toLong() * line.quantity
+        val gross = line.unitPrice.toLong() * line.quantity
+        if (line.discount.toLong() !in 0L..gross) return null
+        total += gross - line.discount
         if (total > Int.MAX_VALUE) return null
     }
     val knownById = knownItems.associateBy { it.productId }
@@ -62,7 +65,8 @@ fun OrderDto.toModel(products: Map<String, Product>, knownItems: List<OrderItem>
             quantity = line.quantity,
             options = line.options?.toModel(),
             description = known?.description ?: product?.description.orEmpty(),
-            unknownOptionCodes = line.options?.unknownCodes().orEmpty()
+            unknownOptionCodes = line.options?.unknownCodes().orEmpty(),
+            discount = line.discount
         )
     }
     return Order(
@@ -72,6 +76,7 @@ fun OrderDto.toModel(products: Map<String, Product>, knownItems: List<OrderItem>
         shop = shop,
         placedAtMillis = placed,
         pickupAtMillis = pickupAt?.let(::parseMillis),
+        promisedReadyAtMillis = promisedReadyAt?.let(::parseMillis),
         total = total.toInt()
     )
 }

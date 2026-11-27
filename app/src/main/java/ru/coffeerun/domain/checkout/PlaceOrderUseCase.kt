@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
 import ru.coffeerun.data.CartRepository
 import ru.coffeerun.data.MenuRepository
@@ -26,6 +27,7 @@ import ru.coffeerun.domain.checkout.CheckoutAttemptStatus
 import ru.coffeerun.domain.checkout.CheckoutAttemptStore
 import ru.coffeerun.domain.checkout.PickupPolicy
 import ru.coffeerun.domain.orders.Orders
+import ru.coffeerun.domain.promotion.priceCart
 import ru.coffeerun.model.CartLine
 import ru.coffeerun.model.Order
 import ru.coffeerun.model.MenuSnapshot
@@ -45,6 +47,9 @@ class PlaceOrderUseCase(
 ) {
     private data class Attempt(val id: String, val session: AuthSession, val status: CheckoutAttemptStatus, val lines: List<CartLine>)
     private val activeAttempt = MutableStateFlow<Attempt?>(null)
+    val pricingMenu = menu.observeSnapshot().onStart<MenuSnapshot?> { emit(null) }.catch {
+        if (it !is IOException) throw it
+    }
     val attemptStatus = sessions.sessions.flatMapLatest { session ->
         val stored = session.localOwner?.let { store?.observeKeyedAttempt(it) } ?: flowOf(null)
         combine(stored.catch { if (it is IOException) emit(null) else throw it }, activeAttempt) { keyed, attempt ->
@@ -104,7 +109,9 @@ class PlaceOrderUseCase(
         }
     }
 
-    suspend operator fun invoke(shop: Shop, pickupAtMillis: Long?, confirmed: CheckoutQuote? = null): CheckoutResult {
+    suspend operator fun invoke(
+        shop: Shop, pickupAtMillis: Long?, confirmed: CheckoutQuote? = null, displayedLines: List<CartLine>? = null
+    ): CheckoutResult {
         val session = sessions.currentSession()
         return sessions.runInSession(session) {
             val owner = session.localOwner
@@ -126,6 +133,9 @@ class PlaceOrderUseCase(
             if (confirmed != null && (confirmed.session != session || !confirmed.matches(lines, shop, pickupAtMillis))) {
                 return@runInSession CheckoutResult.CartChanged
             }
+            if (confirmed == null && displayedLines != null && displayedLines.map { it.copy(discount = 0) } != lines) {
+                return@runInSession CheckoutResult.CartChanged
+            }
             if (!pickup.isValid(shop, pickupAtMillis)) return@runInSession CheckoutResult.InvalidPickupTime
             val snapshot = try {
                 menu.refresh()
@@ -138,7 +148,8 @@ class PlaceOrderUseCase(
             }
             if (currentLines != lines) return@runInSession CheckoutResult.CartChanged
             if (!pickup.isValid(shop, pickupAtMillis)) return@runInSession CheckoutResult.InvalidPickupTime
-            val updated = when (val quote = calculateQuote(lines, snapshot, session, shop, pickupAtMillis, confirmed)) {
+            val shown = confirmed?.updatedLines ?: displayedLines ?: lines
+            val updated = when (val quote = calculateQuote(lines, snapshot, session, shop, pickupAtMillis, shown)) {
                 is QuoteDecision.Ready -> quote.lines
                 is QuoteDecision.Blocked -> return@runInSession quote.result
             }
@@ -212,7 +223,7 @@ private sealed interface QuoteDecision {
 
 private fun calculateQuote(
     lines: List<CartLine>, snapshot: MenuSnapshot, session: AuthSession, shop: Shop,
-    pickupAtMillis: Long?, confirmed: CheckoutQuote?
+    pickupAtMillis: Long?, shown: List<CartLine>
 ): QuoteDecision {
     val products = snapshot.products.associateBy { it.id }
     val unavailable = mutableListOf<String>()
@@ -225,12 +236,12 @@ private fun calculateQuote(
         } else line.copy(product = product, unitPrice = price)
     }
     if (unavailable.isNotEmpty()) return QuoteDecision.Blocked(CheckoutResult.UnavailableLines(unavailable.distinct()))
-    if (updated.sumOf { it.unitPrice.toLong() * it.quantity } > Int.MAX_VALUE) {
+    val priced = priceCart(updated, snapshot)
+    if (priced.sumOf { it.totalAmount } > Int.MAX_VALUE) {
         return QuoteDecision.Blocked(CheckoutResult.InvalidTotal)
     }
-    val shown = confirmed?.updatedLines ?: lines
-    if (updated.map { it.unitPrice } != shown.map { it.unitPrice }) {
-        return QuoteDecision.Blocked(CheckoutResult.PricesChanged(CheckoutQuote(session, lines, updated, shop, pickupAtMillis)))
+    if (priced.indices.any { priced[it].unitPrice != shown[it].unitPrice || priced[it].discount != shown[it].discount }) {
+        return QuoteDecision.Blocked(CheckoutResult.PricesChanged(CheckoutQuote(session, lines, priced, shop, pickupAtMillis)))
     }
-    return QuoteDecision.Ready(updated)
+    return QuoteDecision.Ready(priced)
 }

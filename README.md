@@ -40,6 +40,7 @@ CI (GitHub Actions, [.github/workflows/android.yml](.github/workflows/android.ym
 | Сеть | Retrofit 3, OkHttp 5, kotlinx-serialization |
 | Картинки | Coil 3 |
 | Хранение токена | DataStore Preferences |
+| Локальная база | Room, SQLite, `coffeerun.db`, схема v7 |
 | Тесты | JUnit 4, kotlinx-coroutines-test, MockWebServer, Compose UI Test |
 
 ## Как устроено
@@ -49,7 +50,7 @@ ui/            экраны (XxxScreen) и их ViewModel, навигация, �
   ↓ события вверх, состояние вниз (StateFlow)
 data/          репозитории: интерфейс + Network-реализация + InMemory для UI-тестов
   ├─ network/  CoffeeRunApi (Retrofit), DTO, маппинг DTO ↔ модели, AuthInterceptor
-  └─ local/    TokenStore (DataStore)
+  └─ local/    Room (корзина, меню, заказы, избранное, оформление), DataStore (токен и кофейня)
 model/         предметные классы: Product, CartLine, Order, User…
 ```
 
@@ -59,6 +60,10 @@ model/         предметные классы: Product, CartLine, Order, User
 - **Состояние аккаунта.** Избранное и заказы живут в `applicationScope`: после входа загружаются, после выхода очищаются.
 
 ## Документы
+
+В Room десять таблиц, включая локальные копии рецептов и метаданные аватара. Схемы версий 1–7 находятся в `app/schemas`. Для демонстрации CRUD добавьте настроенный напиток, откройте App Inspection → Database Inspector → `coffeerun.db` → `cart_line`, измените количество и удалите позицию. Действие «Вернуть» восстанавливает рецепт и количество. Остановите Mockoon, перезапустите приложение и проверьте, что корзина и сохранённое меню доступны. По номеру заказа можно открыть сохранённую покупку в истории.
+
+**Демонстрация на двух эмуляторах.** Подключите их к одному запущенному окружению Mockoon и войдите под демо-аккаунтом. На первом сохраните рецепт из карточки напитка и смените фото в профиле. На втором откройте вкладку «Мои рецепты» и профиль. При уже открытом списке можно нажать «Обновить». Для записи рецептов и аватара нужен доступ к Mockoon. Перезапуск окружения сбрасывает его демо-данные.
 
 - [docs/openapi.yaml](docs/openapi.yaml) — контракт API.
 - [mock/README.md](mock/README.md) — мок-сервер, демо-данные, как показать ошибки.

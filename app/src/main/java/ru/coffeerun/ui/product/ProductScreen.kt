@@ -44,15 +44,21 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextDecoration
 import coil3.compose.AsyncImage
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -63,10 +69,12 @@ import ru.coffeerun.model.Extra
 import ru.coffeerun.model.MilkType
 import ru.coffeerun.model.OptionPrices
 import ru.coffeerun.model.Product
+import ru.coffeerun.model.ProductCategory
 import ru.coffeerun.model.MAX_QUANTITY
 import ru.coffeerun.model.MIN_QUANTITY
 import ru.coffeerun.ui.components.CartBadge
 import ru.coffeerun.ui.components.QuantityStepper
+import ru.coffeerun.ui.profile.RecipeNameDialog
 import ru.coffeerun.ui.theme.CoffeeRunTheme
 import ru.coffeerun.ui.theme.priceLarge
 import ru.coffeerun.ui.theme.spacing
@@ -84,6 +92,7 @@ fun ProductScreen(
     product: Product,
     form: ProductForm,
     unitPrice: Int,
+    totalPrice: Long,
     prices: OptionPrices,
     cartCount: Int,
     onSizeSelected: (DrinkSize) -> Unit,
@@ -99,9 +108,27 @@ fun ProductScreen(
     onShare: () -> Unit,
     onCart: () -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    recipeName: String? = null,
+    onSaveRecipe: ((String) -> Unit)? = null,
+    onRecipeLogin: (() -> Unit)? = null,
+    isCartEdit: Boolean = false,
+    optionsAdjusted: Boolean = false,
+    unitDiscount: Int = 0
 ) {
     val features = product.customizations
+    var namingRecipe by rememberSaveable { mutableStateOf(false) }
+    if (namingRecipe && onSaveRecipe != null) {
+        RecipeNameDialog(
+            title = stringResource(R.string.recipe_name_title),
+            initialName = recipeName.orEmpty(),
+            onDismiss = { namingRecipe = false },
+            onConfirm = {
+                namingRecipe = false
+                onSaveRecipe(it)
+            }
+        )
+    }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -117,10 +144,16 @@ fun ProductScreen(
         bottomBar = {
             OrderBar(
                 quantity = form.quantity,
-                totalPrice = unitPrice * form.quantity,
+                totalPrice = totalPrice,
                 onDecrease = { onQuantityChange(-1) },
                 onIncrease = { onQuantityChange(+1) },
-                onAddToCart = onAddToCart
+                onAddToCart = if (recipeName == null) onAddToCart else { { namingRecipe = true } },
+                showQuantity = !isCartEdit && recipeName == null,
+                actionLabel = when {
+                    recipeName != null -> stringResource(R.string.recipe_save_action)
+                    isCartEdit -> stringResource(R.string.recipe_cart_edit_save, totalPrice)
+                    else -> null
+                }
             )
         },
 
@@ -142,8 +175,26 @@ fun ProductScreen(
                 product = product,
                 // Цена за одну порцию — без учёта количества.
                 price = unitPrice,
+                discount = unitDiscount,
                 modifier = Modifier.padding(MaterialTheme.spacing.large)
             )
+            if (optionsAdjusted) {
+                Text(
+                    stringResource(R.string.recipe_options_adjusted),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large)
+                )
+            }
+            if (recipeName == null && !isCartEdit && product.category != ProductCategory.PASTRY &&
+                (onSaveRecipe != null || onRecipeLogin != null)
+            ) {
+                TextButton(
+                    onClick = { if (onSaveRecipe != null) namingRecipe = true else onRecipeLogin?.invoke() },
+                    modifier = Modifier.padding(horizontal = MaterialTheme.spacing.large)
+                ) {
+                    Text(stringResource(R.string.recipe_save_action))
+                }
+            }
 
             if (Customization.SIZE in features) {
                 SectionDivider()
@@ -253,6 +304,7 @@ private fun ProductTopBar(
 private fun ProductHeader(
     product: Product,
     price: Int,
+    discount: Int,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -282,11 +334,28 @@ private fun ProductHeader(
                 style = MaterialTheme.typography.headlineSmall,
                 modifier = Modifier.weight(1f)
             )
-            Text(
-                text = stringResource(R.string.price_rub, price),
-                style = MaterialTheme.typography.priceLarge,
-                color = MaterialTheme.colorScheme.tertiary
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                if (discount > 0) {
+                    Text(
+                        text = stringResource(R.string.price_rub, price),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textDecoration = TextDecoration.LineThrough
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.price_rub, price - discount),
+                    style = MaterialTheme.typography.priceLarge,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+                if (discount > 0) {
+                    Text(
+                        text = stringResource(R.string.promotion_product_discount, discount),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
         }
 
         Spacer(Modifier.height(MaterialTheme.spacing.small))
@@ -335,10 +404,12 @@ private fun ProductHeader(
 @Composable
 private fun OrderBar(
     quantity: Int,
-    totalPrice: Int,
+    totalPrice: Long,
     onDecrease: () -> Unit,
     onIncrease: () -> Unit,
-    onAddToCart: () -> Unit
+    onAddToCart: () -> Unit,
+    showQuantity: Boolean,
+    actionLabel: String?
 ) {
     // Вместо BottomAppBar (он устаревает и рассчитан на иконки и FAB) — панель в стиле docked toolbar
     Surface(
@@ -354,13 +425,15 @@ private fun OrderBar(
         ) {
             // Границы количества держатся на отключении кнопок: на пределе
             // «−» и «+» недоступны, поэтому отдельной проверки в обработчиках нет.
-            QuantityStepper(
-                quantity = quantity,
-                onDecrease = onDecrease,
-                onIncrease = onIncrease,
-                canDecrease = quantity > MIN_QUANTITY,
-                canIncrease = quantity < MAX_QUANTITY
-            )
+            if (showQuantity) {
+                QuantityStepper(
+                    quantity = quantity,
+                    onDecrease = onDecrease,
+                    onIncrease = onIncrease,
+                    canDecrease = quantity > MIN_QUANTITY,
+                    canIncrease = quantity < MAX_QUANTITY
+                )
+            }
             Button(
                 onClick = onAddToCart,
                 modifier = Modifier.weight(1f)
@@ -376,7 +449,7 @@ private fun OrderBar(
                     label = "price"
                 ) { price ->
                     Text(
-                        text = stringResource(R.string.add_to_cart, price),
+                        text = actionLabel ?: stringResource(R.string.add_to_cart, price),
                         maxLines = 1
                     )
                 }
@@ -393,6 +466,7 @@ private fun ProductScreenPreview() {
             product = DemoMenu.CAPPUCCINO,
             form = ProductForm(),
             unitPrice = 240,
+            totalPrice = 240L,
             prices = DemoMenu.prices,
             cartCount = 2,
             onSizeSelected = {},

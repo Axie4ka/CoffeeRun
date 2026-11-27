@@ -79,4 +79,13 @@ class PickupPolicyTest {
         assertTrue(p.isValid(Shop.MOSKOVSKAYA, null))
         assertFalse(p.isValid(Shop.STROITELEY, null))
     }
+
+    @Test fun eachShopUsesItsOwnPreparationTime() {
+        val p = PickupPolicy(now = { at("09:00") }, hours = { selected ->
+            PickupHours(zone, LocalTime.of(22, 0), preparationMinutes = if (selected == shop) 12 else 18)
+        })
+        assertEquals(LocalTime.of(12, 15), p.earliestTime(shop))
+        assertEquals(LocalTime.of(12, 20), p.earliestTime(Shop.STROITELEY))
+        assertFalse(p.isValid(Shop.STROITELEY, at("09:15")))
+    }
 }

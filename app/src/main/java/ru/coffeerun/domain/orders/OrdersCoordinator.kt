@@ -96,6 +96,11 @@ class OrdersCoordinator(
 
     override fun find(number: Int): Order? = repository.find(number)
 
+    override suspend fun findSaved(number: Int): Order? {
+        val session = authorizedSession()
+        return sessions.runInSession(session) { repository.findSaved(number, session) }
+    }
+
     private suspend fun authorizedSession(): AuthSession = sessions.currentSession().also {
         if (!it.isLoggedIn) throw SessionChangedException()
     }
